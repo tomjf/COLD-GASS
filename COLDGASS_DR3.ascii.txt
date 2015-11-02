@@ -1,20 +1,20 @@
 # COLD GASS Third Data Release - 26 September 2012
-# 
-# This is an updated version of the first and second COLD GASS catalogs, to include a total of 366 galaxies, 
-# which is the entire sample observed as part of the COLD GASS survey. 
+#
+# This is an updated version of the first and second COLD GASS catalogs, to include a total of 366 galaxies,
+# which is the entire sample observed as part of the COLD GASS survey.
 # The values given in this catalog supersede those in any previous versions.
-# 
+#
 # If using this catalogue, please refer to the following papers:
 # Saintonge et al. (2011, MNRAS, 415, 32) : Survey description and overview of IRAM CO data
 # Saintonge et al. (2012, ApJ) : Improved aperture corrections and assignment of XCO
 # Saintonge et al. (2011, MNRAS, 415, 61) : SFR measurements from SDSS/Galex photometry
 # Catinella et al. (2012, A&A, 544, A65) : Arecibo HI data
-# 
-# *** IMPORTANT : make sure to familiarize yourself with the contents of the README file that accompanies 
+#
+# *** IMPORTANT : make sure to familiarize yourself with the contents of the README file that accompanies
 #                 this catalogue before using the data! ***
 #
-# GASS    SDSS_name              z_SDSS     logM*    logmu*    SFR     D25      C     NUV-r      r      rms        S/N    SCO_obs   SCO_cor  f_off     XCO    logMH2 logMH2/M* COflag logMHI HIflag weight 
-#                                       [Msun] [Msun/kpc^2] [Msun/yr] [asec]                   [mag]    [mK]             [Jy km/s] [Jy km/s]     [Msun/(K kms pc^2)] [Msun]           [Msun]   
+# GASS    SDSS_name              z_SDSS     logM*    logmu*    SFR     D25      C     NUV-r      r      rms        S/N    SCO_obs   SCO_cor  f_off     XCO    logMH2 logMH2/M* COflag logMHI HIflag weight
+#                                       [Msun] [Msun/kpc^2] [Msun/yr] [asec]                   [mag]    [mK]             [Jy km/s] [Jy km/s]     [Msun/(K kms pc^2)] [Msun]           [Msun]
 # (1)             (2)              (3)       (4)      (5)      (6)     (7)     (8)     (9)     (10)     (11)      (12)      (13)      (14)    (15)     (16)     (17)     (18)  (19)    (20)  (21)   (22)
 #
 11956     J000820.76+150921.6    0.03951    10.09     8.48     0.90    22.6    2.15    3.04    16.28    0.952      0.0      0.00      0.00    0.00     4.35     8.88    -1.21    2     9.18    3    0.936
