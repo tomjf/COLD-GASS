@@ -20,7 +20,7 @@ def lumdistance(z):
 def sortIntoBins(l):
     low = min(l)
     high = max(l)     # min max in logspace
-    bins = np.linspace(low, high,num=20) # log-spaced bins
+    bins = np.linspace(low, high,num=15) # log-spaced bins
     N = []
     mid = []
     for i in range (1,len(bins)):
@@ -29,39 +29,56 @@ def sortIntoBins(l):
         midpt = (bins[i]+bins[i-1])/2
         N.append(n)
         mid.append(midpt)
-    return np.log10(N), mid
+    return N, mid
+
+def lCalc(SCO, z, correction):
+    lums = []
+    for i in range(0,len(SCO)):                              # for each galaxy in the dataset
+        if correction == True:
+            SCO_cor = SCO[i]*6.0                      # find the integrated CO flux
+        else:
+            SCO_cor = SCO[i]
+        C = 3.25*math.pow(10,7)                 # numerical const from eqn 4 paper 1
+        freq = 111                              # observing frequency
+        Dl, DH = lumdistance(z[i])           # luminosity distance
+        SDSS_z = math.pow((1+z[i]),-3)       # redshift component
+        L_CO = C*SCO_cor*((Dl*Dl)/(freq*freq))*SDSS_z   # calculate CO luminosity
+        lums.append(L_CO)
+    return lums
 
 t = atpy.Table('COLDGASS_DR3.fits')         # read web data from table
 abc = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
 
 lumsnew = list(abc[12])
-for q in range(0,len(lumsnew)):
-    a = lumsnew[q]
-    a = math.pow(10,a)
-    a = a*6
-    lumsnew[q] = math.log10(a)
+print lumsnew[0], lumsnew[1]
 
-lums = []
+
+SCO1, z1= [], []
 for rows in t:                              # for each galaxy in the dataset
-    SCO_cor = rows[15]                      # find the integrated CO flux
-    C = 3.25*math.pow(10,7)                 # numerical const from eqn 4 paper 1
-    freq = 111                              # observing frequency
-    Dl, DH = lumdistance(rows[4])           # luminosity distance
-    SDSS_z = math.pow((1+rows[4]),-3)       # redshift component
-    L_CO = C*SCO_cor*((Dl*Dl)/(freq*freq))*SDSS_z   # calculate CO luminosity
-    lums.append(L_CO)
+    SCO1.append(rows[15])                      # find the integrated CO flux
+    z1.append(rows[4])
+SCO2, z2 = list(abc[11]), list(abc[3])
 
-lums = [i for i in lums if i > 0.0]         # remove 0 detected CO flux galaxies
-lums = np.log10(lums)
-combined = np.append(lums, lumsnew)
+lums1, lums2 = lCalc(SCO1,z1,False), lCalc(SCO2,z2,True)
 
-N1, mid1 = sortIntoBins(lums)
-N2, mid2 = sortIntoBins(lumsnew)
+lums1 = [i for i in lums1 if i > 0.0]         # remove 0 detected CO flux galaxies
+lums2 = [i for i in lums2 if i > 0.0]         # remove 0 detected CO flux galaxies
+lums1, lums2 = np.log10(lums1), np.log10(lums2)
+combined = np.append(lums1, lums2)
+
+N1, mid1 = sortIntoBins(lums1)
+N2, mid2 = sortIntoBins(lums2)
 N3, mid3 = sortIntoBins(combined)
+N4, mid4 = sortIntoBins(lumsnew)
 
-plt.plot(mid1,N1,'bo')
-plt.plot(mid2,N2,'ro')
-plt.plot(mid3,N3,'go')
+L = lCalc([0.49, 0.38], [0.01711, 0.01896], True)
+print np.log10(L)
+
+
+plt.plot(mid1,N1,'bo-')
+plt.plot(mid2,N2,'ro-')
+plt.plot(mid3,N3,'go-')
+plt.plot(mid4,N4,'ko-')
 plt.xlabel('log_10(L_CO)')
 plt.ylabel('log_10(N)')
 plt.show()
