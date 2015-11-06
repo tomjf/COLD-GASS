@@ -22,14 +22,15 @@ def sortIntoBins(l):
     high = max(l)     # min max in logspace
     bins = np.linspace(low, high,num=15) # log-spaced bins
     N = []
-    mid = []
+    xbins = []
     for i in range (1,len(bins)):
         inbin = [x for x in l if x > bins[i-1] and x < bins[i]]
         n = len(inbin)
-        midpt = (bins[i]+bins[i-1])/2
         N.append(n)
-        mid.append(midpt)
-    return N, mid
+        N.append(n)
+        xbins.append(bins[i-1])
+        xbins.append(bins[i])
+    return np.log10(N), xbins
 
 def lCalc(SCO, z, correction):
     lums = []
@@ -46,40 +47,49 @@ def lCalc(SCO, z, correction):
         lums.append(L_CO)
     return lums
 
-t = atpy.Table('COLDGASS_DR3.fits')         # read web data from table
-abc = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
+def NonDetect(data, flag):
+    datanew = []
+    for i in range (0,len(data)):
+        if flag[i] == 1:
+            datanew.append(data[i])
+    return datanew
 
-lumsnew = list(abc[12])
-print lumsnew[0], lumsnew[1]
+highM = atpy.Table('COLDGASS_DR3.fits')         # read web data from table
+lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
 
+SCOH, zH = [], []
+for rows in highM:                              # for each galaxy in the dataset
+    SCOH.append(rows[15])                      # find the integrated CO flux
+    zH.append(rows[4])
+SCOL, zL, flagL = list(lowM[11]), list(lowM[3]), list(lowM[15])
+lumsnew = list(lowM[12])
+lumsnew = NonDetect(lumsnew, flagL)
+SCOL, zL = NonDetect(SCOL, flagL), NonDetect(zL, flagL)
+L = lCalc([0.49],[0.01711],True)
+B = lCalc([SCOL[0]],[zL[0]],True)
+print SCOL[0], zL[0]
+print np.log10(L), np.log10(B)
 
-SCO1, z1= [], []
-for rows in t:                              # for each galaxy in the dataset
-    SCO1.append(rows[15])                      # find the integrated CO flux
-    z1.append(rows[4])
-SCO2, z2 = list(abc[11]), list(abc[3])
+lumsH = lCalc(SCOH,zH,False)
+lumsL = lCalc(SCOL,zL,True)
 
-lums1, lums2 = lCalc(SCO1,z1,False), lCalc(SCO2,z2,True)
+lumsL = [i for i in lumsL if i > 0.0]         # remove 0 detected CO flux galaxies
+lumsH = [i for i in lumsH if i > 0.0]         # remove 0 detected CO flux galaxies
+lumsL, lumsH = np.log10(lumsL), np.log10(lumsH)
+combined = np.append(lumsL, lumsH)
 
-lums1 = [i for i in lums1 if i > 0.0]         # remove 0 detected CO flux galaxies
-lums2 = [i for i in lums2 if i > 0.0]         # remove 0 detected CO flux galaxies
-lums1, lums2 = np.log10(lums1), np.log10(lums2)
-combined = np.append(lums1, lums2)
+NL, midL = sortIntoBins(lumsL)
+NH, midH = sortIntoBins(lumsH)
+NC, midC = sortIntoBins(combined)
+NR, midR = sortIntoBins(lumsnew)
 
-N1, mid1 = sortIntoBins(lums1)
-N2, mid2 = sortIntoBins(lums2)
-N3, mid3 = sortIntoBins(combined)
-N4, mid4 = sortIntoBins(lumsnew)
-
-L = lCalc([0.49, 0.38], [0.01711, 0.01896], True)
-print np.log10(L)
-
-
-plt.plot(mid1,N1,'bo-')
-plt.plot(mid2,N2,'ro-')
-plt.plot(mid3,N3,'go-')
-plt.plot(mid4,N4,'ko-')
+plt.plot(midL,NL,'b-', label = 'Low mass')
+plt.plot(midH,NH,'r-', label = 'high mass')
+plt.plot(midC,NC,'g-', label = 'combined')
+plt.plot(midR,NR,'k-', label = 'Pre-calc')
 plt.xlabel('log_10(L_CO)')
 plt.ylabel('log_10(N)')
+plt.title('CO Luminosity')
+plt.legend()
+plt.savefig('lum.png')
 plt.show()
-plt.savefig('a.png')
