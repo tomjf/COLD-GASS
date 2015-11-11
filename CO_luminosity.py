@@ -6,41 +6,52 @@ import matplotlib.pyplot as plt
 import asciidata
 
 # Function to calculate the luminosity distance from z #########################
-def lumdistance(z):
+def lumdistance(data, zaxis):
     omega_m = 0.31                          # from Planck
     omega_l = 0.69                          # from Planck
     c = 3*math.pow(10,5)                    # in km/s
     Ho = 75                                 # in km/(s Mpc)
     f = lambda x : (((omega_m*((1+z)**3))+omega_l)**-0.5)
-    integral = integrate.quad(f, 0.0, z)    # numerically integrate to calculate luminosity distance
-    Dm = (c/Ho)*integral[0]
-    Dl = (1+z)*Dm                           # calculate luminosity distance
-    DH = (c*z)/Ho                           # calculate distance from Hubble law for comparison
-    return Dl, DH
+    Dlvals = np.zeros((len(data),1))
+    for i in range(0,len(data)):
+        z = data[i,zaxis]
+        integral = integrate.quad(f, 0.0, z)    # numerically integrate to calculate luminosity distance
+        Dm = (c/Ho)*integral[0]
+        Dl = (1+z)*Dm                           # calculate luminosity distance
+        #DH = (c*z)/Ho                           # calculate distance from Hubble law for comparison
+        Dlvals[i,0] = Dl
+    data = np.hstack((data,Dlvals))
+    return data
 
 # Calculate CO Luminosity ######################################################
-def lCalc(SCO, z, correction):
-    lums = []
-    for i in range(0,len(SCO)):                              # for each galaxy in the dataset
+def lCalc(data, SCOaxis, zaxis, Dlaxis, correction):
+    lums = np.zeros((len(data),1))
+    for i in range(0,len(data)):                              # for each galaxy in the dataset
         if correction == True:
-            SCO_cor = SCO[i]*6.0                      # find the integrated CO flux
+            SCO_cor = data[i,SCOaxis]*6.0                      # find the integrated CO flux
         else:
-            SCO_cor = SCO[i]
+            SCO_cor = data[i,SCOaxis]
         C = 3.25*math.pow(10,7)                 # numerical const from eqn 4 paper 1
         freq = 111                              # observing frequency
-        Dl, DH = lumdistance(z[i])           # luminosity distance
-        SDSS_z = math.pow((1+z[i]),-3)       # redshift component
+        Dl = data[i,Dlaxis]
+        SDSS_z = math.pow((1+data[i,zaxis]),-3)       # redshift component
         L_CO = C*SCO_cor*((Dl*Dl)/(freq*freq))*SDSS_z   # calculate CO luminosity
-        lums.append(L_CO)
-    return lums
+        lums[i,0] = L_CO
+    data = np.hstack((data, lums))
+    return data
 
 # Remove non-detections ########################################################
-def NonDetect(data, flag):
-    datanew = []
+def NonDetect(data, flagrow):
+    init = True
+    newdata = np.zeros((1,np.shape(data)[1]))
     for i in range (0,len(data)):
-        if flag[i] == 1:
-            datanew.append(data[i])
-    return datanew
+        if data[i,flagrow] == 1.0:
+            if init == True:
+                newdata[0,:] = data[i,:]
+                init = False
+            else:
+                newdata = np.vstack((newdata, list(data[i,:])))
+    return newdata
 
 # Sort into bins ###############################################################
 def sortIntoBins(l,number):
@@ -57,50 +68,88 @@ def sortIntoBins(l,number):
     return np.log10(N), xbins
 
 # Conversion to H2 mass ########################################################
-def H2Conversion(LCO):
-    molecularH = []
-    alpha = 3.2
-    for l in LCO:
-        H2mass = alpha*l
-        molecularH.append(H2mass)
-    return molecularH
+def H2Conversion(data, Zindex, LCOindex):
+    # alpha_CO = mZ + c (from Genzel et al)
+    m = 12.0
+    dm = 2.0
+    c = -1.3
+    dc = 0.26
+    H2mass = np.zeros((len(data),1))
+    for i in range(0,len(data)):
+        alpha_CO_gal = (m*data[i,Zindex]) + c
+        H2mass[i,0] = alpha_CO_gal*data[i,LCOindex]
+    data = np.hstack((data,H2mass))
+    return data
 
 # Vm calc ######################################################################
-def Vm(maglim,magGal,z):
-    Dl = lumdistance(z)[0]
-    absMagGal = magGal - (5*(np.log10(Dl)-1))
-    print absMagGal
-    Vm = ((4*math.pi)/3)*np.log10(0.6*(abs(maglim-25-absMagGal)))
-    V = ((4*math.pi)/3)*Dl*Dl*Dl
-    print '@@',Vm, V/Vm
-    return Vm
+def Vm(data, Dlaxis):
+    VVmlist = np.zeros((len(data),1))
+    Vmlist = np.zeros((len(data),1))
+    x = np.zeros((1,1))
+    x[0,0] = 0.0375
+    Dm = lumdistance(x,0)[0,1]
+    for i in range(0,len(data)):
+        Dl = data[i,Dlaxis]
+        Vm = ((4*math.pi)/3)*Dm*Dm*Dm
+        V = ((4*math.pi)/3)*Dl*Dl*Dl
+        VVmlist[i,0] = (V/Vm)
+        Vmlist[i,0] = Vm
+    data = np.hstack((data,VVmlist))
+    data = np.hstack((data,Vmlist))
+    return data
 
 ## Read data from tables #######################################################
 highM = atpy.Table('COLDGASS_DR3.fits')
 lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
 
 # Sort Data ####################################################################
-SCOH, zH, totalMH, appMagH = [], [], [], []
-for rows in highM:                              # for each galaxy in the dataset
-    SCOH.append(rows[15])                      # find the integrated CO flux
-    zH.append(rows[4])
-    totalMH.append(rows[5])
-    appMagH.append(rows[11])
-SCOL, zL, flagL, totalML = list(lowM[11]), list(lowM[3]), list(lowM[15]), list(lowM[4])
-lumsnew = list(lowM[12])
-lumsnew = NonDetect(lumsnew, flagL)
-SCOL, zL = NonDetect(SCOL, flagL), NonDetect(zL, flagL)
+HMass = np.zeros((len(highM),4))
+LMass = np.zeros((len(lowM[12]),4))
+# High Mass Galaxies
+for i,rows in enumerate(highM):
+    HMass[i,0] = rows[15]       # S_CO
+    HMass[i,1] = rows[4]        # z
+    HMass[i,2] = rows[20]       # flag
+    HMass[i,3] = rows[5]        # Mgal
+# Low Mass Galaxies
+LMass[:,0] = list(lowM[11])     # S_CO
+LMass[:,1] = list(lowM[3])      # z
+LMass[:,2] = list(lowM[15])     # flag
+LMass[:,3] = list(lowM[4])      # Mgal
+# Attach Pre-caclulate L_CO to Low-Mass dataset
+cL_CO = np.zeros((len(list(lowM[12])),1))
+cL_CO[:,0] = list(lowM[12])
+lumsnew = np.concatenate((LMass,cL_CO),axis=1)   # [Lmass, L_CO]
+# Remove non-detections from all samples
+LMass = NonDetect(LMass, 2)
+HMass = NonDetect(HMass, 2)
+lumsnew = NonDetect(lumsnew, 2)
+
+# Calculate Luminosity distance for each galaxy ################################
+# | S_CO | z | flag | Mgal | D_L |
+LMass = lumdistance(LMass, 1)
+HMass = lumdistance(HMass, 1)
+# | S_CO | z | flag | Mgal | L_CO | D_L |
+lumsnew = lumdistance(lumsnew, 1)
 
 # Calculate Vm #################################################################
-Vms = []
-maglimit = min(appMagH)
-print maglimit, appMagH[0], zH[0]
-for j in range(0,len(appMagH)):
-    Vma = Vm(maglimit, appMagH[j], zH[j])
+# | S_CO | z | flag | Mgal | D_L | V/Vm | Vm |
+LMass = Vm(LMass,4)
+HMass = Vm(HMass,4)
+# | S_CO | z | flag | Mgal | L_CO | D_L | V/Vm | Vm |
+lumsnew = Vm(lumsnew,5)
 
 # Calculate Luminosity Values ##################################################
-lumsH = lCalc(SCOH,zH,False)
-lumsL = lCalc(SCOL,zL,True)
+# | S_CO | z | flag | Mgal | D_L | V/Vm | Vm | L_CO |
+LMass = lCalc(LMass,0,1,4,True)
+HMass = lCalc(HMass,0,1,4,False)
+# | S_CO | z | flag | Mgal | L_CO | D_L | V/Vm | Vm | L_CO |
+lumsnew = lCalc(lumsnew,0,1,5,True)
+
+lumsL = LMass[:,7]
+lumsH = HMass[:,7]
+lumsnew = lumsnew[:,4]
+
 lumsL = [i for i in lumsL if i > 0.0]         # remove 0 detected CO flux galaxies
 lumsH = [i for i in lumsH if i > 0.0]         # remove 0 detected CO flux galaxies
 lumsLlog, lumsHlog = np.log10(lumsL), np.log10(lumsH)
@@ -115,7 +164,7 @@ NR, midR = sortIntoBins(lumsnew, 15)
 
 # Calculations for Mass Distribution ###########################################
 
-totalMass = np.append(totalML, totalMH)
+totalMass = np.append(LMass[:,3], HMass[:,3])
 Nmass, Xmass = sortIntoBins(totalMass, 30)
 
 # Calculate H2 Mass fraction ###################################################
@@ -124,26 +173,30 @@ H2Mass = H2Conversion(lCombined)
 H2Mass = np.log10(H2Mass)
 NH2, xH2 = sortIntoBins(H2Mass, 15)
 
-
 # Plot Luminosity number plot ##################################################
-plt.plot(midL,NL,'b-', label = 'Low mass')
-plt.plot(midH,NH,'r-', label = 'high mass')
-plt.plot(midC,NC,'g-', label = 'lCombined')
-plt.plot(midR,NR,'k-', label = 'Pre-calc')
-# plt.plot(Xmass,Nmass,'c-', label = 'Mass')
-plt.xlabel('log_10(L_CO)')
-plt.ylabel('log_10(N)')
-plt.title('CO Luminosity')
-plt.legend()
-plt.savefig('lum1.png')
-plt.show()
+fig, ax = plt.subplots(nrows = 1, ncols = 3, squeeze=False)
+ax[0,0].plot(midL,NL,'b-', label = 'Low mass')
+ax[0,0].plot(midH,NH,'r-', label = 'high mass')
+ax[0,0].plot(midC,NC,'g-', label = 'lCombined')
+ax[0,0].plot(midR,NR,'k-', label = 'Pre-calc')
+ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+ax[0,0].set_ylabel(r'$log_{10}(N)$', fontsize=20)
+ax[0,0].set_title('CO Luminosity', fontsize=20)
+ax[0,0].legend()
+# ax[0,0].savefig('lum1.png')
 
 # Plot H2 mass #################################################################
-# plt.plot(xH2, NH2,'b-', label = 'H2 Mass')
-# plt.plot(midC,NC,'g-', label = 'lCombinedlog')
-# plt.xlabel(r'$log_{10}(M_{H2}/M_{\odot})$', fontsize=20)
-# plt.ylabel(r'$log_{10}(N_{gal})$', fontsize=20)
-# plt.title('CO Luminosity', fontsize=20)
-# plt.legend()
+ax[0,1].plot(xH2, NH2,'b-', label = 'H2 Mass')
+ax[0,1].set_xlabel(r'$log_{10}(M_{H2}/M_{\odot})$', fontsize=20)
+ax[0,1].set_ylabel(r'$log_{10}(N_{gal})$', fontsize=20)
+ax[0,1].set_title('CO Luminosity', fontsize=20)
+ax[0,1].legend()
 # plt.savefig('new.png')
-# plt.show()
+
+# Plot V/Vm ####################################################################
+ax[0,2].plot(LMass[:,7], LMass[:,5],'ko', label = r'$\frac{V}{V_{m}}$')
+ax[0,2].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+ax[0,2].set_ylabel(r'$\frac{V}{V_{m}}$', fontsize=20)
+ax[0,2].set_title('Schmidt Vm', fontsize=20)
+ax[0,2].legend()
+plt.show()
