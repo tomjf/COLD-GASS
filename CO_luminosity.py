@@ -68,16 +68,21 @@ def sortIntoBins(l,number):
     return np.log10(N), xbins
 
 # Conversion to H2 mass ########################################################
-def H2Conversion(data, Zindex, LCOindex):
+def H2Conversion(data, Zindex, LCOindex, Flat):
     # alpha_CO = mZ + c (from Genzel et al)
-    m = 12.0
-    dm = 2.0
-    c = -1.3
-    dc = 0.26
-    H2mass = np.zeros((len(data),1))
+    c = 12.0
+    dc = 2.0
+    m = -1.3
+    dm = 0.26
+    H2mass = np.zeros((len(data),2))
     for i in range(0,len(data)):
-        alpha_CO_gal = (m*data[i,Zindex]) + c
-        H2mass[i,0] = alpha_CO_gal*data[i,LCOindex]
+        if Flat == True:
+            alpha_CO_gal = data[i,Zindex]
+        else:
+            alpha_CO_gal = (m*data[i,Zindex]) + c
+        H2mass[i,0] = alpha_CO_gal
+        H2mass[i,1] = np.log10(alpha_CO_gal*data[i,LCOindex])
+    print H2mass
     data = np.hstack((data,H2mass))
     return data
 
@@ -103,19 +108,21 @@ highM = atpy.Table('COLDGASS_DR3.fits')
 lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
 
 # Sort Data ####################################################################
-HMass = np.zeros((len(highM),4))
-LMass = np.zeros((len(lowM[12]),4))
+HMass = np.zeros((len(highM),5))
+LMass = np.zeros((len(lowM[12]),5))
 # High Mass Galaxies
 for i,rows in enumerate(highM):
     HMass[i,0] = rows[15]       # S_CO
     HMass[i,1] = rows[4]        # z
     HMass[i,2] = rows[20]       # flag
     HMass[i,3] = rows[5]        # Mgal
+    HMass[i,4] = rows[16]         # alpha flat
 # Low Mass Galaxies
 LMass[:,0] = list(lowM[11])     # S_CO
 LMass[:,1] = list(lowM[3])      # z
 LMass[:,2] = list(lowM[15])     # flag
 LMass[:,3] = list(lowM[4])      # Mgal
+LMass[:,4] = list(lowM[5])      # Zo
 # Attach Pre-caclulate L_CO to Low-Mass dataset
 cL_CO = np.zeros((len(list(lowM[12])),1))
 cL_CO[:,0] = list(lowM[12])
@@ -126,29 +133,42 @@ HMass = NonDetect(HMass, 2)
 lumsnew = NonDetect(lumsnew, 2)
 
 # Calculate Luminosity distance for each galaxy ################################
-# | S_CO | z | flag | Mgal | D_L |
+# | S_CO | z | flag | Mgal | Zo | D_L |
 LMass = lumdistance(LMass, 1)
 HMass = lumdistance(HMass, 1)
-# | S_CO | z | flag | Mgal | L_CO | D_L |
+# | S_CO | z | flag | Mgal | Zo | L_CO | D_L |
 lumsnew = lumdistance(lumsnew, 1)
 
 # Calculate Vm #################################################################
-# | S_CO | z | flag | Mgal | D_L | V/Vm | Vm |
-LMass = Vm(LMass,4)
-HMass = Vm(HMass,4)
-# | S_CO | z | flag | Mgal | L_CO | D_L | V/Vm | Vm |
-lumsnew = Vm(lumsnew,5)
+# | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm |
+LMass = Vm(LMass,5)
+HMass = Vm(HMass,5)
+# | S_CO | z | flag | Mgal | Zo | L_CO | D_L | V/Vm | Vm |
+lumsnew = Vm(lumsnew,6)
 
 # Calculate Luminosity Values ##################################################
-# | S_CO | z | flag | Mgal | D_L | V/Vm | Vm | L_CO |
-LMass = lCalc(LMass,0,1,4,True)
-HMass = lCalc(HMass,0,1,4,False)
-# | S_CO | z | flag | Mgal | L_CO | D_L | V/Vm | Vm | L_CO |
-lumsnew = lCalc(lumsnew,0,1,5,True)
+# | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm | L_CO |
+LMass = lCalc(LMass,0,1,5,True)
+HMass = lCalc(HMass,0,1,5,False)
+# | S_CO | z | flag | Mgal | Zo | L_CO | D_L | V/Vm | Vm | L_CO |
+lumsnew = lCalc(lumsnew,0,1,6,True)
 
-lumsL = LMass[:,7]
-lumsH = HMass[:,7]
-lumsnew = lumsnew[:,4]
+# Calculate MH2 ################################################################
+# | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm | L_CO | AlphaCO | MH2 |
+LMass = H2Conversion(LMass, 4, 8, False)
+HMass = H2Conversion(HMass, 4, 8, True)
+Mass = np.append(LMass[:,3], HMass[:,3])
+alpha = np.append(LMass[:,9], HMass[:,9])
+print LMass[:,9]
+MH2 = np.append(LMass[:,10], HMass[:,10])
+NH2, xH2 = sortIntoBins(MH2, 30)
+NH2L ,xH2L = sortIntoBins(LMass[:,10], 15)
+NH2H ,xH2H = sortIntoBins(HMass[:,10], 15)
+
+################################################################################
+lumsL = LMass[:,8]
+lumsH = HMass[:,8]
+lumsnew = lumsnew[:,5]
 
 lumsL = [i for i in lumsL if i > 0.0]         # remove 0 detected CO flux galaxies
 lumsH = [i for i in lumsH if i > 0.0]         # remove 0 detected CO flux galaxies
@@ -167,36 +187,38 @@ NR, midR = sortIntoBins(lumsnew, 15)
 totalMass = np.append(LMass[:,3], HMass[:,3])
 Nmass, Xmass = sortIntoBins(totalMass, 30)
 
-# Calculate H2 Mass fraction ###################################################
-
-H2Mass = H2Conversion(lCombined)
-H2Mass = np.log10(H2Mass)
-NH2, xH2 = sortIntoBins(H2Mass, 15)
-
-# Plot Luminosity number plot ##################################################
-fig, ax = plt.subplots(nrows = 1, ncols = 3, squeeze=False)
-ax[0,0].plot(midL,NL,'b-', label = 'Low mass')
-ax[0,0].plot(midH,NH,'r-', label = 'high mass')
-ax[0,0].plot(midC,NC,'g-', label = 'lCombined')
-ax[0,0].plot(midR,NR,'k-', label = 'Pre-calc')
-ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
-ax[0,0].set_ylabel(r'$log_{10}(N)$', fontsize=20)
-ax[0,0].set_title('CO Luminosity', fontsize=20)
-ax[0,0].legend()
-# ax[0,0].savefig('lum1.png')
+# # Plot Luminosity number plot ##################################################
+fig, ax = plt.subplots(nrows = 1, ncols = 2, squeeze=False)
+# ax[0,0].plot(midL,NL,'b-', label = 'Low mass')
+# ax[0,0].plot(midH,NH,'r-', label = 'high mass')
+# ax[0,0].plot(midC,NC,'g-', label = 'lCombined')
+# ax[0,0].plot(midR,NR,'k-', label = 'Pre-calc')
+# ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+# ax[0,0].set_ylabel(r'$log_{10}(N)$', fontsize=20)
+# ax[0,0].set_title('CO Luminosity', fontsize=20)
+# ax[0,0].legend()
+# # ax[0,0].savefig('lum1.png')
 
 # Plot H2 mass #################################################################
 ax[0,1].plot(xH2, NH2,'b-', label = 'H2 Mass')
+ax[0,1].plot(xH2L,NH2L,'r-', label = 'lowM MH2')
+ax[0,1].plot(xH2H,NH2H,'g-', label = 'highM MH2')
 ax[0,1].set_xlabel(r'$log_{10}(M_{H2}/M_{\odot})$', fontsize=20)
 ax[0,1].set_ylabel(r'$log_{10}(N_{gal})$', fontsize=20)
-ax[0,1].set_title('CO Luminosity', fontsize=20)
+#ax[0,1].set_title('CO Luminosity', fontsize=20)
 ax[0,1].legend()
 # plt.savefig('new.png')
 
-# Plot V/Vm ####################################################################
-ax[0,2].plot(LMass[:,7], LMass[:,5],'ko', label = r'$\frac{V}{V_{m}}$')
-ax[0,2].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
-ax[0,2].set_ylabel(r'$\frac{V}{V_{m}}$', fontsize=20)
-ax[0,2].set_title('Schmidt Vm', fontsize=20)
-ax[0,2].legend()
+# # Plot V/Vm ####################################################################
+# ax[1,0].plot(LMass[:,7], LMass[:,5],'ko', label = r'$\frac{V}{V_{m}}$')
+# ax[1,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+# ax[1,0].set_ylabel(r'$\frac{V}{V_{m}}$', fontsize=20)
+# ax[1,0].set_title('Schmidt Vm', fontsize=20)
+# ax[1,0].legend()
+
+# Plot alpha vs Mgal ###########################################################
+ax[0,0].plot(Mass, alpha,'ko')
+ax[0,0].set_xlabel(r'$log_{10}(M_{gal})$', fontsize=20)
+ax[0,0].set_ylabel(r'$\alpha_{CO}$', fontsize=20)
+ax[0,0].set_title(r'$\alpha_{CO}$ vs $M_{gal}$', fontsize=20)
 plt.show()
