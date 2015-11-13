@@ -74,15 +74,23 @@ def H2Conversion(data, Zindex, LCOindex, Flat):
     dc = 2.0
     m = -1.3
     dm = 0.26
-    H2mass = np.zeros((len(data),2))
+    H2mass = np.zeros((len(data),3))
     for i in range(0,len(data)):
         if Flat == True:
             alpha_CO_gal = data[i,Zindex]
+            dalpha = 0.9
         else:
-            alpha_CO_gal = (m*data[i,Zindex]) + c
+            log_alpha_CO_gal = (m*data[i,Zindex]) + c
+            alpha_CO_gal = math.pow(10,log_alpha_CO_gal)
+            shallow = ((m+dm)*data[i,Zindex]) + (c-dc)
+            steep = ((m-dm)*data[i,Zindex]) + (c+dc)
+            shallow = math.pow(10,shallow)
+            steep = math.pow(10,steep)
+            dalpha = ([abs(alpha_CO_gal-shallow), abs(alpha_CO_gal-steep)])
+            dalpha = max(dalpha)
         H2mass[i,0] = alpha_CO_gal
         H2mass[i,1] = np.log10(alpha_CO_gal*data[i,LCOindex])
-    print H2mass
+        H2mass[i,2] = dalpha
     data = np.hstack((data,H2mass))
     return data
 
@@ -102,6 +110,27 @@ def Vm(data, Dlaxis):
     data = np.hstack((data,VVmlist))
     data = np.hstack((data,Vmlist))
     return data
+
+# schechter bins ###############################################################
+def Schechter(data, LCOaxis, Vmaxis, number):
+    l = data[:,LCOaxis]
+    low, high = min(l), max(l)     # min max in logspace
+    bins = np.linspace(low, high, num=number) # log-spaced bins
+    rho, N, xbins = [], [], []
+    for i in range (1,len(bins)):
+        p, Num = 0, 0
+        for j in range(0,len(data)):
+            if data[j,LCOaxis] >= bins[i-1] and data[j,LCOaxis] < bins[i]:
+                p += 1/data[j,Vmaxis]
+                Num+=1
+        N.append(Num)
+        N.append(Num)
+        xbins.append(bins[i-1])
+        xbins.append(bins[i])
+        rho.append(p)
+        rho.append(p)
+    return N, np.log10(rho), np.log10(xbins)
+
 
 ## Read data from tables #######################################################
 highM = atpy.Table('COLDGASS_DR3.fits')
@@ -154,12 +183,12 @@ HMass = lCalc(HMass,0,1,5,False)
 lumsnew = lCalc(lumsnew,0,1,6,True)
 
 # Calculate MH2 ################################################################
-# | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm | L_CO | AlphaCO | MH2 |
+# | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm | L_CO | AlphaCO | MH2 | dalpha |
 LMass = H2Conversion(LMass, 4, 8, False)
 HMass = H2Conversion(HMass, 4, 8, True)
 Mass = np.append(LMass[:,3], HMass[:,3])
 alpha = np.append(LMass[:,9], HMass[:,9])
-print LMass[:,9]
+alphaerror = np.append(LMass[:,11], HMass[:,11])
 MH2 = np.append(LMass[:,10], HMass[:,10])
 NH2, xH2 = sortIntoBins(MH2, 30)
 NH2L ,xH2L = sortIntoBins(LMass[:,10], 15)
@@ -187,16 +216,21 @@ NR, midR = sortIntoBins(lumsnew, 15)
 totalMass = np.append(LMass[:,3], HMass[:,3])
 Nmass, Xmass = sortIntoBins(totalMass, 30)
 
-# # Plot Luminosity number plot ##################################################
-fig, ax = plt.subplots(nrows = 1, ncols = 2, squeeze=False)
-# ax[0,0].plot(midL,NL,'b-', label = 'Low mass')
-# ax[0,0].plot(midH,NH,'r-', label = 'high mass')
-# ax[0,0].plot(midC,NC,'g-', label = 'lCombined')
-# ax[0,0].plot(midR,NR,'k-', label = 'Pre-calc')
-# ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
-# ax[0,0].set_ylabel(r'$log_{10}(N)$', fontsize=20)
-# ax[0,0].set_title('CO Luminosity', fontsize=20)
-# ax[0,0].legend()
+# density schechter ############################################################
+total = np.vstack((LMass, HMass))
+N, rho, xbins = Schechter(total, 8, 7, 30)
+print rho
+
+# # Plot Luminosity number plot ################################################
+fig, ax = plt.subplots(nrows = 2, ncols = 3, squeeze=False)
+ax[0,0].plot(midL,NL,'b-', label = 'Low mass')
+ax[0,0].plot(midH,NH,'r-', label = 'high mass')
+ax[0,0].plot(midC,NC,'g-', label = 'lCombined')
+ax[0,0].plot(midR,NR,'k-', label = 'Pre-calc')
+ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+ax[0,0].set_ylabel(r'$log_{10}(N)$', fontsize=20)
+ax[0,0].set_title('CO Luminosity', fontsize=20)
+ax[0,0].legend()
 # # ax[0,0].savefig('lum1.png')
 
 # Plot H2 mass #################################################################
@@ -210,15 +244,22 @@ ax[0,1].legend()
 # plt.savefig('new.png')
 
 # # Plot V/Vm ####################################################################
-# ax[1,0].plot(LMass[:,7], LMass[:,5],'ko', label = r'$\frac{V}{V_{m}}$')
-# ax[1,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
-# ax[1,0].set_ylabel(r'$\frac{V}{V_{m}}$', fontsize=20)
-# ax[1,0].set_title('Schmidt Vm', fontsize=20)
-# ax[1,0].legend()
+ax[1,0].plot(LMass[:,8], LMass[:,6],'ko', label = 'low mass')
+ax[1,0].plot(HMass[:,8], HMass[:,6],'ro', label = 'high mass')
+ax[1,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+ax[1,0].set_ylabel(r'$\frac{V}{V_{m}}$', fontsize=20)
+ax[1,0].set_title('Schmidt Vm', fontsize=20)
+ax[1,0].legend()
 
 # Plot alpha vs Mgal ###########################################################
-ax[0,0].plot(Mass, alpha,'ko')
-ax[0,0].set_xlabel(r'$log_{10}(M_{gal})$', fontsize=20)
-ax[0,0].set_ylabel(r'$\alpha_{CO}$', fontsize=20)
-ax[0,0].set_title(r'$\alpha_{CO}$ vs $M_{gal}$', fontsize=20)
+ax[1,1].errorbar(Mass, alpha, yerr=alphaerror, fmt='o')
+ax[1,1].set_xlabel(r'$log_{10}(M_{gal})$', fontsize=20)
+ax[1,1].set_ylabel(r'$\alpha_{CO}$', fontsize=20)
+ax[1,1].set_title(r'$\alpha_{CO}$ vs $M_{gal}$', fontsize=20)
+
+# schecter #####################################################################
+ax[1,2].plot(xbins, rho, 'b-')
+ax[1,2].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+ax[1,2].set_ylabel(r'$log_{10}{\rho(L)}$', fontsize=20)
+ax[1,2].set_title('Schechter', fontsize=20)
 plt.show()
