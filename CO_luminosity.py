@@ -4,6 +4,7 @@ import math
 from scipy import integrate
 import matplotlib.pyplot as plt
 import asciidata
+from scipy.optimize import curve_fit
 
 # Function to calculate the luminosity distance from z #########################
 def lumdistance(data, zaxis):
@@ -95,11 +96,11 @@ def H2Conversion(data, Zindex, LCOindex, Flat):
     return data
 
 # Vm calc ######################################################################
-def Vm(data, Dlaxis):
+def Vm(data, Dlaxis, maxz):
     VVmlist = np.zeros((len(data),1))
     Vmlist = np.zeros((len(data),1))
     x = np.zeros((1,1))
-    x[0,0] = 0.0375
+    x[0,0] = maxz
     Dm = lumdistance(x,0)[0,1]
     for i in range(0,len(data)):
         Dl = data[i,Dlaxis]
@@ -114,23 +115,33 @@ def Vm(data, Dlaxis):
 # schechter bins ###############################################################
 def Schechter(data, LCOaxis, Vmaxis, number):
     l = data[:,LCOaxis]
+    l = np.log10(l)
     low, high = min(l), max(l)     # min max in logspace
     bins = np.linspace(low, high, num=number) # log-spaced bins
     rho, N, xbins = [], [], []
     for i in range (1,len(bins)):
         p, Num = 0, 0
-        for j in range(0,len(data)):
-            if data[j,LCOaxis] >= bins[i-1] and data[j,LCOaxis] < bins[i]:
+        for j in range(0,len(l)):
+            if l[j] >= bins[i-1] and l[j] < bins[i]:
                 p += 1/data[j,Vmaxis]
                 Num+=1
         N.append(Num)
-        N.append(Num)
-        xbins.append(bins[i-1])
-        xbins.append(bins[i])
+        #N.append(Num)
+        #xbins.append(bins[i-1])
+        #xbins.append(bins[i])
+        xbins.append((bins[i]+bins[i-1])/2)
+        #rho.append(p)
         rho.append(p)
-        rho.append(p)
-    return N, np.log10(rho), np.log10(xbins)
+    return N, np.log10(rho), xbins
 
+# schechter density functional form ############################################
+def schechfunc(L, rhostar, Lstar, alpha):
+    a = rhostar
+    b = ((L/Lstar)**alpha)
+    x = -L*(1/Lstar)
+    c = np.exp(x)
+    d = np.log(10)
+    return a*b*c*d
 
 ## Read data from tables #######################################################
 highM = atpy.Table('COLDGASS_DR3.fits')
@@ -168,12 +179,15 @@ HMass = lumdistance(HMass, 1)
 # | S_CO | z | flag | Mgal | Zo | L_CO | D_L |
 lumsnew = lumdistance(lumsnew, 1)
 
+print max(LMass[:,1]), 'max Low mass z'
+print max(HMass[:,1]), 'max High mass z'
+
 # Calculate Vm #################################################################
 # | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm |
-LMass = Vm(LMass,5)
-HMass = Vm(HMass,5)
+LMass = Vm(LMass,5, 0.02)
+HMass = Vm(HMass,5, 0.05)
 # | S_CO | z | flag | Mgal | Zo | L_CO | D_L | V/Vm | Vm |
-lumsnew = Vm(lumsnew,6)
+lumsnew = Vm(lumsnew,6, 0.05)
 
 # Calculate Luminosity Values ##################################################
 # | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm | L_CO |
@@ -218,8 +232,16 @@ Nmass, Xmass = sortIntoBins(totalMass, 30)
 
 # density schechter ############################################################
 total = np.vstack((LMass, HMass))
-N, rho, xbins = Schechter(total, 8, 7, 30)
-print rho
+N, rho, xbins = Schechter(total, 8, 7, 20)
+
+# fit schechter ################################################################
+xdata = np.linspace(8,11,30)
+ydata = schechfunc(xdata, 0.07, 10, 1)
+popt, pcov = curve_fit(schechfunc, xdata, ydata)
+print popt
+print xbins, rho
+popt, pcov = curve_fit(linear, xbins, rho)
+# print popt
 
 # # Plot Luminosity number plot ################################################
 fig, ax = plt.subplots(nrows = 2, ncols = 3, squeeze=False)
@@ -246,6 +268,8 @@ ax[0,1].legend()
 # # Plot V/Vm ####################################################################
 ax[1,0].plot(LMass[:,8], LMass[:,6],'ko', label = 'low mass')
 ax[1,0].plot(HMass[:,8], HMass[:,6],'ro', label = 'high mass')
+ax[1,0].axhline(y=np.average(LMass[:,6]),color='k')
+ax[1,0].axhline(y=np.average(HMass[:,6]),color='r')
 ax[1,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
 ax[1,0].set_ylabel(r'$\frac{V}{V_{m}}$', fontsize=20)
 ax[1,0].set_title('Schmidt Vm', fontsize=20)
@@ -258,7 +282,7 @@ ax[1,1].set_ylabel(r'$\alpha_{CO}$', fontsize=20)
 ax[1,1].set_title(r'$\alpha_{CO}$ vs $M_{gal}$', fontsize=20)
 
 # schecter #####################################################################
-ax[1,2].plot(xbins, rho, 'b-')
+ax[1,2].plot(xbins, rho, 'bo')
 ax[1,2].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
 ax[1,2].set_ylabel(r'$log_{10}{\rho(L)}$', fontsize=20)
 ax[1,2].set_title('Schechter', fontsize=20)
