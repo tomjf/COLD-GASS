@@ -5,6 +5,7 @@ from scipy import integrate
 import matplotlib.pyplot as plt
 import asciidata
 from scipy.optimize import curve_fit
+import schechter
 
 # Function to calculate the luminosity distance from z #########################
 def lumdistance(data, zaxis):
@@ -19,7 +20,7 @@ def lumdistance(data, zaxis):
         integral = integrate.quad(f, 0.0, z)    # numerically integrate to calculate luminosity distance
         Dm = (c/Ho)*integral[0]
         Dl = (1+z)*Dm                           # calculate luminosity distance
-        #DH = (c*z)/Ho                           # calculate distance from Hubble law for comparison
+        #DH = (c*z)/Ho                          # calculate distance from Hubble law for comparison
         Dlvals[i,0] = Dl
     data = np.hstack((data,Dlvals))
     return data
@@ -27,15 +28,15 @@ def lumdistance(data, zaxis):
 # Calculate CO Luminosity ######################################################
 def lCalc(data, SCOaxis, zaxis, Dlaxis, correction):
     lums = np.zeros((len(data),1))
-    for i in range(0,len(data)):                              # for each galaxy in the dataset
+    for i in range(0,len(data)):                # for each galaxy in the dataset
         if correction == True:
-            SCO_cor = data[i,SCOaxis]*6.0                      # find the integrated CO flux
+            SCO_cor = data[i,SCOaxis]*6.0       # find the integrated CO flux
         else:
             SCO_cor = data[i,SCOaxis]
         C = 3.25*math.pow(10,7)                 # numerical const from eqn 4 paper 1
         freq = 111                              # observing frequency
         Dl = data[i,Dlaxis]
-        SDSS_z = math.pow((1+data[i,zaxis]),-3)       # redshift component
+        SDSS_z = math.pow((1+data[i,zaxis]),-3)         # redshift component
         L_CO = C*SCO_cor*((Dl*Dl)/(freq*freq))*SDSS_z   # calculate CO luminosity
         lums[i,0] = L_CO
     data = np.hstack((data, lums))
@@ -179,9 +180,6 @@ HMass = lumdistance(HMass, 1)
 # | S_CO | z | flag | Mgal | Zo | L_CO | D_L |
 lumsnew = lumdistance(lumsnew, 1)
 
-print max(LMass[:,1]), 'max Low mass z'
-print max(HMass[:,1]), 'max High mass z'
-
 # Calculate Vm #################################################################
 # | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm |
 LMass = Vm(LMass,5, 0.02)
@@ -235,55 +233,80 @@ total = np.vstack((LMass, HMass))
 N, rho, xbins = Schechter(total, 8, 7, 20)
 
 # fit schechter ################################################################
-xdata = np.linspace(8,11,30)
-ydata = schechfunc(xdata, 0.07, 10, 1)
-popt, pcov = curve_fit(schechfunc, xdata, ydata)
-print popt
-print xbins, rho
-popt, pcov = curve_fit(linear, xbins, rho)
-# print popt
+x1,x2 = xbins, xbins[4:]
+y1,y2 = rho,rho[4:]
+popt1 = schechter.log_schechter_fit(x1, y1)
+phi1, L01, alpha1 = popt1
+popt2 = schechter.log_schechter_fit(x2, y2)
+phi2, L02, alpha2 = popt2
+xnew = np.linspace(max(xbins),min(xbins),100)
+ynew1 = schechter.log_schechter(xnew, *popt1)
+ynew2 = schechter.log_schechter(xnew, *popt2)
 
 # # Plot Luminosity number plot ################################################
-fig, ax = plt.subplots(nrows = 2, ncols = 3, squeeze=False)
-ax[0,0].plot(midL,NL,'b-', label = 'Low mass')
-ax[0,0].plot(midH,NH,'r-', label = 'high mass')
-ax[0,0].plot(midC,NC,'g-', label = 'lCombined')
-ax[0,0].plot(midR,NR,'k-', label = 'Pre-calc')
+# fig, ax = plt.subplots(nrows = 2, ncols = 3, squeeze=False)
+# ax[0,0].plot(midL,NL,'b-', label = 'Low mass')
+# ax[0,0].plot(midH,NH,'r-', label = 'high mass')
+# ax[0,0].plot(midC,NC,'g-', label = 'lCombined')
+# ax[0,0].plot(midR,NR,'k-', label = 'Pre-calc')
+# ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+# ax[0,0].set_ylabel(r'$log_{10}(N)$', fontsize=20)
+# ax[0,0].set_title('CO Luminosity', fontsize=20)
+# ax[0,0].legend()
+# # # ax[0,0].savefig('lum1.png')
+#
+# # Plot H2 mass #################################################################
+# ax[0,1].plot(xH2, NH2,'b-', label = 'H2 Mass')
+# ax[0,1].plot(xH2L,NH2L,'r-', label = 'lowM MH2')
+# ax[0,1].plot(xH2H,NH2H,'g-', label = 'highM MH2')
+# ax[0,1].set_xlabel(r'$log_{10}(M_{H2}/M_{\odot})$', fontsize=20)
+# ax[0,1].set_ylabel(r'$log_{10}(N_{gal})$', fontsize=20)
+# #ax[0,1].set_title('CO Luminosity', fontsize=20)
+# ax[0,1].legend()
+# # plt.savefig('new.png')
+#
+# # # Plot V/Vm ##################################################################
+# ax[1,0].plot(LMass[:,8], LMass[:,6],'ko', label = 'low mass')
+# ax[1,0].plot(HMass[:,8], HMass[:,6],'ro', label = 'high mass')
+# ax[1,0].axhline(y=np.average(LMass[:,6]),color='k')
+# ax[1,0].axhline(y=np.average(HMass[:,6]),color='r')
+# ax[1,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+# ax[1,0].set_ylabel(r'$\frac{V}{V_{m}}$', fontsize=20)
+# ax[1,0].set_title('Schmidt Vm', fontsize=20)
+# ax[1,0].legend()
+#
+# # Plot alpha vs Mgal ###########################################################
+# ax[1,1].errorbar(Mass, alpha, yerr=alphaerror, fmt='o')
+# ax[1,1].set_xlabel(r'$log_{10}(M_{gal})$', fontsize=20)
+# ax[1,1].set_ylabel(r'$\alpha_{CO}$', fontsize=20)
+# ax[1,1].set_title(r'$\alpha_{CO}$ vs $M_{gal}$', fontsize=20)
+#
+# # schecter #####################################################################
+# ax[1,2].plot(xbins, rho, 'bo')
+# ax[1,2].plot(xbins[4:], rho[4:], 'ro')
+# ax[1,2].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+# ax[1,2].set_ylabel(r'$log_{10}{\rho(L)}$', fontsize=20)
+# ax[1,2].set_title('Schechter', fontsize=20)
+# plt.show()
+#
+# # schecter #####################################################################
+# ax[1,2].plot(xbins, rho, 'bo')
+# ax[1,2].plot(xbins[4:], rho[4:], 'ro')
+# ax[1,2].plot(xdata, ydatanew, 'r-')
+# ax[1,2].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+# ax[1,2].set_ylabel(r'$log_{10}{\rho(L)}$', fontsize=20)
+# ax[1,2].set_title('Schechter', fontsize=20)
+# plt.show()
+# schechter only ###############################################################
+fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
+ax[0,0].plot(xbins, rho, 'bo')
+ax[0,0].plot(xbins[4:], rho[4:], 'ro')
+ax[0,0].plot(xnew, ynew1, 'b-')
+ax[0,0].plot(xnew, ynew2, 'r-')
 ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
-ax[0,0].set_ylabel(r'$log_{10}(N)$', fontsize=20)
-ax[0,0].set_title('CO Luminosity', fontsize=20)
-ax[0,0].legend()
-# # ax[0,0].savefig('lum1.png')
-
-# Plot H2 mass #################################################################
-ax[0,1].plot(xH2, NH2,'b-', label = 'H2 Mass')
-ax[0,1].plot(xH2L,NH2L,'r-', label = 'lowM MH2')
-ax[0,1].plot(xH2H,NH2H,'g-', label = 'highM MH2')
-ax[0,1].set_xlabel(r'$log_{10}(M_{H2}/M_{\odot})$', fontsize=20)
-ax[0,1].set_ylabel(r'$log_{10}(N_{gal})$', fontsize=20)
-#ax[0,1].set_title('CO Luminosity', fontsize=20)
-ax[0,1].legend()
-# plt.savefig('new.png')
-
-# # Plot V/Vm ####################################################################
-ax[1,0].plot(LMass[:,8], LMass[:,6],'ko', label = 'low mass')
-ax[1,0].plot(HMass[:,8], HMass[:,6],'ro', label = 'high mass')
-ax[1,0].axhline(y=np.average(LMass[:,6]),color='k')
-ax[1,0].axhline(y=np.average(HMass[:,6]),color='r')
-ax[1,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
-ax[1,0].set_ylabel(r'$\frac{V}{V_{m}}$', fontsize=20)
-ax[1,0].set_title('Schmidt Vm', fontsize=20)
-ax[1,0].legend()
-
-# Plot alpha vs Mgal ###########################################################
-ax[1,1].errorbar(Mass, alpha, yerr=alphaerror, fmt='o')
-ax[1,1].set_xlabel(r'$log_{10}(M_{gal})$', fontsize=20)
-ax[1,1].set_ylabel(r'$\alpha_{CO}$', fontsize=20)
-ax[1,1].set_title(r'$\alpha_{CO}$ vs $M_{gal}$', fontsize=20)
-
-# schecter #####################################################################
-ax[1,2].plot(xbins, rho, 'bo')
-ax[1,2].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
-ax[1,2].set_ylabel(r'$log_{10}{\rho(L)}$', fontsize=20)
-ax[1,2].set_title('Schechter', fontsize=20)
+ax[0,0].set_ylabel(r'$log_{10}{\rho(L)}$', fontsize=20)
+ax[0,0].set_title('Schechter', fontsize=20)
+ax[0,0].text(9, -5.1, (r'$\phi_{*}$ = '+str(round(phi1,2))+'\n'+ r'$L_{*}$ = '+str(round(L01,2))+'\n'+ r'$\alpha$ = '+str(round(alpha1,2))), fontsize=18, color='b')
+ax[0,0].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
+plt.savefig('1stSchechterFit.png')
 plt.show()
