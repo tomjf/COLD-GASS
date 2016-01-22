@@ -143,11 +143,21 @@ def schechfunc(L, rhostar, Lstar, alpha):
     c = np.exp(x)
     d = np.log(10)
     return a*b*c*d
+# fgas #########################################################################
+def fgas(Mgas, Mstar):
+    # print Mgas, Mstar
+    # Mgas = math.pow(10,Mgas)
+    # Mstar = math.pow(10,Mstar)
+    # fgas = Mgas/Mstar
+    # fgas = np.log10(fgas)
+    #fgas510 = Mgas/(Mgas + (5*math.pow(10,10)))
+    fgas = Mgas - Mstar
+    return fgas
 
 ## Read data from tables #######################################################
 highM = atpy.Table('COLDGASS_DR3.fits')
 lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
-
+SAMI = asciidata.open('SAMI_IRAM_data.txt')
 # Sort Data ####################################################################
 HMass = np.zeros((len(highM),5))
 LMass = np.zeros((len(lowM[12]),5))
@@ -243,6 +253,41 @@ xnew = np.linspace(max(xbins),min(xbins),100)
 ynew1 = schechter.log_schechter(xnew, *popt1)
 ynew2 = schechter.log_schechter(xnew, *popt2)
 
+# gas fractions ################################################################
+SAMI_outflows = [   567624,574200,228432,239249,31452,238125,486834,
+                    417678,106389,593680,618906,618220,383259,209807,376121]
+
+SAMI_data = np.zeros((len(SAMI_outflows),5))
+for i in range(0, len(SAMI[0])):
+    if SAMI[0][i] in SAMI_outflows:
+        SAMI_data[i,0] = SAMI[2][i] # Mgal
+        SAMI_data[i,1] = SAMI[6][i] # MH2
+        SAMI_data[i,2] = SAMI[8][i] # flag
+        SAMI_data[i,3] = np.log10(SAMI[7][i]) # amelie's calc gas fraction
+        SAMI_data[i,4] = fgas(SAMI_data[i,1],SAMI_data[i,0]) #my calc
+print SAMI_data
+
+
+fgasL, fgasH = [], []
+for i in range (len(LMass)):
+    fgasL.append(fgas(LMass[i,10], LMass[i,3]))
+for i in range (len(HMass)):
+    fgasH.append(fgas(HMass[i,10], HMass[i,3]))
+CG_X = np.append(LMass[:,3], HMass[:,3])
+CG_Y = np.append(fgasL, fgasH)
+
+
+plt.plot(SAMI_data[:,0], SAMI_data[:,3],'ro', label = 'SAMI am')
+#plt.plot(LMass[:,3], fgasL,'bo', label ='Low Mass')
+#plt.plot(HMass[:,3], fgasH,'ko', label = 'High Mass')
+#plt.plot(CG_X, CG_Y,'ko', label = 'COLD GASS')
+plt.plot(SAMI_data[:,0], SAMI_data[:,4], 'bo', label ='SAMI me', markersize = 10, alpha = 0.5)
+plt.xlabel(r'$log_{10}(M_{*}/M_{\odot})$', fontsize = 20)
+plt.ylabel(r'$log_{10}(M_{H2}/M_{*})$', fontsize = 20)
+#plt.annotate(r'$y = \frac{\frac{M_{H2}}{M_{H2}+M_{*}}}{\frac{M_{H2}}{M_{H2}+5\cdot 10^{10}M_{\odot}}}$', xy=(10,30), fontsize = 20)
+plt.legend()
+plt.show()
+
 # # Plot Luminosity number plot ################################################
 # fig, ax = plt.subplots(nrows = 2, ncols = 3, squeeze=False)
 # ax[0,0].plot(midL,NL,'b-', label = 'Low mass')
@@ -298,15 +343,15 @@ ynew2 = schechter.log_schechter(xnew, *popt2)
 # ax[1,2].set_title('Schechter', fontsize=20)
 # plt.show()
 # schechter only ###############################################################
-fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
-ax[0,0].plot(xbins, rho, 'bo')
-ax[0,0].plot(xbins[4:], rho[4:], 'ro')
-ax[0,0].plot(xnew, ynew1, 'b-')
-ax[0,0].plot(xnew, ynew2, 'r-')
-ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
-ax[0,0].set_ylabel(r'$log_{10}{\rho(L)}$', fontsize=20)
-ax[0,0].set_title('Schechter', fontsize=20)
-ax[0,0].text(9, -5.1, (r'$\phi_{*}$ = '+str(round(phi1,2))+'\n'+ r'$L_{*}$ = '+str(round(L01,2))+'\n'+ r'$\alpha$ = '+str(round(alpha1,2))), fontsize=18, color='b')
-ax[0,0].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
-plt.savefig('1stSchechterFit.png')
-plt.show()
+# fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
+# ax[0,0].plot(xbins, rho, 'bo')
+# ax[0,0].plot(xbins[4:], rho[4:], 'ro')
+# ax[0,0].plot(xnew, ynew1, 'b-')
+# ax[0,0].plot(xnew, ynew2, 'r-')
+# ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+# ax[0,0].set_ylabel(r'$log_{10}{\rho(L)}$', fontsize=20)
+# ax[0,0].set_title('Schechter', fontsize=20)
+# ax[0,0].text(9, -5.1, (r'$\phi_{*}$ = '+str(round(phi1,2))+'\n'+ r'$L_{*}$ = '+str(round(L01,2))+'\n'+ r'$\alpha$ = '+str(round(alpha1,2))), fontsize=18, color='b')
+# ax[0,0].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
+# plt.savefig('1stSchechterFit.png')
+# plt.show()
