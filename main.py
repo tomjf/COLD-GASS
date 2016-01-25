@@ -158,7 +158,11 @@ def fgas(Mgas, Mstar):
 highM = atpy.Table('COLDGASS_DR3.fits')
 lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
 SAMI = asciidata.open('SAMI_IRAM_data.txt')
-# Sort Data ####################################################################
+# def dict for indices #########################################################
+l_input = {'S_CO':11, 'z':3, 'M*':4, 'Zo':5, 'SFR':6, 'flag':15}
+h_input = {'S_CO':15, 'z':4, 'M*':5, 'Zo':16, 'SFR':1, 'flag':20}
+output = { 'S_CO':0, 'z':1, 'flag':2, 'Mgal':3, 'Zo':4, 'D_L':5, 'V/Vm':6, 'Vm':7, 'L_CO':8, 'AlphaCO':9, 'MH2':10, 'dalpha':11}
+# New Algo #####################################################################
 HMass = np.zeros((len(highM),5))
 LMass = np.zeros((len(lowM[12]),5))
 # High Mass Galaxies
@@ -169,11 +173,11 @@ for i,rows in enumerate(highM):
     HMass[i,3] = rows[5]        # Mgal
     HMass[i,4] = rows[16]       # alpha flat
 # Low Mass Galaxies
-LMass[:,0] = list(lowM[11])     # S_CO
-LMass[:,1] = list(lowM[3])      # z
-LMass[:,2] = list(lowM[15])     # flag
-LMass[:,3] = list(lowM[4])      # Mgal
-LMass[:,4] = list(lowM[5])      # Zo
+LMass[:,output['S_CO']] = list(lowM[l_input['S_CO']])     # S_CO
+LMass[:,output['z']] = list(lowM[l_input['z']])      # z
+LMass[:,output['flag']] = list(lowM[l_input['flag']])     # flag
+LMass[:,output['Mgal']] = list(lowM[4])      # Mgal
+LMass[:,output['Zo']] = list(lowM[5])      # Zo
 # Attach Pre-caclulate L_CO to Low-Mass dataset
 cL_CO = np.zeros((len(list(lowM[12])),1))
 cL_CO[:,0] = list(lowM[12])
@@ -274,18 +278,18 @@ CG_X = np.append(LMass[:,3], HMass[:,3])
 CG_Y = np.append(fgasL, fgasH)
 
 ################################################################################
-fig, ax = plt.subplots(nrows = 1, ncols = 2, squeeze=False)
+fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
 ax[0,0].plot(SAMI_data[:,0], SAMI_data[:,4],'ro', label = 'SAMI', markersize = 8)
 ax[0,0].plot(CG_X, CG_Y,'ko', label = 'COLD GASS', alpha = 0.5)
 ax[0,0].set_xlabel(r'$log_{10}(M_{*}/M_{\odot})$', fontsize = 20)
 ax[0,0].set_ylabel(r'$log_{10}(M_{H2}/M_{*})$', fontsize = 20)
 ax[0,0].legend()
 
-ax[0,1].plot(SAMI_data[:,0], SAMI_data[:,3],'ro', label = 'SAMI am', markersize = 8)
-ax[0,1].plot(CG_X, CG_Y,'ko', label = 'COLD GASS', alpha = 0.5)
-ax[0,1].set_xlabel(r'$log_{10}(M_{*}/M_{\odot})$', fontsize = 20)
-ax[0,1].set_ylabel(r'$log_{10}(M_{H2}/M_{*})$', fontsize = 20)
-ax[0,1].legend()
+# ax[0,1].plot(SAMI_data[:,0], SAMI_data[:,3],'ro', label = 'SAMI am', markersize = 8)
+# ax[0,1].plot(CG_X, CG_Y,'ko', label = 'COLD GASS', alpha = 0.5)
+# ax[0,1].set_xlabel(r'$log_{10}(M_{*}/M_{\odot})$', fontsize = 20)
+# ax[0,1].set_ylabel(r'$log_{10}(M_{H2}/M_{*})$', fontsize = 20)
+# ax[0,1].legend()
 plt.show()
 
 # # Plot Luminosity number plot ################################################
@@ -342,7 +346,7 @@ plt.show()
 # ax[1,2].set_ylabel(r'$log_{10}{\rho(L)}$', fontsize=20)
 # ax[1,2].set_title('Schechter', fontsize=20)
 # plt.show()
-# schechter only ###############################################################
+# #schechter only ###############################################################
 # fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
 # ax[0,0].plot(xbins, rho, 'bo')
 # ax[0,0].plot(xbins[4:], rho[4:], 'ro')
