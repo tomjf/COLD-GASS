@@ -70,7 +70,7 @@ def sortIntoBins(l,number):
     return np.log10(N), xbins
 
 # Conversion to H2 mass ########################################################
-def H2Conversion(data, Zindex, LCOindex, Flat):
+def H2Conversion(data, Zindex, LCOindex):
     # alpha_CO = mZ + c (from Genzel et al)
     c = 12.0
     dc = 2.0
@@ -78,9 +78,8 @@ def H2Conversion(data, Zindex, LCOindex, Flat):
     dm = 0.26
     H2mass = np.zeros((len(data),3))
     for i in range(0,len(data)):
-        if Flat == True:
-            alpha_CO_gal = data[i,Zindex]
-            dalpha = 0.9
+        if math.isnan(data[i,Zindex]) == True:
+            alpha_CO_gal = 4.35
         else:
             log_alpha_CO_gal = (m*data[i,Zindex]) + c
             alpha_CO_gal = math.pow(10,log_alpha_CO_gal)
@@ -145,85 +144,94 @@ def schechfunc(L, rhostar, Lstar, alpha):
     return a*b*c*d
 # fgas #########################################################################
 def fgas(Mgas, Mstar):
-    # print Mgas, Mstar
-    # Mgas = math.pow(10,Mgas)
-    # Mstar = math.pow(10,Mstar)
-    # fgas = Mgas/Mstar
-    # fgas = np.log10(fgas)
-    #fgas510 = Mgas/(Mgas + (5*math.pow(10,10)))
     fgas = Mgas - Mstar
     return fgas
 
+# sSFR #########################################################################
+def sSFR(SFRs, Mgals):
+    sSFR = []
+    for i in range(0, len(SFRs)):
+        a = np.log10(SFRs[i]) - Mgals[i]
+        sSFR.append(a)
+    return sSFR
+
 ## Read data from tables #######################################################
-highM = atpy.Table('COLDGASS_DR3.fits')
+highM = atpy.Table('COLDGASS_DR3_with_Z.fits')
 lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
 SAMI = asciidata.open('SAMI_IRAM_data.txt')
+# Sort Data ####################################################################
 # def dict for indices #########################################################
-l_input = {'S_CO':11, 'z':3, 'M*':4, 'Zo':5, 'SFR':6, 'flag':15}
-h_input = {'S_CO':15, 'z':4, 'M*':5, 'Zo':16, 'SFR':1, 'flag':20}
-output = { 'S_CO':0, 'z':1, 'flag':2, 'Mgal':3, 'Zo':4, 'D_L':5, 'V/Vm':6, 'Vm':7, 'L_CO':8, 'AlphaCO':9, 'MH2':10, 'dalpha':11}
+l = {'S_CO':11, 'z':3, 'M*':4, 'Zo':5, 'SFR':6, 'flag':15}
+h = {'S_CO':16, 'z':4, 'M*':5, 'Zo':12, 'SFR':7, 'flag':21}
+output = { 'S_CO':0, 'z':1, 'flag':2, 'M*':3, 'Zo':4, 'SFR':5, 'sSFR':6, 'D_L':7, 'V/Vm':8, 'Vm':9, 'L_CO':10, 'AlphaCO':11, 'MH2':12, 'dalpha':13}
 # New Algo #####################################################################
-HMass = np.zeros((len(highM),5))
-LMass = np.zeros((len(lowM[12]),5))
+HMass = np.zeros((len(highM),7))
+LMass = np.zeros((len(lowM[12]),7))
 # High Mass Galaxies
 for i,rows in enumerate(highM):
-    HMass[i,0] = rows[15]       # S_CO
-    HMass[i,1] = rows[4]        # z
-    HMass[i,2] = rows[20]       # flag
-    HMass[i,3] = rows[5]        # Mgal
-    HMass[i,4] = rows[16]       # alpha flat
+    HMass[i,output['S_CO']] = rows[h['S_CO']]                                   # S_CO
+    HMass[i,output['z']] = rows[h['z']]                                         # z
+    HMass[i,output['flag']] = rows[h['flag']]                                   # flag
+    HMass[i,output['M*']] = rows[h['M*']]                                       # Mgal
+    HMass[i,output['Zo']] = rows[h['Zo']]                                       # Zo
+    HMass[i,output['SFR']] = rows[h['SFR']]                                     # SFR
+    HMass[i,output['sSFR']] = np.log10(HMass[i,output['SFR']]) - HMass[i,output['M*']]      # sSFR
+
 # Low Mass Galaxies
-LMass[:,output['S_CO']] = list(lowM[l_input['S_CO']])     # S_CO
-LMass[:,output['z']] = list(lowM[l_input['z']])      # z
-LMass[:,output['flag']] = list(lowM[l_input['flag']])     # flag
-LMass[:,output['Mgal']] = list(lowM[4])      # Mgal
-LMass[:,output['Zo']] = list(lowM[5])      # Zo
+LMass[:,output['S_CO']] = list(lowM[l['S_CO']])                         # S_CO
+LMass[:,output['z']] = list(lowM[l['z']])                               # z
+LMass[:,output['flag']] = list(lowM[l['flag']])                         # flag
+LMass[:,output['M*']] = list(lowM[l['M*']])                             # Mgal
+LMass[:,output['Zo']] = list(lowM[l['Zo']])                             # Zo
+LMass[:,output['SFR']] = list(lowM[l['SFR']])                           # SFR
+sSFRlist = sSFR(list(lowM[l['SFR']]), list(lowM[l['M*']]))
+LMass[:,output['sSFR']] = sSFRlist                                      # sSFR
 # Attach Pre-caclulate L_CO to Low-Mass dataset
-cL_CO = np.zeros((len(list(lowM[12])),1))
-cL_CO[:,0] = list(lowM[12])
-lumsnew = np.concatenate((LMass,cL_CO),axis=1)   # [Lmass, L_CO]
+#cL_CO = np.zeros((len(list(lowM[12])),1))
+#cL_CO[:,0] = list(lowM[12])
+#lumsnew = np.concatenate((LMass,cL_CO),axis=1)   # [Lmass, L_CO]
 # Remove non-detections from all samples
-LMass = NonDetect(LMass, 2)
-HMass = NonDetect(HMass, 2)
-lumsnew = NonDetect(lumsnew, 2)
+LMass = NonDetect(LMass, output['flag'])
+HMass = NonDetect(HMass, output['flag'])
+#lumsnew = NonDetect(lumsnew, output['flag'])
 
 # Calculate Luminosity distance for each galaxy ################################
 # | S_CO | z | flag | Mgal | Zo | D_L |
-LMass = lumdistance(LMass, 1)
-HMass = lumdistance(HMass, 1)
+LMass = lumdistance(LMass, output['z'])
+HMass = lumdistance(HMass, output['z'])
 # | S_CO | z | flag | Mgal | Zo | L_CO | D_L |
-lumsnew = lumdistance(lumsnew, 1)
+#lumsnew = lumdistance(lumsnew, output['z'])
 
 # Calculate Vm #################################################################
 # | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm |
-LMass = Vm(LMass,5, 0.02)
-HMass = Vm(HMass,5, 0.05)
+LMass = Vm(LMass,output['D_L'], 0.02)
+HMass = Vm(HMass,output['D_L'], 0.05)
 # | S_CO | z | flag | Mgal | Zo | L_CO | D_L | V/Vm | Vm |
-lumsnew = Vm(lumsnew,6, 0.05)
+#lumsnew = Vm(lumsnew,6, 0.05)
 
 # Calculate Luminosity Values ##################################################
 # | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm | L_CO |
-LMass = lCalc(LMass,0,1,5,True)
-HMass = lCalc(HMass,0,1,5,False)
+LMass = lCalc(LMass,output['S_CO'],output['z'],output['D_L'],True)
+HMass = lCalc(HMass,output['S_CO'],output['z'],output['D_L'],False)
 # | S_CO | z | flag | Mgal | Zo | L_CO | D_L | V/Vm | Vm | L_CO |
-lumsnew = lCalc(lumsnew,0,1,6,True)
+#lumsnew = lCalc(lumsnew,0,1,6,True)
 
 # Calculate MH2 ################################################################
 # | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm | L_CO | AlphaCO | MH2 | dalpha |
-LMass = H2Conversion(LMass, 4, 8, False)
-HMass = H2Conversion(HMass, 4, 8, True)
-Mass = np.append(LMass[:,3], HMass[:,3])
-alpha = np.append(LMass[:,9], HMass[:,9])
-alphaerror = np.append(LMass[:,11], HMass[:,11])
-MH2 = np.append(LMass[:,10], HMass[:,10])
+LMass = H2Conversion(LMass, output['Zo'], output['L_CO'])
+HMass = H2Conversion(HMass, output['Zo'], output['L_CO'])
+Mass = np.append(LMass[:,output['M*']], HMass[:,output['M*']])
+alpha = np.append(LMass[:,output['AlphaCO']], HMass[:,output['AlphaCO']])
+alphaerror = np.append(LMass[:,output['dalpha']], HMass[:,output['dalpha']])
+MH2 = np.append(LMass[:,output['MH2']], HMass[:,output['MH2']])
 NH2, xH2 = sortIntoBins(MH2, 30)
-NH2L ,xH2L = sortIntoBins(LMass[:,10], 15)
-NH2H ,xH2H = sortIntoBins(HMass[:,10], 15)
+NH2L ,xH2L = sortIntoBins(LMass[:,output['MH2']], 15)
+NH2H ,xH2H = sortIntoBins(HMass[:,output['MH2']], 15)
 
 ################################################################################
-lumsL = LMass[:,8]
-lumsH = HMass[:,8]
-lumsnew = lumsnew[:,5]
+lumsL = LMass[:,output['L_CO']]
+lumsH = HMass[:,output['L_CO']]
+#lumsnew = lumsnew[:,5]
 
 lumsL = [i for i in lumsL if i > 0.0]         # remove 0 detected CO flux galaxies
 lumsH = [i for i in lumsH if i > 0.0]         # remove 0 detected CO flux galaxies
@@ -235,16 +243,16 @@ lCombined = np.append(lumsL, lumsH)
 NL, midL = sortIntoBins(lumsLlog, 15)
 NH, midH = sortIntoBins(lumsHlog, 15)
 NC, midC = sortIntoBins(lCombinedlog, 20)
-NR, midR = sortIntoBins(lumsnew, 15)
+#NR, midR = sortIntoBins(lumsnew, 15)
 
 # Calculations for Mass Distribution ###########################################
 
-totalMass = np.append(LMass[:,3], HMass[:,3])
+totalMass = np.append(LMass[:,output['M*']], HMass[:,output['M*']])
 Nmass, Xmass = sortIntoBins(totalMass, 30)
 
 # density schechter ############################################################
 total = np.vstack((LMass, HMass))
-N, rho, xbins = Schechter(total, 8, 7, 20)
+N, rho, xbins = Schechter(total, output['L_CO'], output['Vm'], 20)
 
 # fit schechter ################################################################
 x1,x2 = xbins, xbins[4:]
@@ -261,7 +269,10 @@ ynew2 = schechter.log_schechter(xnew, *popt2)
 SAMI_outflows = [   567624,574200,228432,239249,31452,238125,486834,
                     417678,106389,593680,618906,618220,383259,209807,376121]
 
-SAMI_data = np.zeros((len(SAMI_outflows),5))
+SAMI_SFR = [        0.39, 0.65, 0.56, 0.24, 0.72, 0.28, 0.51, 0.04, 0.84, 0.16, 0.46,
+                    1.14, 2.30, 3.66, 2.02]
+
+SAMI_data = np.zeros((len(SAMI_outflows),7))
 for i in range(0, len(SAMI[0])):
     if SAMI[0][i] in SAMI_outflows:
         SAMI_data[i,0] = SAMI[2][i] # Mgal
@@ -269,35 +280,39 @@ for i in range(0, len(SAMI[0])):
         SAMI_data[i,2] = SAMI[8][i] # flag
         SAMI_data[i,3] = np.log10(SAMI[7][i]) # amelie's calc gas fraction
         SAMI_data[i,4] = fgas(SAMI_data[i,1],SAMI_data[i,0]) #my calc
+        SAMI_data[i,5] = SAMI_SFR[i]
+        print np.log10(SAMI_SFR[i])
+        SAMI_data[i,6] = np.log10(SAMI_data[i,5]) - SAMI_data[i,0]
 fgasL, fgasH = [], []
 for i in range (len(LMass)):
-    fgasL.append(fgas(LMass[i,10], LMass[i,3]))
+    fgasL.append(fgas(LMass[i,output['MH2']], LMass[i,output['M*']]))
 for i in range (len(HMass)):
-    fgasH.append(fgas(HMass[i,10], HMass[i,3]))
-CG_X = np.append(LMass[:,3], HMass[:,3])
+    fgasH.append(fgas(HMass[i,output['MH2']], HMass[i,output['M*']]))
+CG_X = np.append(LMass[:,output['M*']], HMass[:,output['M*']])
 CG_Y = np.append(fgasL, fgasH)
+sSFR_X = np.append(LMass[:,output['sSFR']], HMass[:,output['sSFR']])
 
 ################################################################################
-fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
-ax[0,0].plot(SAMI_data[:,0], SAMI_data[:,4],'ro', label = 'SAMI', markersize = 8)
+fig, ax = plt.subplots(nrows = 1, ncols = 2, squeeze=False)
+ax[0,0].plot(SAMI_data[:,0], SAMI_data[:,4],'ro', label = 'SAMI', markersize = 10)
 ax[0,0].plot(CG_X, CG_Y,'ko', label = 'COLD GASS', alpha = 0.5)
 ax[0,0].set_xlabel(r'$log_{10}(M_{*}/M_{\odot})$', fontsize = 20)
 ax[0,0].set_ylabel(r'$log_{10}(M_{H2}/M_{*})$', fontsize = 20)
 ax[0,0].legend()
 
-# ax[0,1].plot(SAMI_data[:,0], SAMI_data[:,3],'ro', label = 'SAMI am', markersize = 8)
-# ax[0,1].plot(CG_X, CG_Y,'ko', label = 'COLD GASS', alpha = 0.5)
-# ax[0,1].set_xlabel(r'$log_{10}(M_{*}/M_{\odot})$', fontsize = 20)
-# ax[0,1].set_ylabel(r'$log_{10}(M_{H2}/M_{*})$', fontsize = 20)
-# ax[0,1].legend()
+ax[0,1].plot(sSFR_X, CG_Y, 'ko', label = 'COLD GASS', alpha = 0.5)
+ax[0,1].plot(SAMI_data[:,6], SAMI_data[:,4], 'ro', label = 'SAMI', markersize = 10)
+ax[0,1].set_xlabel(r'$log_{10}(sSFR)$', fontsize = 20)
+ax[0,1].set_ylabel(r'$log_{10}(M_{H2}/M_{*})$', fontsize = 20)
+ax[0,1].legend()
 plt.show()
-
+#
 # # Plot Luminosity number plot ################################################
 # fig, ax = plt.subplots(nrows = 2, ncols = 3, squeeze=False)
 # ax[0,0].plot(midL,NL,'b-', label = 'Low mass')
 # ax[0,0].plot(midH,NH,'r-', label = 'high mass')
 # ax[0,0].plot(midC,NC,'g-', label = 'lCombined')
-# ax[0,0].plot(midR,NR,'k-', label = 'Pre-calc')
+# #ax[0,0].plot(midR,NR,'k-', label = 'Pre-calc')
 # ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
 # ax[0,0].set_ylabel(r'$log_{10}(N)$', fontsize=20)
 # ax[0,0].set_title('CO Luminosity', fontsize=20)
@@ -312,7 +327,17 @@ plt.show()
 # ax[0,1].set_ylabel(r'$log_{10}(N_{gal})$', fontsize=20)
 # #ax[0,1].set_title('CO Luminosity', fontsize=20)
 # ax[0,1].legend()
-# # plt.savefig('new.png')
+#
+# # schechter only ###############################################################
+# ax[0,2].plot(xbins, rho, 'bo')
+# ax[0,2].plot(xbins[4:], rho[4:], 'ro')
+# ax[0,2].plot(xnew, ynew1, 'b-')
+# ax[0,2].plot(xnew, ynew2, 'r-')
+# ax[0,2].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+# ax[0,2].set_ylabel(r'$log_{10}{\rho(L)}$', fontsize=20)
+# ax[0,2].set_title('Schechter', fontsize=20)
+# ax[0,2].text(9, -5.1, (r'$\phi_{*}$ = '+str(round(phi1,2))+'\n'+ r'$L_{*}$ = '+str(round(L01,2))+'\n'+ r'$\alpha$ = '+str(round(alpha1,2))), fontsize=18, color='b')
+# ax[0,2].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
 #
 # # # Plot V/Vm ##################################################################
 # ax[1,0].plot(LMass[:,8], LMass[:,6],'ko', label = 'low mass')
@@ -336,26 +361,5 @@ plt.show()
 # ax[1,2].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
 # ax[1,2].set_ylabel(r'$log_{10}{\rho(L)}$', fontsize=20)
 # ax[1,2].set_title('Schechter', fontsize=20)
-# plt.show()
 #
-# # schecter #####################################################################
-# ax[1,2].plot(xbins, rho, 'bo')
-# ax[1,2].plot(xbins[4:], rho[4:], 'ro')
-# ax[1,2].plot(xdata, ydatanew, 'r-')
-# ax[1,2].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
-# ax[1,2].set_ylabel(r'$log_{10}{\rho(L)}$', fontsize=20)
-# ax[1,2].set_title('Schechter', fontsize=20)
-# plt.show()
-# #schechter only ###############################################################
-# fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
-# ax[0,0].plot(xbins, rho, 'bo')
-# ax[0,0].plot(xbins[4:], rho[4:], 'ro')
-# ax[0,0].plot(xnew, ynew1, 'b-')
-# ax[0,0].plot(xnew, ynew2, 'r-')
-# ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
-# ax[0,0].set_ylabel(r'$log_{10}{\rho(L)}$', fontsize=20)
-# ax[0,0].set_title('Schechter', fontsize=20)
-# ax[0,0].text(9, -5.1, (r'$\phi_{*}$ = '+str(round(phi1,2))+'\n'+ r'$L_{*}$ = '+str(round(L01,2))+'\n'+ r'$\alpha$ = '+str(round(alpha1,2))), fontsize=18, color='b')
-# ax[0,0].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
-# plt.savefig('1stSchechterFit.png')
 # plt.show()
