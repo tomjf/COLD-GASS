@@ -272,17 +272,17 @@ SAMI_outflows = [   567624,574200,228432,239249,31452,238125,486834,
 SAMI_SFR = [        0.39, 0.65, 0.56, 0.24, 0.72, 0.28, 0.51, 0.04, 0.84, 0.16, 0.46,
                     1.14, 2.30, 3.66, 2.02]
 
-SAMI_data = np.zeros((len(SAMI_outflows),7))
+SAMI_data = np.zeros((len(SAMI_outflows),8))
 for i in range(0, len(SAMI[0])):
     if SAMI[0][i] in SAMI_outflows:
-        SAMI_data[i,0] = SAMI[2][i] # Mgal
-        SAMI_data[i,1] = SAMI[6][i] # MH2
-        SAMI_data[i,2] = SAMI[8][i] # flag
-        SAMI_data[i,3] = np.log10(SAMI[7][i]) # amelie's calc gas fraction
-        SAMI_data[i,4] = fgas(SAMI_data[i,1],SAMI_data[i,0]) #my calc
-        SAMI_data[i,5] = SAMI_SFR[i]
-        print np.log10(SAMI_SFR[i])
-        SAMI_data[i,6] = np.log10(SAMI_data[i,5]) - SAMI_data[i,0]
+        SAMI_data[i,0] = SAMI_outflows[i] # GAMA ID
+        SAMI_data[i,1] = SAMI[2][i] # Mgal
+        SAMI_data[i,2] = SAMI[6][i] # MH2
+        SAMI_data[i,3] = SAMI[8][i] # flag
+        SAMI_data[i,4] = np.log10(SAMI[7][i]) # amelie's calc gas fraction
+        SAMI_data[i,5] = fgas(SAMI_data[i,2],SAMI_data[i,1]) #my calc
+        SAMI_data[i,6] = SAMI_SFR[i]
+        SAMI_data[i,7] = np.log10(SAMI_data[i,6]) - SAMI_data[i,1]
 fgasL, fgasH = [], []
 for i in range (len(LMass)):
     fgasL.append(fgas(LMass[i,output['MH2']], LMass[i,output['M*']]))
@@ -293,73 +293,83 @@ CG_Y = np.append(fgasL, fgasH)
 sSFR_X = np.append(LMass[:,output['sSFR']], HMass[:,output['sSFR']])
 
 ################################################################################
+order = 'GAMA ID \t M* \t MH2 \t flag \t fgas1 \t fgas2 \t SFR \t sSFR'
+np.savetxt('SAMI.txt', SAMI_data, delimiter='\t', fmt= '%1.3f', header = order)
+
+# ###############################################################################
 fig, ax = plt.subplots(nrows = 1, ncols = 2, squeeze=False)
-ax[0,0].plot(SAMI_data[:,0], SAMI_data[:,4],'ro', label = 'SAMI', markersize = 10)
-ax[0,0].plot(CG_X, CG_Y,'ko', label = 'COLD GASS', alpha = 0.5)
+ax[0,0].plot(CG_X, CG_Y,'ko', label = 'COLD GASS', alpha=0.2)
+ax[0,0].plot(SAMI_data[:,1], SAMI_data[:,5],'ro', label = 'SAMI', markersize = 10)
 ax[0,0].set_xlabel(r'$log_{10}(M_{*}/M_{\odot})$', fontsize = 20)
 ax[0,0].set_ylabel(r'$log_{10}(M_{H2}/M_{*})$', fontsize = 20)
+for i, txt in enumerate(SAMI_outflows):
+    print txt
+    ax[0,0].annotate(str(txt), (0.03+SAMI_data[i,1],SAMI_data[i,5]))
 ax[0,0].legend()
 
-ax[0,1].plot(sSFR_X, CG_Y, 'ko', label = 'COLD GASS', alpha = 0.5)
-ax[0,1].plot(SAMI_data[:,6], SAMI_data[:,4], 'ro', label = 'SAMI', markersize = 10)
+ax[0,1].plot(sSFR_X, CG_Y, 'ko', label = 'COLD GASS', alpha=0.2)
+ax[0,1].plot(SAMI_data[:,7], SAMI_data[:,5], 'ro', label = 'SAMI', markersize = 10)
 ax[0,1].set_xlabel(r'$log_{10}(sSFR)$', fontsize = 20)
 ax[0,1].set_ylabel(r'$log_{10}(M_{H2}/M_{*})$', fontsize = 20)
 ax[0,1].legend()
+for i, txt in enumerate(SAMI_outflows):
+    print txt
+    ax[0,1].annotate(str(txt), (0.03+SAMI_data[i,7],SAMI_data[i,5]))
 plt.show()
-#
+
 # # Plot Luminosity number plot ################################################
-# fig, ax = plt.subplots(nrows = 2, ncols = 3, squeeze=False)
-# ax[0,0].plot(midL,NL,'b-', label = 'Low mass')
-# ax[0,0].plot(midH,NH,'r-', label = 'high mass')
-# ax[0,0].plot(midC,NC,'g-', label = 'lCombined')
-# #ax[0,0].plot(midR,NR,'k-', label = 'Pre-calc')
-# ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
-# ax[0,0].set_ylabel(r'$log_{10}(N)$', fontsize=20)
-# ax[0,0].set_title('CO Luminosity', fontsize=20)
-# ax[0,0].legend()
-# # # ax[0,0].savefig('lum1.png')
+# fig, ax = plt.subplots(nrows = 2, ncols = 2, squeeze=False)
+# # ax[0,0].plot(midL,NL,'b-', label = 'Low mass')
+# # ax[0,0].plot(midH,NH,'r-', label = 'high mass')
+# # ax[0,0].plot(midC,NC,'g-', label = 'lCombined')
+# # #ax[0,0].plot(midR,NR,'k-', label = 'Pre-calc')
+# # ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+# # ax[0,0].set_ylabel(r'$log_{10}(N)$', fontsize=20)
+# # ax[0,0].set_title('CO Luminosity', fontsize=20)
+# # ax[0,0].legend()
+# # # # ax[0,0].savefig('lum1.png')
 #
 # # Plot H2 mass #################################################################
-# ax[0,1].plot(xH2, NH2,'b-', label = 'H2 Mass')
-# ax[0,1].plot(xH2L,NH2L,'r-', label = 'lowM MH2')
-# ax[0,1].plot(xH2H,NH2H,'g-', label = 'highM MH2')
-# ax[0,1].set_xlabel(r'$log_{10}(M_{H2}/M_{\odot})$', fontsize=20)
-# ax[0,1].set_ylabel(r'$log_{10}(N_{gal})$', fontsize=20)
+# ax[1,0].plot(xH2, NH2,'b-', label = 'H2 Mass')
+# #ax[0,0].plot(xH2L,NH2L,'r-', label = 'lowM MH2')
+# #ax[0,0].plot(xH2H,NH2H,'g-', label = 'highM MH2')
+# ax[1,0].set_xlabel(r'$log_{10}(M_{H2}/M_{\odot})$', fontsize=20)
+# ax[1,0].set_ylabel(r'$log_{10}(N_{gal})$', fontsize=20)
 # #ax[0,1].set_title('CO Luminosity', fontsize=20)
-# ax[0,1].legend()
+# ax[1,0].legend(loc=3)
 #
 # # schechter only ###############################################################
-# ax[0,2].plot(xbins, rho, 'bo')
-# ax[0,2].plot(xbins[4:], rho[4:], 'ro')
-# ax[0,2].plot(xnew, ynew1, 'b-')
-# ax[0,2].plot(xnew, ynew2, 'r-')
-# ax[0,2].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
-# ax[0,2].set_ylabel(r'$log_{10}{\rho(L)}$', fontsize=20)
-# ax[0,2].set_title('Schechter', fontsize=20)
-# ax[0,2].text(9, -5.1, (r'$\phi_{*}$ = '+str(round(phi1,2))+'\n'+ r'$L_{*}$ = '+str(round(L01,2))+'\n'+ r'$\alpha$ = '+str(round(alpha1,2))), fontsize=18, color='b')
-# ax[0,2].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
+# ax[1,1].plot(xbins, rho, 'bo')
+# ax[1,1].plot(xbins[4:], rho[4:], 'ro', alpha=0.5)
+# ax[1,1].plot(xnew, ynew1, 'b-')
+# ax[1,1].plot(xnew, ynew2, 'r-')
+# ax[1,1].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+# ax[1,1].set_ylabel(r'$log_{10}{\rho(L)}$', fontsize=20)
+# #ax[0,1].set_title('Schechter', fontsize=20)
+# ax[1,1].text(9, -5.1, (r'$\phi_{*}$ = '+str(round(phi1,2))+'\n'+ r'$L_{*}$ = '+str(round(L01,2))+'\n'+ r'$\alpha$ = '+str(round(alpha1,2))), fontsize=18, color='b')
+# ax[1,1].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
 #
 # # # Plot V/Vm ##################################################################
-# ax[1,0].plot(LMass[:,8], LMass[:,6],'ko', label = 'low mass')
-# ax[1,0].plot(HMass[:,8], HMass[:,6],'ro', label = 'high mass')
-# ax[1,0].axhline(y=np.average(LMass[:,6]),color='k')
-# ax[1,0].axhline(y=np.average(HMass[:,6]),color='r')
-# ax[1,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
-# ax[1,0].set_ylabel(r'$\frac{V}{V_{m}}$', fontsize=20)
-# ax[1,0].set_title('Schmidt Vm', fontsize=20)
-# ax[1,0].legend()
+# ax[0,0].plot(LMass[:,output['L_CO']], LMass[:,output['V/Vm']],'ko', label = 'low mass')
+# ax[0,0].plot(HMass[:,output['L_CO']], HMass[:,output['V/Vm']],'ro', label = 'high mass')
+# ax[0,0].axhline(y=np.average(LMass[:,output['V/Vm']]),color='k', label = 'average low')
+# ax[0,0].axhline(y=np.average(HMass[:,output['V/Vm']]),color='r', label = 'average high')
+# ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+# ax[0,0].set_ylabel(r'$\frac{V}{V_{m}}$', fontsize=20)
+# #ax[1,0].set_title('Schmidt Vm', fontsize=20)
+# ax[0,0].legend()
 #
 # # Plot alpha vs Mgal ###########################################################
-# ax[1,1].errorbar(Mass, alpha, yerr=alphaerror, fmt='o')
-# ax[1,1].set_xlabel(r'$log_{10}(M_{gal})$', fontsize=20)
-# ax[1,1].set_ylabel(r'$\alpha_{CO}$', fontsize=20)
-# ax[1,1].set_title(r'$\alpha_{CO}$ vs $M_{gal}$', fontsize=20)
+# ax[0,1].errorbar(Mass, alpha, yerr=alphaerror, fmt='o')
+# ax[0,1].set_xlabel(r'$log_{10}(M_{gal})$', fontsize=20)
+# ax[0,1].set_ylabel(r'$\alpha_{CO}$', fontsize=20)
+# #ax[1,1].set_title(r'$\alpha_{CO}$ vs $M_{gal}$', fontsize=20)
 #
 # # schecter #####################################################################
-# ax[1,2].plot(xbins, rho, 'bo')
-# ax[1,2].plot(xbins[4:], rho[4:], 'ro')
-# ax[1,2].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
-# ax[1,2].set_ylabel(r'$log_{10}{\rho(L)}$', fontsize=20)
-# ax[1,2].set_title('Schechter', fontsize=20)
-#
-# plt.show()
+# # ax[1,2].plot(xbins, rho, 'bo')
+# # ax[1,2].plot(xbins[4:], rho[4:], 'ro')
+# # ax[1,2].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+# # ax[1,2].set_ylabel(r'$log_{10}{\rho(L)}$', fontsize=20)
+# # ax[1,2].set_title('Schechter', fontsize=20)
+
+plt.show()
