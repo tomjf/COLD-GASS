@@ -12,6 +12,10 @@ def log_schechter(logL, log_phi, log_L0, alpha):
     schechter -= pow(10,logL-log_L0)
     return schechter
 
+def log_schechter1(logL, log_rho, log_Lstar, alpha):
+    schechter = log_rho*((logL-log_Lstar)**(alpha+1))*math.exp(-(L-Lstar))*np.log(10)
+    return schechter
+
 def log_schechter_fit(schechX, schechY):
     popt, pcov = curve_fit(log_schechter, schechX, schechY)
     return popt
