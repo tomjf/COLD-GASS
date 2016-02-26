@@ -81,7 +81,9 @@ Baldry[:,0] = L
 Baldry[:,1] = 0.2
 Baldry[:,2] = yBaldry
 
-print red
+
+
+total = np.append(bluepop, redpop)
 
 # fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
 # #plt.plot(L, ySpheroid, 'r')
@@ -92,9 +94,11 @@ print red
 # ax[0,0].plot(L,np.log10(yblue), 'b')
 # ax[0,0].set_xlabel(r'$log_{10}(M/M_{\odot})$', fontsize = 20)
 # ax[0,0].set_ylabel(r'$log_{10}(N density)$', fontsize = 20)
-
-n, bins, patches = plt.hist(redpop, 25, normed=1, facecolor='red', alpha=0.5)
-n1, bins1, patches1 = plt.hist(bluepop, 25, normed=1, facecolor='blue', alpha=0.5)
+#
+n1, bins1, patches1 = plt.hist(bluepop, 25, normed = 1, facecolor='blue', alpha=0.5)
+n, bins, patches = plt.hist(redpop, 25, normed = 1, facecolor='red', alpha=0.5)
+plt.savefig('BlueRedhist.png', transparent = False ,dpi=250)
+#n2, bins2, patches2 = plt.hist(total, 25, normed=1, facecolor='k', alpha=0.5)
 # plt.xlim(8,11.7)
 # plt.ylim(-5,0)
 plt.show()
