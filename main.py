@@ -295,7 +295,12 @@ SAMI_outflows = [   567624,574200,228432,239249,31452,238125,486834,
 SAMI_SFR = [        0.39, 0.65, 0.56, 0.24, 0.72, 0.28, 0.51, 0.04, 0.84, 0.16, 0.46,
                     1.14, 2.30, 3.66, 2.02]
 
-SAMI_data = np.zeros((len(SAMI_outflows),8))
+SAMI_Halpha = [     0.5620484135, 1.5436637384, 2.7566674648, 0.5648367555,
+                    1.0654768981, 1.612541277, 0.8870459836, 7.2135198788,
+                    1.5275349255, 2.3419404859, 28.8979144739, 1.4031710791,
+                    9.2286257903 ,4.7398961907,2.7929139441]
+
+SAMI_data = np.zeros((len(SAMI_outflows),9))
 for i in range(0, len(SAMI[0])):
     if SAMI[0][i] in SAMI_outflows:
         GAMAID = SAMI[0][i]
@@ -308,6 +313,7 @@ for i in range(0, len(SAMI[0])):
         SAMI_data[ind,5] = fgas(SAMI_data[ind,2],SAMI_data[ind,1]) #my calc
         SAMI_data[ind,6] = SAMI_SFR[ind]
         SAMI_data[ind,7] = np.log10(SAMI_data[ind,6]) - SAMI_data[ind,1]
+        SAMI_data[ind,8] = np.log10(SAMI_Halpha[ind]) - SAMI_data[ind,1]
 fgasL, fgasH = [], []
 for i in range (len(LMass)):
     fgasL.append(fgas(LMass[i,output['MH2']], LMass[i,output['M*']]))
@@ -350,8 +356,10 @@ ax[0,0].set_ylim(-2.5,0)
 ax[0,0].legend(bbox_to_anchor=(1.1,1.14), loc='upper center', ncol=3)
 
 ax[0,1].scatter(sSFR_X, CG_Y, c='k' , label = 'COLD GASS detection', alpha=0.2, s=30)
-ax[0,1].scatter(SAMI_data_detect[:,7], SAMI_data_detect[:,5], label = 'SAMI detection', s=100, c='g')
+ax[0,1].scatter(SAMI_data_detect[:,7], SAMI_data_detect[:,5], label = 'SAMI detection', s=100, c='r')
 ax[0,1].scatter(SAMI_data_nondetect[:,7], SAMI_data_nondetect[:,5], label = 'SAMI no detection', s=100, c='r')
+ax[0,1].scatter(SAMI_data_detect[:,8], SAMI_data_detect[:,5], label = 'SAMI detection', s=100, c='b')
+ax[0,1].scatter(SAMI_data_nondetect[:,8], SAMI_data_nondetect[:,5], label = 'SAMI no detection', s=100, c='b')
 ax[0,1].set_xlabel(r'$log_{10}(sSFR)$', fontsize = 20)
 ax[0,1].set_xlim(-12,-9)
 ax[0,1].set_ylim(-2.5,0)
@@ -360,7 +368,7 @@ ax[0,1].set_ylim(-2.5,0)
 # for i, txt in enumerate(SAMI_outflows):
 #     ax[0,1].annotate(str(int(SAMI_data[i,0])), (0.03+SAMI_data[i,7],SAMI_data[i,5]))
 fig.set_size_inches(13,6)
-plt.savefig('SAMI2.png', transparent = True,dpi=250)
+plt.savefig('SAMI2.png', transparent = False ,dpi=250)
 
 ################################################################################
 # M1 = np.append(HMass[:,output['M*']], LMass[:,output['M*']])
