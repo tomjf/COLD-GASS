@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import asciidata
 from scipy.optimize import curve_fit
 import schechter
+import csv
+import pandas as pd
 
 # Function to calculate the luminosity distance from z #########################
 def lumdistance(data, zaxis):
@@ -174,12 +176,14 @@ lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
 SAMI = asciidata.open('SAMI_IRAM_data.txt')
 # Sort Data ####################################################################
 # def dict for indices #########################################################
-l = {'S_CO':11, 'z':3, 'M*':4, 'Zo':5, 'SFR':6, 'flag':15}
-h = {'S_CO':16, 'z':4, 'M*':5, 'Zo':12, 'SFR':7, 'flag':21}
-output = { 'S_CO':0, 'z':1, 'flag':2, 'M*':3, 'Zo':4, 'SFR':5, 'sSFR':6, 'D_L':7, 'V/Vm':8, 'Vm':9, 'L_CO':10, 'AlphaCO':11, 'MH2':12, 'dalpha':13}
+l = {'S_CO':11, 'z':3, 'M*':4, 'Zo':5, 'SFR':6, 'flag':15, 'NUV-r': 8}
+h = {'S_CO':16, 'z':4, 'M*':5, 'Zo':12, 'SFR':7, 'flag':21, 'NUV-r': 10}
+output = {  'S_CO':0, 'z':1, 'flag':2, 'M*':3, 'Zo':4, 'SFR':5, 'sSFR':6,
+            'NUV-r':7,'D_L':8, 'V/Vm':9, 'Vm':10, 'L_CO':11, 'AlphaCO':12,
+            'MH2':13, 'dalpha':14}
 # New Algo #####################################################################
-HMass = np.zeros((len(highM),7))
-LMass = np.zeros((len(lowM[12]),7))
+HMass = np.zeros((len(highM),8))
+LMass = np.zeros((len(lowM[12]),8))
 # High Mass Galaxies
 for i,rows in enumerate(highM):
     HMass[i,output['S_CO']] = rows[h['S_CO']]                                   # S_CO
@@ -188,7 +192,8 @@ for i,rows in enumerate(highM):
     HMass[i,output['M*']] = rows[h['M*']]                                       # Mgal
     HMass[i,output['Zo']] = rows[h['Zo']]                                       # Zo
     HMass[i,output['SFR']] = rows[h['SFR']]                                     # SFR
-    HMass[i,output['sSFR']] = np.log10(HMass[i,output['SFR']]) - HMass[i,output['M*']]      # sSFR
+    HMass[i,output['sSFR']] = np.log10(HMass[i,output['SFR']]) - HMass[i,output['M*']]      # NUV-r
+    HMass[i,output['NUV-r']] = rows[h['NUV-r']]      # sSFR
 
 # Low Mass Galaxies
 LMass[:,output['S_CO']] = list(lowM[l['S_CO']])                         # S_CO
@@ -199,6 +204,7 @@ LMass[:,output['Zo']] = list(lowM[l['Zo']])                             # Zo
 LMass[:,output['SFR']] = list(lowM[l['SFR']])                           # SFR
 sSFRlist = sSFR(list(lowM[l['SFR']]), list(lowM[l['M*']]))
 LMass[:,output['sSFR']] = sSFRlist                                      # sSFR
+LMass[:,output['NUV-r']] = list(lowM[l['NUV-r']])      # NUV-r
 
 M = np.append(HMass[:,output['M*']], LMass[:,output['M*']])
 SFR = np.log10(np.append(HMass[:,output['SFR']], LMass[:,output['SFR']]))
@@ -292,6 +298,9 @@ ykeres = schechter.log_schechter(xnew, *poptkeres)
 SAMI_outflows = [   567624,574200,228432,239249,31452,238125,486834,
                     417678,106389,593680,618906,618220,383259,209807,376121]
 
+SAMI_NUV_r = [      2.34, 1.95, 2.13, 2.76, 2.14, 2.88, 2.87, 5.64, 3.30,
+                    5.05, 4.48, 3.78, 3.48, 3.25, 4.12]
+
 SAMI_SFR = [        0.39, 0.65, 0.56, 0.24, 0.72, 0.28, 0.51, 0.04, 0.84, 0.16, 0.46,
                     1.14, 2.30, 3.66, 2.02]
 
@@ -300,7 +309,11 @@ SAMI_Halpha = [     0.5620484135, 1.5436637384, 2.7566674648, 0.5648367555,
                     1.5275349255, 2.3419404859, 28.8979144739, 1.4031710791,
                     9.2286257903 ,4.7398961907,2.7929139441]
 
-SAMI_data = np.zeros((len(SAMI_outflows),9))
+df = pd.read_csv('SFR_cat1.csv')
+SFR_ids = df[['CATAID']].values
+SFR_meas = df[['SFR_Ha', 'SFR_W3', 'SFR_W4', 'SFR_FUV', 'SFR_NUV', 'SFR_u']].values
+
+SAMI_data = np.zeros((len(SAMI_outflows),10))
 for i in range(0, len(SAMI[0])):
     if SAMI[0][i] in SAMI_outflows:
         GAMAID = SAMI[0][i]
@@ -313,7 +326,8 @@ for i in range(0, len(SAMI[0])):
         SAMI_data[ind,5] = fgas(SAMI_data[ind,2],SAMI_data[ind,1]) #my calc
         SAMI_data[ind,6] = SAMI_SFR[ind]
         SAMI_data[ind,7] = np.log10(SAMI_data[ind,6]) - SAMI_data[ind,1]
-        SAMI_data[ind,8] = np.log10(SAMI_Halpha[ind]) - SAMI_data[ind,1]
+        SAMI_data[ind,8] = np.log10(SFR_meas[ind,5]) - SAMI_data[ind,1]
+        SAMI_data[ind,9] = SAMI_NUV_r[ind]
 fgasL, fgasH = [], []
 for i in range (len(LMass)):
     fgasL.append(fgas(LMass[i,output['MH2']], LMass[i,output['M*']]))
@@ -323,6 +337,7 @@ CG_X = np.append(LMass[:,output['M*']], HMass[:,output['M*']])
 CG_Y = np.append(fgasL, fgasH)
 sSFR_X = np.append(LMass[:,output['sSFR']], HMass[:,output['sSFR']])
 SFR_X = np.log10(np.append(LMass[:,output['SFR']], HMass[:,output['SFR']]))
+CG_NUVr = np.append(LMass[:,output['NUV-r']], HMass[:,output['NUV-r']])
 
 ################################################################################
 order = 'GAMA ID \t M* \t MH2 \t flag \t fgas1 \t fgas2 \t SFR \t sSFR'
@@ -343,32 +358,42 @@ np.savetxt('SAMI.txt', SAMI_data, delimiter='\t', fmt= '%1.2f', header = order)
 SAMI_data_detect = SAMI_data[SAMI_data[:,3]<2]
 SAMI_data_nondetect = SAMI_data[SAMI_data[:,3]>1]
 
-fig, ax = plt.subplots(nrows = 1, ncols = 2, squeeze=False)
-ax[0,0].scatter(CG_X, CG_Y, c='k', label = 'COLD GASS detection', alpha=0.2, s=30)
-ax[0,0].scatter(SAMI_data_detect[:,1], SAMI_data_detect[:,5], label = 'SAMI detection', s=100, c='g')
-ax[0,0].scatter(SAMI_data_nondetect[:,1], SAMI_data_nondetect[:,5], label = 'SAMI no detection', s=100, c='r')
-ax[0,0].set_xlabel(r'$log_{10}(M_{*}/M_{\odot})$', fontsize = 20)
-ax[0,0].set_ylabel(r'$log_{10}(M_{H2}/M_{*})$', fontsize = 20)
-ax[0,0].set_xlim(9,11.5)
-ax[0,0].set_ylim(-2.5,0)
-# for i, txt in enumerate(SAMI_outflows):
-#     ax[0,0].annotate(str(txt), (0.03+SAMI_data[i,1],SAMI_data[i,5]))
-ax[0,0].legend(bbox_to_anchor=(1.1,1.14), loc='upper center', ncol=3)
+fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
+# ax[0,0].scatter(CG_X, CG_Y, c='k', label = 'COLD GASS detection', alpha=0.2, s=30)
+# ax[0,0].scatter(SAMI_data_detect[:,1], SAMI_data_detect[:,5], label = 'SAMI-IRAM detection', s=100, c='g')
+# ax[0,0].scatter(SAMI_data_nondetect[:,1], SAMI_data_nondetect[:,5], label = 'SAMI-IRAM no detection', s=100, c='r')
+# ax[0,0].set_xlabel(r'$log_{10}(M_{*}/M_{\odot})$', fontsize = 20)
+# ax[0,0].set_ylabel(r'$log_{10}(M_{H2}/M_{*})$', fontsize = 20)
+# ax[0,0].set_xlim(9,11.5)
+# ax[0,0].set_ylim(-2.5,0)
+# # for i, txt in enumerate(SAMI_outflows):
+# #     ax[0,0].annotate(str(txt), (0.03+SAMI_data[i,1],SAMI_data[i,5]))
+# ax[0,0].legend(bbox_to_anchor=(1.1,1.14), loc='upper center', ncol=3)
+# ax[0,1].scatter(sSFR_X, CG_Y, c='k' , label = 'COLD GASS detection', alpha=0.2, s=30)
+# # ax[0,1].scatter(SAMI_data_detect[:,7], SAMI_data_detect[:,5], label = 'SAMI detection', s=100, c='r')
+# # ax[0,1].scatter(SAMI_data_nondetect[:,7], SAMI_data_nondetect[:,5], label = 'SAMI no detection', s=100, c='r')
+# ax[0,1].scatter(SAMI_data_detect[:,8], SAMI_data_detect[:,5], label = 'SAMI detection', s=100, c='g')
+# ax[0,1].scatter(SAMI_data_nondetect[:,8], SAMI_data_nondetect[:,5], label = 'SAMI no detection', s=100, c='r')
+# ax[0,1].set_xlabel(r'$log_{10}(\mathrm{sSFR})$', fontsize = 20)
+# ax[0,1].set_xlim(-12,-8)
+# ax[0,1].set_ylim(-2.5,0)
+# #ax[0,1].set_ylabel(r'$log_{10}(M_{H2}/M_{*})$', fontsize = 20)
+# #ax[0,1].legend(loc=2)
+# # for i, txt in enumerate(SAMI_outflows):
+# #     ax[0,1].annotate(str(int(SAMI_data[i,0])), (0.03+SAMI_data[i,7],SAMI_data[i,5]))
 
-ax[0,1].scatter(sSFR_X, CG_Y, c='k' , label = 'COLD GASS detection', alpha=0.2, s=30)
-ax[0,1].scatter(SAMI_data_detect[:,7], SAMI_data_detect[:,5], label = 'SAMI detection', s=100, c='r')
-ax[0,1].scatter(SAMI_data_nondetect[:,7], SAMI_data_nondetect[:,5], label = 'SAMI no detection', s=100, c='r')
-ax[0,1].scatter(SAMI_data_detect[:,8], SAMI_data_detect[:,5], label = 'SAMI detection', s=100, c='b')
-ax[0,1].scatter(SAMI_data_nondetect[:,8], SAMI_data_nondetect[:,5], label = 'SAMI no detection', s=100, c='b')
-ax[0,1].set_xlabel(r'$log_{10}(sSFR)$', fontsize = 20)
-ax[0,1].set_xlim(-12,-9)
-ax[0,1].set_ylim(-2.5,0)
-#ax[0,1].set_ylabel(r'$log_{10}(M_{H2}/M_{*})$', fontsize = 20)
-#ax[0,1].legend(loc=2)
-# for i, txt in enumerate(SAMI_outflows):
-#     ax[0,1].annotate(str(int(SAMI_data[i,0])), (0.03+SAMI_data[i,7],SAMI_data[i,5]))
-fig.set_size_inches(13,6)
-plt.savefig('SAMI2.png', transparent = False ,dpi=250)
+ax[0,0].scatter(CG_NUVr, CG_Y, c='k' , label = 'COLD GASS detection', alpha=0.2, s=30)
+ax[0,0].scatter(SAMI_data_detect[:,9], SAMI_data_detect[:,5], label = 'SAMI-IRAM detection', s=100, c='g')
+ax[0,0].scatter(SAMI_data_nondetect[:,9], SAMI_data_nondetect[:,5], label = 'SAMI-IRAM no detection', s=100, c='r')
+ax[0,0].set_xlabel(r'$\mathrm{NUV\minus r}$', fontsize = 20)
+ax[0,0].set_ylabel(r'$log_{10}(M_{H2}/M_{*})$', fontsize = 20)
+ax[0,0].set_xlim(1,7)
+ax[0,0].set_ylim(-2.5,0)
+fig.set_size_inches(7,6)
+for i, txt in enumerate(SAMI_outflows):
+    ax[0,0].annotate(str(int(SAMI_data[i,0])), (0.09+SAMI_data[i,9],SAMI_data[i,5]), fontsize=8)
+plt.savefig('IRAM_NUV-r.pdf', format='pdf', dpi=1000, transparent = False)
+
 
 ################################################################################
 # M1 = np.append(HMass[:,output['M*']], LMass[:,output['M*']])
