@@ -384,15 +384,16 @@ fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
 
 ax[0,0].scatter(CG_NUVr, CG_Y, c='k' , label = 'COLD GASS detection', alpha=0.2, s=30)
 ax[0,0].scatter(SAMI_data_detect[:,9], SAMI_data_detect[:,5], label = 'SAMI-IRAM detection', s=100, c='g')
-ax[0,0].scatter(SAMI_data_nondetect[:,9], SAMI_data_nondetect[:,5], label = 'SAMI-IRAM no detection', s=100, c='r')
+ax[0,0].legend(bbox_to_anchor=(0.5,1.135), loc='upper center', ncol=2, fontsize = 13)
+# ax[0,0].scatter(SAMI_data_nondetect[:,9], SAMI_data_nondetect[:,5], label = 'SAMI-IRAM no detection', s=100, c='r')
 ax[0,0].set_xlabel(r'$\mathrm{NUV\minus r}$', fontsize = 20)
 ax[0,0].set_ylabel(r'$log_{10}(M_{H2}/M_{*})$', fontsize = 20)
 ax[0,0].set_xlim(1,7)
 ax[0,0].set_ylim(-2.5,0)
 fig.set_size_inches(7,6)
-for i, txt in enumerate(SAMI_outflows):
-    ax[0,0].annotate(str(int(SAMI_data[i,0])), (0.09+SAMI_data[i,9],SAMI_data[i,5]), fontsize=8)
-plt.savefig('IRAM_NUV-r.pdf', format='pdf', dpi=1000, transparent = False)
+for i, txt in enumerate(SAMI_data_detect):
+    ax[0,0].annotate(str(int(SAMI_data_detect[i,0])), (0.09+SAMI_data_detect[i,9],SAMI_data_detect[i,5]), fontsize=8)
+plt.savefig('IRAM_NUV-r_detections4.pdf', format='pdf', dpi=1000, transparent = False)
 
 
 ################################################################################
