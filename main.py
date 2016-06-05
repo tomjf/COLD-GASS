@@ -358,6 +358,7 @@ np.savetxt('SAMI.txt', SAMI_data, delimiter='\t', fmt= '%1.2f', header = order)
 SAMI_data_detect = SAMI_data[SAMI_data[:,3]<2]
 SAMI_data_nondetect = SAMI_data[SAMI_data[:,3]>1]
 
+fig = plt.figure(figsize=(8,6))
 fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
 # ax[0,0].scatter(CG_X, CG_Y, c='k', label = 'COLD GASS detection', alpha=0.2, s=30)
 # ax[0,0].scatter(SAMI_data_detect[:,1], SAMI_data_detect[:,5], label = 'SAMI-IRAM detection', s=100, c='g')
@@ -382,18 +383,18 @@ fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
 # # for i, txt in enumerate(SAMI_outflows):
 # #     ax[0,1].annotate(str(int(SAMI_data[i,0])), (0.03+SAMI_data[i,7],SAMI_data[i,5]))
 
-ax[0,0].scatter(CG_NUVr, CG_Y, c='k' , label = 'COLD GASS detection', alpha=0.2, s=30)
-ax[0,0].scatter(SAMI_data_detect[:,9], SAMI_data_detect[:,5], label = 'SAMI-IRAM detection', s=100, c='g')
-ax[0,0].legend(bbox_to_anchor=(0.5,1.135), loc='upper center', ncol=2, fontsize = 13)
-# ax[0,0].scatter(SAMI_data_nondetect[:,9], SAMI_data_nondetect[:,5], label = 'SAMI-IRAM no detection', s=100, c='r')
-ax[0,0].set_xlabel(r'$\mathrm{NUV\minus r}$', fontsize = 20)
-ax[0,0].set_ylabel(r'$log_{10}(M_{H2}/M_{*})$', fontsize = 20)
-ax[0,0].set_xlim(1,7)
-ax[0,0].set_ylim(-2.5,0)
-fig.set_size_inches(7,6)
-for i, txt in enumerate(SAMI_data_detect):
-    ax[0,0].annotate(str(int(SAMI_data_detect[i,0])), (0.09+SAMI_data_detect[i,9],SAMI_data_detect[i,5]), fontsize=8)
-plt.savefig('IRAM_NUV-r_detections4.pdf', format='pdf', dpi=1000, transparent = False)
+# ax[0,0].scatter(CG_NUVr, CG_Y, c='k' , label = 'COLD GASS detection', alpha=0.2, s=30)
+# ax[0,0].scatter(SAMI_data_detect[:,9], SAMI_data_detect[:,5], label = 'SAMI-IRAM detection', s=100, c='g')
+# ax[0,0].legend(bbox_to_anchor=(0.5,1.135), loc='upper center', ncol=2, fontsize = 13)
+# # ax[0,0].scatter(SAMI_data_nondetect[:,9], SAMI_data_nondetect[:,5], label = 'SAMI-IRAM no detection', s=100, c='r')
+# ax[0,0].set_xlabel(r'$\mathrm{NUV\minus r}$', fontsize = 20)
+# ax[0,0].set_ylabel(r'$log_{10}(M_{H2}/M_{*})$', fontsize = 20)
+# ax[0,0].set_xlim(1,7)
+# ax[0,0].set_ylim(-2.5,0)
+# fig.set_size_inches(7,6)
+# for i, txt in enumerate(SAMI_data_detect):
+#     ax[0,0].annotate(str(int(SAMI_data_detect[i,0])), (0.09+SAMI_data_detect[i,9],SAMI_data_detect[i,5]), fontsize=8)
+# plt.savefig('IRAM_NUV-r_detections4.pdf', format='pdf', dpi=1000, transparent = False)
 
 
 ################################################################################
@@ -404,15 +405,14 @@ plt.savefig('IRAM_NUV-r_detections4.pdf', format='pdf', dpi=1000, transparent = 
 
 # # Plot Luminosity number plot ################################################
 # fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
-# # ax[0,0].plot(midL,NL,'b-', label = 'Low mass')
-# # ax[0,0].plot(midH,NH,'r-', label = 'high mass')
-# # ax[0,0].plot(midC,NC,'g-', label = 'lCombined')
-# # #ax[0,0].plot(midR,NR,'k-', label = 'Pre-calc')
-# # ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
-# # ax[0,0].set_ylabel(r'$log_{10}(N)$', fontsize=20)
-# # ax[0,0].set_title('CO Luminosity', fontsize=20)
-# # ax[0,0].legend()
-# # # # ax[0,0].savefig('lum1.png')
+# ax[0,0].plot(midL,NL,'b-', label = 'Low mass')
+# ax[0,0].plot(midH,NH,'r-', label = 'high mass')
+# ax[0,0].plot(midC,NC,'g-', label = 'lCombined')
+# #ax[0,0].plot(midR,NR,'k-', label = 'Pre-calc')
+# ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+# ax[0,0].set_ylabel(r'$log_{10}(N)$', fontsize=20)
+# ax[0,0].set_title('CO Luminosity', fontsize=20)
+# ax[0,0].legend()
 #
 # # Plot H2 mass #################################################################
 # ax[1,0].plot(xH2, NH2,'b-', label = 'H2 Mass')
@@ -424,18 +424,18 @@ plt.savefig('IRAM_NUV-r_detections4.pdf', format='pdf', dpi=1000, transparent = 
 # ax[1,0].legend(loc=3)
 #
 # # schechter only ###############################################################
-# ax[0,0].plot(xbins, rho, 'bo')
-# ax[0,0].plot(xbins[4:], rho[4:], 'ro', alpha=0.5)
-# ax[0,0].plot(xnew, ynew1, 'b-')
-# ax[0,0].plot(xnew, ynew2, 'r-')
-# ax[0,0].plot(xnew, ykeres, 'g-')
-# ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
-# ax[0,0].set_ylabel(r'$log_{10}{\rho(L)} \,(Mpc^{-3})$', fontsize=20)
-# ax[0,0].set_ylim(-7.5, -5)
+ax[0,0].plot(xbins, rho, 'bo')
+ax[0,0].plot(xbins[4:], rho[4:], 'ro', alpha=0.5)
+ax[0,0].plot(xnew, ynew1, 'b-')
+ax[0,0].plot(xnew, ynew2, 'r-')
+ax[0,0].plot(xnew, ykeres, 'g-')
+ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
+ax[0,0].set_ylabel(r'$log_{10}{\rho(L)} \,(Mpc^{-3})$', fontsize=20)
+ax[0,0].set_ylim(-7.5, -5)
 #ax[0,1].set_title('Schechter', fontsize=20)
-#ax[0,0].text(9, -5.1, (r'$\phi_{*}$ = '+str(round(phi1,2))+'\n'+ r'$L_{*}$ = '+str(round(L01,2))+'\n'+ r'$\alpha$ = '+str(round(alpha1,2))), fontsize=18, color='b')
-#ax[0,0].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
-
+ax[0,0].text(9, -5.1, (r'$\phi_{*}$ = '+str(round(phi1,2))+'\n'+ r'$L_{*}$ = '+str(round(L01,2))+'\n'+ r'$\alpha$ = '+str(round(alpha1,2))), fontsize=18, color='b')
+ax[0,0].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
+plt.savefig('img/lum.png', dpi=1000, transparent = False)
 # fig.set_size_inches(10,6)
 # plt.savefig('schechter.png', transparent = False ,dpi=250)
 # plt.show()

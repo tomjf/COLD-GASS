@@ -36,7 +36,6 @@ y = third(x, *fit[0])
 res = np.zeros((len(data[:,0]),1))
 for i in range(0, len(data[:,0])):
     res[i,0] = data[i,0] - third(data[i,1], *fit[0])
-    print res
 
 fig, ax = plt.subplots(nrows = 2, ncols = 2, squeeze=False)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -51,10 +50,10 @@ ax[0,1].set_xlabel(r'$Log(SFR)$', fontsize = 12)
 cb = plt.colorbar(t)
 cb.set_label('Log M')
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ax[1,0].plot(x,res)
+ax[1,0].scatter(data[:,1],res)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ax[1,1].plot(x,res)
+#ax[1,1].scatter/(data[:,1],res)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-fig.set_size_inches(10,6)
+fig.set_size_inches(10,12)
 plt.savefig('img/scalrelns.pdf', format='pdf', dpi=1000, transparent = False)
 #plt.show()
