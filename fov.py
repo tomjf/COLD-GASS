@@ -60,6 +60,7 @@ LMass[:,2] = list(lowM[2])                        # flag
 GASS = np.vstack((coords, coords_L))
 COLDGASS = np.vstack((COLD_GASS_H, LMass))
 areas = []
+print len(GASS)
 ################################################################################
 x = np.array([-np.pi/3.25,-np.pi/3.25,np.pi/3.0,np.pi/3.0,-np.pi/3.25])
 y = np.array([0,np.pi/5,np.pi/5,0,0])
@@ -119,7 +120,7 @@ ax = fig.add_subplot(111, projection="mollweide")
 ax.scatter(((GASS[:,1]-180)*(math.pi/180.0)), (GASS[:,2]*(math.pi/180.0)), s=0.1, alpha = 0.5, label = 'SDSS')
 ax.scatter(((COLDGASS[:,1]-180)*(math.pi/180.0)), (COLDGASS[:,2]*(math.pi/180.0)), s=0.1, color='red', label = 'COLD GASS')
 for i in range(0,len(areas)):
-    ax.plot(areas[i][0][:,0],areas[i][0][:,1], linewidth=0.3)
+    ax.plot(areas[i][0][:,0],areas[i][0][:,1], linewidth=1)
     ax.text(areas[i][1][:,0], areas[i][1][:,1], str(round(areas[i][2],4)), color = 'r', fontsize=12)
 ax.grid(True)
 ax.legend(bbox_to_anchor=(0.5,1.2), loc='upper center', ncol=2, fontsize = 13)

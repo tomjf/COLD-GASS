@@ -3,7 +3,8 @@ import math
 import matplotlib.pyplot as plt
 import schechter
 import random
-
+import scal_relns
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def log_schechter(logL, log_rho, log_Lstar, alpha):
     rholist = []
     L = 10**logL
@@ -15,7 +16,7 @@ def log_schechter(logL, log_rho, log_Lstar, alpha):
         rho = pstar*(frac**(alpha+1))*math.exp(-frac)*log
         rholist.append(rho)
     return np.log10(rholist)
-
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def schechter(L, Ls, dL, phis, alph):
     philist = []
     for i in range(0,len(L)):
@@ -25,7 +26,7 @@ def schechter(L, Ls, dL, phis, alph):
         log = np.log(10)
         philist.append((phibit*exp*log))
     return philist
-
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def doubleschechter(L, Ls, dL, phi1, phi2, alph1, alph2):
     philist = []
     for i in range(0,len(L)):
@@ -36,9 +37,25 @@ def doubleschechter(L, Ls, dL, phi1, phi2, alph1, alph2):
         log = np.log(10)
         philist.append(exp*log*(phibit1+phibit2))
     return philist
-
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def mainSequence(Mstar, spread):
+    logSFRlist = []
+    for index, M in enumerate(Mstar):
+        logSFR = - (2.332*M) + (0.4156*M*M) - (0.01828*M*M*M)
+        if spread == True:
+            logSFR += random.gauss(0,0.3)
+        logSFRlist.append(logSFR)
+    return logSFRlist
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def cloud(Mstar):
+    logSFRlist = []
+    for index, M in enumerate(Mstar):
+        logSFR = -1 + random.gauss(0,0.3)
+        logSFRlist.append(logSFR)
+    return logSFRlist
+################################################################################
 d = 100
-L = np.linspace(7.1,11.9,25)
+L = np.linspace(8,11.9,25)
 LKeres = np.linspace(4,8,200)
 
 Spheroid = (3.67/10000), 10.74, -0.525
@@ -50,40 +67,66 @@ ySpheroid = log_schechter(L, *Spheroid)
 #disk is blue
 yDisk = log_schechter(L, *Disk)
 yKeres = schechter(LKeres, Keres[1], (L[1]-L[0]), Keres[0], Keres[2])
+
 yBaldry = doubleschechter(L, 10.66, (L[1]-L[0]), 0.00396, 0.00079, -0.35, -1.47)
 yred = schechter(L, 10.66, (L[1]-L[0]), 0.00396, -0.35)
 yblue = schechter(L, 10.66, (L[1]-L[0]), 0.00079, -1.47)
 
 ###### make a table for the red galaxies #######################################
 red = np.zeros((len(yred),4))
+# the luminosity bin
 red[:,0] = L
+# spacing between bins
 red[:,1] = 0.2
+# the number of galaxies in this luminosity bin from the schechter function
 red[:,2] = yred
+#list of all the galaxies over all the bins
 redpop = []
 for i in range(0,len(yred)):
-    red[i,3] = int(red[i,2]*d*d*d)
+    red[i,3] = int(red[i,2]*d*d)
+    #print red[i,3]
     for j in range(0,int(red[i,3])):
-        redpop.append(random.uniform((red[i,0]+(0.5*red[i,1])), (red[i,0]+(0.5*red[i,1]))))
+        redpop.append(random.uniform((red[i,0]-(0.5*red[i,1])), (red[i,0]+(0.5*red[i,1]))))
 
 ###### make a table for the blue galaxies ######################################
 blue = np.zeros((len(yblue),4))
+# the luminosity bin
 blue[:,0] = L
+# spacing between bins
 blue[:,1] = 0.2
+# the number of galaxies in this luminosity bin from the schechter function
 blue[:,2] = yblue
+#list of all the galaxies over all the bins
 bluepop = []
 for i in range(0,len(yblue)):
-    blue[i,3] = int(blue[i,2]*d*d*d)
+    blue[i,3] = int(blue[i,2]*d*d)
     for j in range(0,int(blue[i,3])):
-        bluepop.append(random.uniform((blue[i,0]+(0.5*blue[i,1])), (blue[i,0]+(0.5*blue[i,1]))))
+        bluepop.append(random.uniform((blue[i,0]-(0.5*blue[i,1])), (blue[i,0]+(0.5*blue[i,1]))))
 ###### make a table for all the galaxies #######################################
 Baldry = np.zeros((len(yBaldry),4))
 Baldry[:,0] = L
 Baldry[:,1] = 0.2
 Baldry[:,2] = yBaldry
-
-
-
 total = np.append(bluepop, redpop)
+
+x = mainSequence(bluepop, True)
+z = cloud(redpop)
+print '@@@@@@@@@@@@@@@@@@@',len(z), len(redpop)
+trend = np.array(mainSequence(L,    False))
+data = np.zeros((len(L),2))
+data[:,0] = L
+data[:,1] = trend
+
+datagio, fit = scal_relns.fitdata()
+
+bluepop1 = np.zeros((len(bluepop),4))
+redpop1 = np.zeros((len(redpop),4))
+
+bluepop1[:,0], bluepop1[:,1] = bluepop, x
+bluepop1[:,2] = scal_relns.third(bluepop1[:,1], *fit[0])
+
+redpop1[:,0], redpop1[:,1] = redpop, z
+redpop1[:,2] = scal_relns.third(redpop1[:,1], *fit[0])
 
 # fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
 # #plt.plot(L, ySpheroid, 'r')
@@ -95,10 +138,27 @@ total = np.append(bluepop, redpop)
 # ax[0,0].set_xlabel(r'$log_{10}(M/M_{\odot})$', fontsize = 20)
 # ax[0,0].set_ylabel(r'$log_{10}(N density)$', fontsize = 20)
 #
+
+
 n1, bins1, patches1 = plt.hist(bluepop, 25, normed = 1, facecolor='blue', alpha=0.5)
 n, bins, patches = plt.hist(redpop, 25, normed = 1, facecolor='red', alpha=0.5)
 plt.savefig('BlueRedhist.png', transparent = False ,dpi=250)
 #n2, bins2, patches2 = plt.hist(total, 25, normed=1, facecolor='k', alpha=0.5)
 # plt.xlim(8,11.7)
 # plt.ylim(-5,0)
-plt.show()
+plt.savefig('img/BlueRedhist.png', dpi=250, transparent = False)
+
+
+# fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
+# # ax[0,0].scatter(bluepop, x, color = 'b')
+# # ax[0,0].scatter(redpop, z, color = 'r')
+# # ax[0,0].plot(data[:,0], data[:,1], linewidth = 2, color='r')
+# # ax[0,0].set_xlabel(r'$log({M_{*}})$')
+# # ax[0,0].set_ylabel(r'$log({\mathrm{SFR}})$')
+# # plt.xlim(min(L),11.5)
+# # plt.ylim(-2.5,1)
+# ax[0,0].scatter(bluepop1[:,1], bluepop1[:,2])
+# ax[0,0].set_xlabel(r'$log({\mathrm{SFR}})$')
+# ax[0,0].set_ylabel(r'$log({\mathrm{MH2}})$')
+# # plt.show()
+# plt.savefig('img/MH2-SFR.png', dpi=250, transparent = False)

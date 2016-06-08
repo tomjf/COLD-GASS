@@ -26,34 +26,37 @@ def polyfit(data, order):
         fit = curve_fit(fourth, data[:,1], data[:,0])
     return fit
 
-df = pd.read_csv('data/cold_gass_data_gio.csv')
-data = df[['Log_Mh2', 'Log_SFR', 'Log_M', 'Log_LCO']].values
+def fitdata():
+    df = pd.read_csv('data/cold_gass_data_gio.csv')
+    data = df[['Log_Mh2', 'Log_SFR', 'Log_M', 'Log_LCO']].values
+    fit = polyfit(data, 3)
+    x = np.linspace(-1.5,2.0,300)
+    y = third(x, *fit[0])
+    return data, fit
 
-fit = polyfit(data, 3)
-x = np.linspace(-1.5,2.0,300)
-y = third(x, *fit[0])
+data, fit = fitdata()
 
 res = np.zeros((len(data[:,0]),1))
 for i in range(0, len(data[:,0])):
     res[i,0] = data[i,0] - third(data[i,1], *fit[0])
-
-fig, ax = plt.subplots(nrows = 2, ncols = 2, squeeze=False)
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-s = ax[0,0].scatter(data[:,1], data[:,0], c=data[:,2])
-ax[0,0].plot(x,y, linewidth = 1)
-ax[0,0].set_ylabel(r'$Log(MH2)$', fontsize = 12)
-ax[0,0].set_xlabel(r'$Log(SFR)$', fontsize = 12)
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-t = ax[0,1].scatter(data[:,1], data[:,3], c=data[:,2])
-ax[0,1].set_ylabel(r'$Log(LCO)$', fontsize = 12)
-ax[0,1].set_xlabel(r'$Log(SFR)$', fontsize = 12)
-cb = plt.colorbar(t)
-cb.set_label('Log M')
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-ax[1,0].scatter(data[:,1],res)
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#ax[1,1].scatter/(data[:,1],res)
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-fig.set_size_inches(10,12)
-plt.savefig('img/scalrelns.pdf', format='pdf', dpi=1000, transparent = False)
+#
+# fig, ax = plt.subplots(nrows = 2, ncols = 2, squeeze=False)
+# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# s = ax[0,0].scatter(data[:,1], data[:,0], c=data[:,2])
+# ax[0,0].plot(x,y, linewidth = 1)
+# ax[0,0].set_ylabel(r'$Log(MH2)$', fontsize = 12)
+# ax[0,0].set_xlabel(r'$Log(SFR)$', fontsize = 12)
+# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# t = ax[0,1].scatter(data[:,1], data[:,3], c=data[:,2])
+# ax[0,1].set_ylabel(r'$Log(LCO)$', fontsize = 12)
+# ax[0,1].set_xlabel(r'$Log(SFR)$', fontsize = 12)
+# cb = plt.colorbar(t)
+# cb.set_label('Log M')
+# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ax[1,0].scatter(data[:,1],res)
+# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# #ax[1,1].scatter/(data[:,1],res)
+# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# fig.set_size_inches(10,12)
+# plt.savefig('img/scalrelns.pdf', format='pdf', dpi=1000, transparent = False)
 #plt.show()

@@ -98,23 +98,23 @@ def H2Conversion(data, Zindex, LCOindex):
     return data
 
 # Vm calc ######################################################################
-def Vm(data, Dlaxis, minz, maxz):
-    #Vm = (OMEGA/3)*(Ncoldgass/NSDSS)*(D^3)
-    # N_COLDGASS = 366
-    # N_SDSS = 760
+def Vm(data, Dlaxis, minz, maxz, N_COLDGASS):
+    Omega = 0.483979888662
+    N_SDSS = 12770.0
     VVmlist = np.zeros((len(data),1))
     Vmlist = np.zeros((len(data),1))
     x,y = np.zeros((1,1)), np.zeros((1,1))
     x[0,0] = minz
     y[0,0] = maxz
-    D_in = lumdistance(x,0)[0,1]
-    D_out = lumdistance(y,0)[0,1]
-    V_in = ((4*math.pi)/3)*D_in*D_in*D_in
-    V_out = ((4*math.pi)/3)*D_out*D_out*D_out
-    Vm = V_out - V_in
+    #D_in = lumdistance(x,0)[0,1]
+    D_out = float(lumdistance(y,0)[0,1])
+    #V_in = ((4*math.pi)/3)*D_in*D_in*D_in
+    #V_out = ((4*math.pi)/3)*D_out*D_out*D_out
+    Vm = (Omega/3.0)*(float(N_COLDGASS)/N_SDSS)*(D_out*D_out*D_out)
     for i in range(0,len(data)):
         Dl = data[i,Dlaxis]
         V = ((4*math.pi)/3)*Dl*Dl*Dl
+        print V, Vm, V/Vm
         VVmlist[i,0] = (V/Vm)
         Vmlist[i,0] = Vm
     data = np.hstack((data,VVmlist))
@@ -138,7 +138,7 @@ def Schechter(data, LCOaxis, Vmaxis, number):
         xbins.append((bins[i]+bins[i-1])/2)
         rho.append(p)
     # return the Number of gals, log10(density), centre pt of each bin
-    print np.sum(N), len(l)
+    #print np.sum(N), len(l)
     return N, np.log10(rho), xbins
 
 # schechter density functional form ############################################
@@ -228,8 +228,8 @@ HMass = lumdistance(HMass, output['z'])
 
 # Calculate Vm #################################################################
 # | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm |
-LMass = Vm(LMass,output['D_L'], min(LMass[:,output['z']]), max(LMass[:,output['z']]))
-HMass = Vm(HMass,output['D_L'], min(HMass[:,output['z']]), max(HMass[:,output['z']]))
+LMass = Vm(LMass,output['D_L'], min(LMass[:,output['z']]), max(LMass[:,output['z']]),89)
+HMass = Vm(HMass,output['D_L'], min(HMass[:,output['z']]), max(HMass[:,output['z']]),215)
 # | S_CO | z | flag | Mgal | Zo | L_CO | D_L | V/Vm | Vm |
 #lumsnew = Vm(lumsnew,6, 0.05)
 
@@ -286,7 +286,7 @@ phi1, L01, alpha1 = popt1
 popt2 = schechter.log_schechter_fit(x2, y2)
 phi2, L02, alpha2 = popt2
 poptkeres = np.log10(0.00072), np.log10(9.8*math.pow(10,6)), -1.3
-print popt1
+#print popt1
 xnew = np.linspace(max(xbins),min(xbins),100)
 ynew1 = schechter.log_schechter(xnew, *popt1)
 ynew2 = schechter.log_schechter(xnew, *popt2)
@@ -431,7 +431,7 @@ ax[0,0].plot(xnew, ynew2, 'r-')
 ax[0,0].plot(xnew, ykeres, 'g-')
 ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
 ax[0,0].set_ylabel(r'$log_{10}{\rho(L)} \,(Mpc^{-3})$', fontsize=20)
-ax[0,0].set_ylim(-7.5, -5)
+ax[0,0].set_ylim(-7.5, -1)
 #ax[0,1].set_title('Schechter', fontsize=20)
 ax[0,0].text(9, -5.1, (r'$\phi_{*}$ = '+str(round(phi1,2))+'\n'+ r'$L_{*}$ = '+str(round(L01,2))+'\n'+ r'$\alpha$ = '+str(round(alpha1,2))), fontsize=18, color='b')
 ax[0,0].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
