@@ -117,16 +117,16 @@ data = np.zeros((len(L),2))
 data[:,0] = L
 data[:,1] = trend
 
-datagio, fit = scal_relns.fitdata()
+datagio, fit = scal_relns.fitdata2()
 
 bluepop1 = np.zeros((len(bluepop),4))
 redpop1 = np.zeros((len(redpop),4))
 
 bluepop1[:,0], bluepop1[:,1] = bluepop, x
-bluepop1[:,2] = scal_relns.third(bluepop1[:,1], *fit[0])
+bluepop1[:,2] = scal_relns.second2var((bluepop1[:,0], bluepop1[:,1]), *fit[0])
 
 redpop1[:,0], redpop1[:,1] = redpop, z
-redpop1[:,2] = scal_relns.third(redpop1[:,1], *fit[0])
+redpop1[:,2] = scal_relns.second2var((redpop1[:,0], redpop1[:,1]), *fit[0])
 
 # fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
 # #plt.plot(L, ySpheroid, 'r')
@@ -140,16 +140,16 @@ redpop1[:,2] = scal_relns.third(redpop1[:,1], *fit[0])
 #
 
 
-n1, bins1, patches1 = plt.hist(bluepop, 25, normed = 1, facecolor='blue', alpha=0.5)
-n, bins, patches = plt.hist(redpop, 25, normed = 1, facecolor='red', alpha=0.5)
-plt.savefig('BlueRedhist.png', transparent = False ,dpi=250)
-#n2, bins2, patches2 = plt.hist(total, 25, normed=1, facecolor='k', alpha=0.5)
-# plt.xlim(8,11.7)
-# plt.ylim(-5,0)
-plt.savefig('img/BlueRedhist.png', dpi=250, transparent = False)
+# n1, bins1, patches1 = plt.hist(bluepop, 25, normed = 1, facecolor='blue', alpha=0.5)
+# n, bins, patches = plt.hist(redpop, 25, normed = 1, facecolor='red', alpha=0.5)
+# plt.savefig('BlueRedhist.png', transparent = False ,dpi=250)
+# #n2, bins2, patches2 = plt.hist(total, 25, normed=1, facecolor='k', alpha=0.5)
+# # plt.xlim(8,11.7)
+# # plt.ylim(-5,0)
+# plt.savefig('img/BlueRedhist.png', dpi=250, transparent = False)
 
 
-# fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
+fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
 # # ax[0,0].scatter(bluepop, x, color = 'b')
 # # ax[0,0].scatter(redpop, z, color = 'r')
 # # ax[0,0].plot(data[:,0], data[:,1], linewidth = 2, color='r')
@@ -157,8 +157,11 @@ plt.savefig('img/BlueRedhist.png', dpi=250, transparent = False)
 # # ax[0,0].set_ylabel(r'$log({\mathrm{SFR}})$')
 # # plt.xlim(min(L),11.5)
 # # plt.ylim(-2.5,1)
-# ax[0,0].scatter(bluepop1[:,1], bluepop1[:,2])
-# ax[0,0].set_xlabel(r'$log({\mathrm{SFR}})$')
-# ax[0,0].set_ylabel(r'$log({\mathrm{MH2}})$')
-# # plt.show()
-# plt.savefig('img/MH2-SFR.png', dpi=250, transparent = False)
+ax[0,0].scatter(bluepop1[:,1], bluepop1[:,2], color = 'b')
+ax[0,0].scatter(redpop1[:,1], redpop1[:,2], color = 'r')
+ax[0,0].scatter(datagio[:,1], datagio[:,0], color = 'g')
+ax[0,0].set_xlabel(r'$log({\mathrm{SFR}})$')
+ax[0,0].set_ylabel(r'$log({\mathrm{MH2}})$')
+# plt.show()
+plt.savefig('img/scal/MH2-SFR.png', dpi=250, transparent = False)
+plt.show()
