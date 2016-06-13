@@ -55,9 +55,9 @@ res = np.zeros((len(data[:,0]),1))
 for i in range(0, len(data[:,0])):
     res[i,0] = data[i,0] - third(data[i,1], *fit[0])
 
-plt.scatter(data[:,1], MH2)
-plt.scatter(data[:,1], data[:,0], color = 'r')
-plt.show()
+# plt.scatter(data[:,1], MH2)
+# plt.scatter(data[:,1], data[:,0], color = 'r')
+# plt.show()
 #
 # fig, ax = plt.subplots(nrows = 2, ncols = 2, squeeze=False)
 # #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

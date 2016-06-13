@@ -92,7 +92,7 @@ def H2Conversion(data, Zindex, LCOindex):
             dalpha = ([abs(alpha_CO_gal-shallow), abs(alpha_CO_gal-steep)])
             dalpha = max(dalpha)
         H2mass[i,0] = alpha_CO_gal
-        H2mass[i,1] = np.log10(alpha_CO_gal*data[i,LCOindex])
+        H2mass[i,1] = alpha_CO_gal*data[i,LCOindex]
         H2mass[i,2] = dalpha
     data = np.hstack((data,H2mass))
     return data
@@ -106,15 +106,14 @@ def Vm(data, Dlaxis, minz, maxz, N_COLDGASS):
     x,y = np.zeros((1,1)), np.zeros((1,1))
     x[0,0] = minz
     y[0,0] = maxz
-    #D_in = lumdistance(x,0)[0,1]
+    D_in = float(lumdistance(x,0)[0,1])
     D_out = float(lumdistance(y,0)[0,1])
-    #V_in = ((4*math.pi)/3)*D_in*D_in*D_in
-    #V_out = ((4*math.pi)/3)*D_out*D_out*D_out
-    Vm = (Omega/3.0)*(float(N_COLDGASS)/N_SDSS)*(D_out*D_out*D_out)
+    V_in = ((4*math.pi)/3)*D_in*D_in*D_in
+    V_out = ((4*math.pi)/3)*D_out*D_out*D_out
+    Vm =  (N_COLDGASS/N_SDSS)*(V_out - V_in)*Omega
     for i in range(0,len(data)):
         Dl = data[i,Dlaxis]
         V = ((4*math.pi)/3)*Dl*Dl*Dl
-        print V, Vm, V/Vm
         VVmlist[i,0] = (V/Vm)
         Vmlist[i,0] = Vm
     data = np.hstack((data,VVmlist))
@@ -277,7 +276,8 @@ Nmass, Xmass = sortIntoBins(totalMass, 30)
 # density schechter ############################################################
 total = np.vstack((LMass, HMass))
 N, rho, xbins = Schechter(total, output['L_CO'], output['Vm'], 20)
-
+Nh2, rhoh2, xbinsh2 = Schechter(total, output['MH2'], output['Vm'], 12)
+print total[:,output['L_CO']]
 # fit schechter ################################################################
 x1,x2 = xbins, xbins[4:]
 y1,y2 = rho,rho[4:]
@@ -292,56 +292,62 @@ ynew1 = schechter.log_schechter(xnew, *popt1)
 ynew2 = schechter.log_schechter(xnew, *popt2)
 ykeres = schechter.log_schechter(xnew, *poptkeres)
 
+# Keres fit
+mst=np.log10((2.81*(10**9))/(0.7**2))
+alpha=-1.18
+phist=np.log10(0.0089*(0.7**3))
+xkeres = np.linspace(8,10.5,200)
+ykeres = schechter.log_schechter(xkeres, phist, mst, alpha)
 
 
-# gas fractions ################################################################
-SAMI_outflows = [   567624,574200,228432,239249,31452,238125,486834,
-                    417678,106389,593680,618906,618220,383259,209807,376121]
-
-SAMI_NUV_r = [      2.34, 1.95, 2.13, 2.76, 2.14, 2.88, 2.87, 5.64, 3.30,
-                    5.05, 4.48, 3.78, 3.48, 3.25, 4.12]
-
-SAMI_SFR = [        0.39, 0.65, 0.56, 0.24, 0.72, 0.28, 0.51, 0.04, 0.84, 0.16, 0.46,
-                    1.14, 2.30, 3.66, 2.02]
-
-SAMI_Halpha = [     0.5620484135, 1.5436637384, 2.7566674648, 0.5648367555,
-                    1.0654768981, 1.612541277, 0.8870459836, 7.2135198788,
-                    1.5275349255, 2.3419404859, 28.8979144739, 1.4031710791,
-                    9.2286257903 ,4.7398961907,2.7929139441]
-
-df = pd.read_csv('SFR_cat1.csv')
-SFR_ids = df[['CATAID']].values
-SFR_meas = df[['SFR_Ha', 'SFR_W3', 'SFR_W4', 'SFR_FUV', 'SFR_NUV', 'SFR_u']].values
-
-SAMI_data = np.zeros((len(SAMI_outflows),10))
-for i in range(0, len(SAMI[0])):
-    if SAMI[0][i] in SAMI_outflows:
-        GAMAID = SAMI[0][i]
-        ind = FindIndex(GAMAID, SAMI_outflows)
-        SAMI_data[ind,0] = SAMI_outflows[ind] # GAMA ID
-        SAMI_data[ind,1] = SAMI[2][i] # Mgal
-        SAMI_data[ind,2] = SAMI[6][i] # MH2
-        SAMI_data[ind,3] = SAMI[8][i] # flag
-        SAMI_data[ind,4] = np.log10(SAMI[7][i]) # amelie's calc gas fraction
-        SAMI_data[ind,5] = fgas(SAMI_data[ind,2],SAMI_data[ind,1]) #my calc
-        SAMI_data[ind,6] = SAMI_SFR[ind]
-        SAMI_data[ind,7] = np.log10(SAMI_data[ind,6]) - SAMI_data[ind,1]
-        SAMI_data[ind,8] = np.log10(SFR_meas[ind,5]) - SAMI_data[ind,1]
-        SAMI_data[ind,9] = SAMI_NUV_r[ind]
-fgasL, fgasH = [], []
-for i in range (len(LMass)):
-    fgasL.append(fgas(LMass[i,output['MH2']], LMass[i,output['M*']]))
-for i in range (len(HMass)):
-    fgasH.append(fgas(HMass[i,output['MH2']], HMass[i,output['M*']]))
-CG_X = np.append(LMass[:,output['M*']], HMass[:,output['M*']])
-CG_Y = np.append(fgasL, fgasH)
-sSFR_X = np.append(LMass[:,output['sSFR']], HMass[:,output['sSFR']])
-SFR_X = np.log10(np.append(LMass[:,output['SFR']], HMass[:,output['SFR']]))
-CG_NUVr = np.append(LMass[:,output['NUV-r']], HMass[:,output['NUV-r']])
-
-################################################################################
-order = 'GAMA ID \t M* \t MH2 \t flag \t fgas1 \t fgas2 \t SFR \t sSFR'
-np.savetxt('SAMI.txt', SAMI_data, delimiter='\t', fmt= '%1.2f', header = order)
+# # gas fractions ################################################################
+# SAMI_outflows = [   567624,574200,228432,239249,31452,238125,486834,
+#                     417678,106389,593680,618906,618220,383259,209807,376121]
+#
+# SAMI_NUV_r = [      2.34, 1.95, 2.13, 2.76, 2.14, 2.88, 2.87, 5.64, 3.30,
+#                     5.05, 4.48, 3.78, 3.48, 3.25, 4.12]
+#
+# SAMI_SFR = [        0.39, 0.65, 0.56, 0.24, 0.72, 0.28, 0.51, 0.04, 0.84, 0.16, 0.46,
+#                     1.14, 2.30, 3.66, 2.02]
+#
+# SAMI_Halpha = [     0.5620484135, 1.5436637384, 2.7566674648, 0.5648367555,
+#                     1.0654768981, 1.612541277, 0.8870459836, 7.2135198788,
+#                     1.5275349255, 2.3419404859, 28.8979144739, 1.4031710791,
+#                     9.2286257903 ,4.7398961907,2.7929139441]
+#
+# df = pd.read_csv('SFR_cat1.csv')
+# SFR_ids = df[['CATAID']].values
+# SFR_meas = df[['SFR_Ha', 'SFR_W3', 'SFR_W4', 'SFR_FUV', 'SFR_NUV', 'SFR_u']].values
+#
+# SAMI_data = np.zeros((len(SAMI_outflows),10))
+# for i in range(0, len(SAMI[0])):
+#     if SAMI[0][i] in SAMI_outflows:
+#         GAMAID = SAMI[0][i]
+#         ind = FindIndex(GAMAID, SAMI_outflows)
+#         SAMI_data[ind,0] = SAMI_outflows[ind] # GAMA ID
+#         SAMI_data[ind,1] = SAMI[2][i] # Mgal
+#         SAMI_data[ind,2] = SAMI[6][i] # MH2
+#         SAMI_data[ind,3] = SAMI[8][i] # flag
+#         SAMI_data[ind,4] = np.log10(SAMI[7][i]) # amelie's calc gas fraction
+#         SAMI_data[ind,5] = fgas(SAMI_data[ind,2],SAMI_data[ind,1]) #my calc
+#         SAMI_data[ind,6] = SAMI_SFR[ind]
+#         SAMI_data[ind,7] = np.log10(SAMI_data[ind,6]) - SAMI_data[ind,1]
+#         SAMI_data[ind,8] = np.log10(SFR_meas[ind,5]) - SAMI_data[ind,1]
+#         SAMI_data[ind,9] = SAMI_NUV_r[ind]
+# fgasL, fgasH = [], []
+# for i in range (len(LMass)):
+#     fgasL.append(fgas(LMass[i,output['MH2']], LMass[i,output['M*']]))
+# for i in range (len(HMass)):
+#     fgasH.append(fgas(HMass[i,output['MH2']], HMass[i,output['M*']]))
+# CG_X = np.append(LMass[:,output['M*']], HMass[:,output['M*']])
+# CG_Y = np.append(fgasL, fgasH)
+# sSFR_X = np.append(LMass[:,output['sSFR']], HMass[:,output['sSFR']])
+# SFR_X = np.log10(np.append(LMass[:,output['SFR']], HMass[:,output['SFR']]))
+# CG_NUVr = np.append(LMass[:,output['NUV-r']], HMass[:,output['NUV-r']])
+#
+# ################################################################################
+# order = 'GAMA ID \t M* \t MH2 \t flag \t fgas1 \t fgas2 \t SFR \t sSFR'
+# np.savetxt('SAMI.txt', SAMI_data, delimiter='\t', fmt= '%1.2f', header = order)
 
 ################################################################################
 # fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
@@ -354,12 +360,14 @@ np.savetxt('SAMI.txt', SAMI_data, delimiter='\t', fmt= '%1.2f', header = order)
 # fig.set_size_inches(10,6)
 # plt.savefig('SFRvsM.png', transparent = False ,dpi=250)
 
-# ###############################################################################
-SAMI_data_detect = SAMI_data[SAMI_data[:,3]<2]
-SAMI_data_nondetect = SAMI_data[SAMI_data[:,3]>1]
+# SAMI_data_detect = SAMI_data[SAMI_data[:,3]<2]
+# SAMI_data_nondetect = SAMI_data[SAMI_data[:,3]>1]
 
-fig = plt.figure(figsize=(8,6))
-fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
+# ###############################################################################
+
+
+#fig = plt.figure(figsize=(8,6))
+# fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
 # ax[0,0].scatter(CG_X, CG_Y, c='k', label = 'COLD GASS detection', alpha=0.2, s=30)
 # ax[0,0].scatter(SAMI_data_detect[:,1], SAMI_data_detect[:,5], label = 'SAMI-IRAM detection', s=100, c='g')
 # ax[0,0].scatter(SAMI_data_nondetect[:,1], SAMI_data_nondetect[:,5], label = 'SAMI-IRAM no detection', s=100, c='r')
@@ -404,7 +412,7 @@ fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
 # plt.show()
 
 # # Plot Luminosity number plot ################################################
-# fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
+fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
 # ax[0,0].plot(midL,NL,'b-', label = 'Low mass')
 # ax[0,0].plot(midH,NH,'r-', label = 'high mass')
 # ax[0,0].plot(midC,NC,'g-', label = 'lCombined')
@@ -414,31 +422,35 @@ fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False)
 # ax[0,0].set_title('CO Luminosity', fontsize=20)
 # ax[0,0].legend()
 #
-# # Plot H2 mass #################################################################
-# ax[1,0].plot(xH2, NH2,'b-', label = 'H2 Mass')
+# Plot H2 mass #################################################################
+# ax[0,1].plot(xH2, NH2,'b-', label = 'H2 Mass')
 # #ax[0,0].plot(xH2L,NH2L,'r-', label = 'lowM MH2')
 # #ax[0,0].plot(xH2H,NH2H,'g-', label = 'highM MH2')
-# ax[1,0].set_xlabel(r'$log_{10}(M_{H2}/M_{\odot})$', fontsize=20)
-# ax[1,0].set_ylabel(r'$log_{10}(N_{gal})$', fontsize=20)
+# ax[0,1].set_xlabel(r'$log_{10}(M_{H2}/M_{\odot})$', fontsize=20)
+# ax[0,1].set_ylabel(r'$log_{10}(N_{gal})$', fontsize=20)
 # #ax[0,1].set_title('CO Luminosity', fontsize=20)
-# ax[1,0].legend(loc=3)
+# ax[0,1].legend(loc=3)
 #
 # # schechter only ###############################################################
-ax[0,0].plot(xbins, rho, 'bo')
-ax[0,0].plot(xbins[4:], rho[4:], 'ro', alpha=0.5)
-ax[0,0].plot(xnew, ynew1, 'b-')
-ax[0,0].plot(xnew, ynew2, 'r-')
-ax[0,0].plot(xnew, ykeres, 'g-')
-ax[0,0].set_xlabel(r'$log_{10}(L_{CO})$', fontsize=20)
-ax[0,0].set_ylabel(r'$log_{10}{\rho(L)} \,(Mpc^{-3})$', fontsize=20)
-ax[0,0].set_ylim(-7.5, -1)
+ax[0,0].plot(xbinsh2, rhoh2, 'bo', label = 'COLD GASS')
+ax[0,0].plot(xkeres, ykeres, 'r', label = 'Keres+03')
+# ax[0,0].plot(xbins[4:], rho[4:], 'ro', alpha=0.5)
+# ax[0,0].plot(xnew, ynew1, 'b-')
+# ax[0,0].plot(xnew, ynew2, 'r-')
+# ax[0,0].plot(xnew, ykeres, 'g-')
+ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
+ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
+ax[0,0].set_ylim(-5, -1)
+# ax[0,0].set_xlim(8, 10.5)
 #ax[0,1].set_title('Schechter', fontsize=20)
-ax[0,0].text(9, -5.1, (r'$\phi_{*}$ = '+str(round(phi1,2))+'\n'+ r'$L_{*}$ = '+str(round(L01,2))+'\n'+ r'$\alpha$ = '+str(round(alpha1,2))), fontsize=18, color='b')
-ax[0,0].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
-plt.savefig('img/lum.png', dpi=1000, transparent = False)
+# ax[0,0].text(9, -5.1, (r'$\phi_{*}$ = '+str(round(phi1,2))+'\n'+ r'$L_{*}$ = '+str(round(L01,2))+'\n'+ r'$\alpha$ = '+str(round(alpha1,2))), fontsize=18, color='b')
+# ax[0,0].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
+# plt.savefig('img/lum.png', dpi=1000, transparent = False)
 # fig.set_size_inches(10,6)
 # plt.savefig('schechter.png', transparent = False ,dpi=250)
-# plt.show()
+plt.legend()
+plt.show()
+plt.savefig('img/MH2.png', transparent = False ,dpi=250)
 # # # Plot V/Vm ##################################################################
 # ax[0,0].plot(LMass[:,output['L_CO']], LMass[:,output['V/Vm']],'ko', label = 'low mass')
 # ax[0,0].plot(HMass[:,output['L_CO']], HMass[:,output['V/Vm']],'ro', label = 'high mass')
