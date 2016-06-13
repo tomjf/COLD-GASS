@@ -449,7 +449,7 @@ ax[0,0].set_ylim(-5, -1)
 # fig.set_size_inches(10,6)
 # plt.savefig('schechter.png', transparent = False ,dpi=250)
 plt.legend()
-plt.show()
+# plt.show()
 plt.savefig('img/MH2.png', transparent = False ,dpi=250)
 # # # Plot V/Vm ##################################################################
 # ax[0,0].plot(LMass[:,output['L_CO']], LMass[:,output['V/Vm']],'ko', label = 'low mass')
