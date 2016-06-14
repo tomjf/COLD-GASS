@@ -340,6 +340,10 @@ phist=np.log10(0.0089*(0.7**3))
 xkeres = np.linspace(7.5,10.5,200)
 ykeres = schechter.log_schechter(xkeres, phist, mst, alpha)
 
+#fit our data to a schechter function and plot
+CG_para = schechter.log_schechter_fit(xbinsh2tot[2:], rhoh2tot[2:])
+y_CG = schechter.log_schechter(xkeres, *CG_para)
+
 
 # # gas fractions ################################################################
 # SAMI_outflows = [   567624,574200,228432,239249,31452,238125,486834,
@@ -478,6 +482,7 @@ ax[0,0].scatter(xbinsh2H, rhoh2H, marker = 's', s = 100, edgecolor='green', line
 ax[0,0].scatter(xbinsh2ND, rhoh2ND, marker = 's', s = 100, edgecolor='orange', linewidth='2', facecolor='none', label = 'Non Detection')
 ax[0,0].scatter(xbinsh2tot, rhoh2tot, marker = 'o', s = 100, color = 'red', label = 'Total')
 ax[0,0].plot(xkeres, ykeres, 'k--', label = 'Keres+03')
+ax[0,0].plot(xkeres, y_CG, 'k-', label = 'COLD GASS fit')
 # ax[0,0].plot(xbins[4:], rho[4:], 'ro', alpha=0.5)
 # ax[0,0].plot(xnew, ynew1, 'b-')
 # ax[0,0].plot(xnew, ynew2, 'r-')
@@ -486,6 +491,7 @@ ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
 ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
 ax[0,0].set_ylim(-5, -1)
 ax[0,0].set_xlim(7.5, 10.5)
+ax[0,0].tick_params(axis='x',which='minor',bottom='on')
 #ax[0,1].set_title('Schechter', fontsize=20)
 # ax[0,0].text(9, -5.1, (r'$\phi_{*}$ = '+str(round(phi1,2))+'\n'+ r'$L_{*}$ = '+str(round(L01,2))+'\n'+ r'$\alpha$ = '+str(round(alpha1,2))), fontsize=18, color='b')
 # ax[0,0].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
