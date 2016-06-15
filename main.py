@@ -207,12 +207,13 @@ def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG):
     # plt.savefig('img/MH2.png', transparent = False ,dpi=250)
 
 # schechter only ###############################################################
-def PlotRhoH2(LSch, HSch, NDSch, totSch):
+def PlotRhoH2(LSch, HSch, NDSch, totSch, x, ykeresph2):
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
     ax[0,0].scatter(LSch[2], LSch[4], marker = 's', s = 100, edgecolor='blue', linewidth='2', facecolor='none', label = 'Low Mass')
     ax[0,0].scatter(HSch[2], HSch[4], marker = 's', s = 100, edgecolor='green', linewidth='2', facecolor='none', label = 'High Mass')
     ax[0,0].scatter(NDSch[2], NDSch[4], marker = 's', s = 100, edgecolor='orange', linewidth='2', facecolor='none', label = 'Non Detection')
     ax[0,0].errorbar(totSch[2], totSch[4], fmt = 'o', markersize = 10, color = 'red', label = 'Total')
+    ax[0,0].plot(x,ykeresph2, 'k--')
     #ax[0,0].plot(xkeres, ykeres2, 'k--', label = 'Keres+03')
     #ax[0,0].plot(xkeres, y_CG, 'k-', label = 'COLD GASS fit')
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
@@ -400,15 +401,24 @@ mst1 = 10**mst
 phist1 = 10**phist
 xkeres = np.linspace(7.5,10.5,200)
 x1 = 10**xkeres
+
+bins = list(totSch[2])
+for i in range(0,len(bins)):
+    bins[i] = 10**bins[i]
+    print bins[i]
+
+
 ykeres = schechter.log_schechter(xkeres, phist, mst, alpha)
 ykeres2 = np.log10((phist1)*((x1/(mst1))**(alpha+1))*np.exp(-x1/mst1)*np.log(10))
+ykeres2sh = np.log10((phist1)*((bins/(mst1))**(alpha+1))*np.exp(-bins/mst1)*np.log(10))
+ykeresph2 = ykeres2sh+totSch[2]
 
 #fit our data to a schechter function and plot
 CG_para = schechter.log_schechter_fit(totSch[2][4:14], totSch[1][4:14])
 y_CG = schechter.log_schechter(xkeres, *CG_para)
 
 PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG)
-PlotRhoH2(LSch, HSch, NDSch, totSch)
+PlotRhoH2(LSch, HSch, NDSch, totSch, xkeres, ykeresph2)
 PlotAlphaCO(total, output)
 
 print np.sum(10**totSch[4])/(10**7)
