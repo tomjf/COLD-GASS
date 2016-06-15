@@ -102,19 +102,22 @@ def H2Conversion(data, Zindex, LCOindex):
     return data
 
 # Vm calc ######################################################################
-def Vm(data, Dlaxis, minz, maxz, N_COLDGASS):
+def Vm(data, Dlaxis, minz, maxz, L):
+    print minz, maxz
     Omega = 0.483979888662
-    N_SDSS = 12770.0
+    if L == True:
+        N_COLDGASS = 89.0
+        N_SDSS = 764.0
+    else:
+        N_COLDGASS = 366.0
+        N_SDSS = 12006.0
     VVmlist = np.zeros((len(data),1))
     Vmlist = np.zeros((len(data),1))
     x,y = np.zeros((1,1)), np.zeros((1,1))
-    x[0,0] = minz
-    y[0,0] = maxz
+    x[0,0], y[0,0] = minz, maxz
     D_in = float(lumdistance(x,0)[0,1])
     D_out = float(lumdistance(y,0)[0,1])
-    V_in = ((4*math.pi)/3)*D_in*D_in*D_in
-    V_out = ((4*math.pi)/3)*D_out*D_out*D_out
-    Vm =  (N_COLDGASS/N_SDSS)*(V_out - V_in)*Omega
+    Vm =  (1.0/3.0)*(N_COLDGASS/N_SDSS)*((D_out**3)-(D_in**3))*(Omega)
     for i in range(0,len(data)):
         Dl = data[i,Dlaxis]
         V = ((4*math.pi)/3)*Dl*Dl*Dl
@@ -139,7 +142,7 @@ def Schechter(data, LCOaxis, Vmaxis):
                 Num+=1
         N.append(Num)
         xbins.append((bins[i]+bins[i-1])/2)
-        rho.append(p/0.25)
+        rho.append(p/(bins[1]-bins[0]))
     # return the Number of gals, log10(density), centre pt of each bin
     return N, np.log10(rho), xbins
 
@@ -220,6 +223,7 @@ M = np.append(HMass[:,output['M*']], LMass[:,output['M*']])
 SFR = np.log10(np.append(HMass[:,output['SFR']], LMass[:,output['SFR']]))
 # plt.plot(M, SFR, 'ro')
 
+
 # Attach Pre-caclulate L_CO to Low-Mass dataset
 #cL_CO = np.zeros((len(list(lowM[12])),1))
 #cL_CO[:,0] = list(lowM[12])
@@ -247,10 +251,10 @@ HMassND = lumdistance(HMassND, output['z'])
 #lumsnew = lumdistance(lumsnew, output['z'])
 # Calculate Vm #################################################################
 # | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm |
-LMass = Vm(LMass,output['D_L'], min(LMass[:,output['z']]), max(LMass[:,output['z']]), len(LMass))
-HMass = Vm(HMass,output['D_L'], min(HMass[:,output['z']]), max(HMass[:,output['z']]), len(HMass))
-LMassND = Vm(LMassND, output['D_L'], min(LMassND[:,output['z']]), max(LMassND[:,output['z']]), len(LMassND))
-HMassND = Vm(HMassND, output['D_L'], min(HMassND[:,output['z']]), max(HMassND[:,output['z']]), len(HMassND))
+LMass = Vm(LMass,output['D_L'], min(LMass[:,output['z']]), max(LMass[:,output['z']]), True)
+HMass = Vm(HMass,output['D_L'], min(HMass[:,output['z']]), max(HMass[:,output['z']]), False)
+LMassND = Vm(LMassND, output['D_L'], min(LMassND[:,output['z']]), max(LMassND[:,output['z']]), True)
+HMassND = Vm(HMassND, output['D_L'], min(HMassND[:,output['z']]), max(HMassND[:,output['z']]), False)
 # | S_CO | z | flag | Mgal | Zo | L_CO | D_L | V/Vm | Vm |
 #lumsnew = Vm(lumsnew,6, 0.05)
 
@@ -337,12 +341,18 @@ Nh2tot, rhoh2tot, xbinsh2tot = Schechter(total, output['MH2'], output['Vm'])
 mst=np.log10((2.81*(10**9))/(0.7**2))
 alpha=-1.18
 phist=np.log10(0.0089*(0.7**3))
+mst1 = 10**mst
+phist1 = 10**phist
 xkeres = np.linspace(7.5,10.5,200)
+x1 = 10**xkeres
 ykeres = schechter.log_schechter(xkeres, phist, mst, alpha)
+ykeres2 = np.log10((phist1)*((x1/(mst1))**(alpha+1))*np.exp(-x1/mst1)*np.log(10))
 
 #fit our data to a schechter function and plot
-CG_para = schechter.log_schechter_fit(xbinsh2tot[2:], rhoh2tot[2:])
+CG_para = schechter.log_schechter_fit(xbinsh2tot[4:], rhoh2tot[4:])
 y_CG = schechter.log_schechter(xkeres, *CG_para)
+
+print '@@@@@@@@@', np.log10(max(HMass[:,output['MH2']]))
 
 
 # # gas fractions ################################################################
@@ -481,7 +491,9 @@ ax[0,0].scatter(xbinsh2L, rhoh2L, marker = 's', s = 100, edgecolor='blue', linew
 ax[0,0].scatter(xbinsh2H, rhoh2H, marker = 's', s = 100, edgecolor='green', linewidth='2', facecolor='none', label = 'High Mass')
 ax[0,0].scatter(xbinsh2ND, rhoh2ND, marker = 's', s = 100, edgecolor='orange', linewidth='2', facecolor='none', label = 'Non Detection')
 ax[0,0].scatter(xbinsh2tot, rhoh2tot, marker = 'o', s = 100, color = 'red', label = 'Total')
-ax[0,0].plot(xkeres, ykeres, 'k--', label = 'Keres+03')
+# ax[0,0].plot(xkeres, ykeres, 'k--', label = 'Keres+03')
+ax[0,0].plot(xkeres, ykeres2, 'k--', label = 'Keres+03')
+
 ax[0,0].plot(xkeres, y_CG, 'k-', label = 'COLD GASS fit')
 # ax[0,0].plot(xbins[4:], rho[4:], 'ro', alpha=0.5)
 # ax[0,0].plot(xnew, ynew1, 'b-')
@@ -498,7 +510,7 @@ ax[0,0].tick_params(axis='x',which='minor',bottom='on')
 # plt.savefig('img/lum.png', dpi=1000, transparent = False)
 # fig.set_size_inches(10,6)
 # plt.savefig('schechter.png', transparent = False ,dpi=250)
-plt.legend()
+plt.legend(fontsize = 13)
 # plt.show()
 plt.savefig('img/MH2.eps', format='eps', dpi=250, transparent = False)
 # plt.savefig('img/MH2.png', transparent = False ,dpi=250)
