@@ -3,6 +3,7 @@ import atpy
 import math
 from scipy import integrate
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 import asciidata
 from scipy.optimize import curve_fit
 import schechter
@@ -99,6 +100,8 @@ def H2Conversion(data, Zindex, LCOindex):
         H2mass[i,0] = alpha_CO_gal
         H2mass[i,1] = alpha_CO_gal*data[i,LCOindex]
         H2mass[i,2] = dalpha
+        # if alpha_CO_gal<4.3:
+        #     print alpha_CO_gal
     data = np.hstack((data,H2mass))
     return data
 
@@ -187,7 +190,15 @@ def quarterRound(num, L):
 
 # schechter only ###############################################################
 def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG):
+    xmajorLocator   = MultipleLocator(0.5)
+    xminorLocator   = MultipleLocator(0.1)
+    ymajorLocator   = MultipleLocator(0.5)
+    yminorLocator   = MultipleLocator(0.1)
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].xaxis.set_major_locator(xmajorLocator)
+    ax[0,0].xaxis.set_minor_locator(xminorLocator)
+    ax[0,0].yaxis.set_major_locator(ymajorLocator)
+    ax[0,0].yaxis.set_minor_locator(yminorLocator)
     ax[0,0].scatter(LSch[2], LSch[1], marker = 's', s = 100, edgecolor='blue', linewidth='2', facecolor='none', label = 'Low Mass')
     ax[0,0].scatter(HSch[2], HSch[1], marker = 's', s = 100, edgecolor='green', linewidth='2', facecolor='none', label = 'High Mass')
     ax[0,0].scatter(NDSch[2], NDSch[1], marker = 's', s = 100, edgecolor='orange', linewidth='2', facecolor='none', label = 'Non Detection')
@@ -233,11 +244,29 @@ def PlotAlphaCO(data, output):
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
     ax[0,0].scatter(np.log10(data[:,output['M*']]), data[:, output['AlphaCO']], marker = 'o', s = 1, label = 'Low Mass')
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
-    ax[0,0].set_ylabel(r'$\mathrm{log\, \rho_{H2}\, [M_{\odot}\, Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{\alpha_{CO}}$', fontsize=18)
     #ax[0,0].set_ylim(-5, -1)
     #ax[0,0].set_xlim(7.5, 10.5)
     ax[0,0].tick_params(axis='x',which='minor',bottom='on')
     plt.savefig('img/aCO.eps', format='eps', dpi=250, transparent = False)
+# schechter only ###############################################################
+def PlotMsunvsMH2(data, output):
+    x = np.linspace(8.5,12,200)
+    y = np.zeros((200,1))
+    xmajorLocator   = MultipleLocator(0.5)
+    xminorLocator   = MultipleLocator(0.1)
+    ymajorLocator   = MultipleLocator(0.5)
+    yminorLocator   = MultipleLocator(0.1)
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].xaxis.set_major_locator(xmajorLocator)
+    ax[0,0].xaxis.set_minor_locator(xminorLocator)
+    ax[0,0].yaxis.set_major_locator(ymajorLocator)
+    ax[0,0].yaxis.set_minor_locator(yminorLocator)
+    ax[0,0].scatter(np.log10(data[:,output['MH2']]), np.log10(data[:, output['MH2']])-data[:,output['M*']], marker = 'o', s = 1, label = 'Low Mass')
+    ax[0,0].plot(x,0)
+    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{log\, \frac{M_{H2}}{M_{sun}}}$', fontsize=18)
+    plt.savefig('img/MMH2.eps', format='eps', dpi=250, transparent = False)
 ## Read data from tables #######################################################
 highM = atpy.Table('COLDGASS_DR3_with_Z.fits')
 lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
@@ -405,22 +434,21 @@ x1 = 10**xkeres
 bins = list(totSch[2])
 for i in range(0,len(bins)):
     bins[i] = 10**bins[i]
-    print bins[i]
-
 
 ykeres = schechter.log_schechter(xkeres, phist, mst, alpha)
 ykeres2 = np.log10((phist1)*((x1/(mst1))**(alpha+1))*np.exp(-x1/mst1)*np.log(10))
-ykeres2sh = np.log10((phist1)*((bins/(mst1))**(alpha+1))*np.exp(-bins/mst1)*np.log(10))
-ykeresph2 = ykeres2sh+totSch[2]
+# ykeres2sh = np.log10((phist1)*((bins/(mst1))**(alpha+1))*np.exp(-bins/mst1)*np.log(10))
+# ykeresph2 = ykeres2sh+totSch[2]
 
 #fit our data to a schechter function and plot
 CG_para = schechter.log_schechter_fit(totSch[2][4:14], totSch[1][4:14])
 y_CG = schechter.log_schechter(xkeres, *CG_para)
 
 PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG)
-PlotRhoH2(LSch, HSch, NDSch, totSch, xkeres, ykeresph2)
+# PlotRhoH2(LSch, HSch, NDSch, totSch, xkeres, ykeresph2)
 PlotAlphaCO(total, output)
-
+PlotMsunvsMH2(total, output)
+print total[output['AlphaCO']]
 print np.sum(10**totSch[4])/(10**7)
 
 

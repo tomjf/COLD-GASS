@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from scipy.optimize import curve_fit
 import numpy as np
 
@@ -44,6 +45,22 @@ def fitdata2():
     fit = curve_fit(second2var, (data[:,2], data[:,1]), data[:,0])
     return data, fit
 
+def plotgioscal(data):
+    xmajorLocator   = MultipleLocator(0.5)
+    xminorLocator   = MultipleLocator(0.1)
+    ymajorLocator   = MultipleLocator(0.5)
+    yminorLocator   = MultipleLocator(0.1)
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].xaxis.set_major_locator(xmajorLocator)
+    ax[0,0].xaxis.set_minor_locator(xminorLocator)
+    ax[0,0].yaxis.set_major_locator(ymajorLocator)
+    ax[0,0].yaxis.set_minor_locator(yminorLocator)
+    s = ax[0,0].scatter(data[:,1], data[:,0], c=data[:,2])
+    # ax[0,0].plot(x,y, linewidth = 1)
+    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{log\, SFR\, [M_{\odot} \, yr^{-1}]}$', fontsize=18)
+    plt.savefig('img/scal/scalrelns.eps', format='eps', dpi=250, transparent = False)
+
 data, fit = fitdata()
 
 fit2var = curve_fit(second2var, (data[:,2], data[:,1]), data[:,0])
@@ -59,23 +76,4 @@ for i in range(0, len(data[:,0])):
 # plt.scatter(data[:,1], data[:,0], color = 'r')
 # plt.show()
 #
-# fig, ax = plt.subplots(nrows = 2, ncols = 2, squeeze=False)
-# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# s = ax[0,0].scatter(data[:,1], data[:,0], c=data[:,2])
-# ax[0,0].plot(x,y, linewidth = 1)
-# ax[0,0].set_ylabel(r'$Log(MH2)$', fontsize = 12)
-# ax[0,0].set_xlabel(r'$Log(SFR)$', fontsize = 12)
-# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# t = ax[0,1].scatter(data[:,1], data[:,3], c=data[:,2])
-# ax[0,1].set_ylabel(r'$Log(LCO)$', fontsize = 12)
-# ax[0,1].set_xlabel(r'$Log(SFR)$', fontsize = 12)
-# cb = plt.colorbar(t)
-# cb.set_label('Log M')
-# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# ax[1,0].scatter(data[:,1],res)
-# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# #ax[1,1].scatter/(data[:,1],res)
-# #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# fig.set_size_inches(10,12)
-# plt.savefig('img/scalrelns.pdf', format='pdf', dpi=1000, transparent = False)
-#plt.show()
+plotgioscal(data)
