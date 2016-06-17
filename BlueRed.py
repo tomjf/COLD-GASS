@@ -72,7 +72,7 @@ def PlotBaldry(L, yBaldry, yred, yblue):
     ax[0,0].plot(L,np.log10(yred), 'r', linewidth = 3)
     ax[0,0].plot(L,np.log10(yblue), 'b', linewidth = 3)
     ax[0,0].set_xlabel(r'$\mathrm{log \, M_{*}\, [M_{sun}]}$', fontsize = 20)
-    ax[0,0].set_ylabel(r'$\mathrm{log \, N}$', fontsize = 20)
+    ax[0,0].set_ylabel(r'$\mathrm{log \, (number \, density) \,[Mpc^{-3} \,dex^{-1}]}$', fontsize = 20)
     plt.savefig('img/scal/Baldry.eps', format='eps', dpi=250, transparent = False)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def PlotMSFR(bluepop, redpop, x, z, data):

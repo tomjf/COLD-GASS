@@ -56,6 +56,8 @@ def plotgioscal(data):
     ax[0,0].yaxis.set_major_locator(ymajorLocator)
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
     s = ax[0,0].scatter(data[:,1], data[:,0], c=data[:,2])
+    cbar = plt.colorbar(s)
+    cbar.ax.set_ylabel(r'$\mathrm{log\, M_{*}\,[M_{sun}]}$',  fontsize = 18)
     # ax[0,0].plot(x,y, linewidth = 1)
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, SFR\, [M_{\odot} \, yr^{-1}]}$', fontsize=18)
