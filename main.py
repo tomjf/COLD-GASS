@@ -9,6 +9,7 @@ from scipy.optimize import curve_fit
 import schechter
 import csv
 import pandas as pd
+import random
 
 # Function to calculate the luminosity distance from z #########################
 def lumdistance(data, zaxis):
@@ -77,42 +78,42 @@ def sortIntoBins(l,number):
     return np.log10(N), xbins
 
 # Conversion to H2 mass ########################################################
-def H2Conversion(data, Zindex, LCOindex):
+def H2Conversion(data, Zindex, LCOindex, *args):
+    #print args[:,0], '@@@@'
+    alphaCOHMass = []
+    for arg in args:
+        alphaCOHMass = arg
+    print alphaCOHMass
     # alpha_CO = mZ + c (from Genzel et al)
     c = 12.0
     dc = 2.0
     m = -1.3
     dm = 0.26
     H2mass = np.zeros((len(data),3))
-    for i in range(0,len(data)):
-        if data[i,3] > 10:
-            alpha_CO_gal = 4.35
-            dalpha = 0
-        else:
-            log_alpha_CO_gal = (m*data[i,Zindex]) + c
-            alpha_CO_gal = math.pow(10,log_alpha_CO_gal)
-            shallow = ((m+dm)*data[i,Zindex]) + (c-dc)
-            steep = ((m-dm)*data[i,Zindex]) + (c+dc)
-            shallow = math.pow(10,shallow)
-            steep = math.pow(10,steep)
-            dalpha = ([abs(alpha_CO_gal-shallow), abs(alpha_CO_gal-steep)])
-            dalpha = max(dalpha)
-        # if np.log10(alpha_CO_gal*data[i,LCOindex]) > np.log10(0.4*(10**data[i,3])):
-        #     print 'eh'
-        #     H2mass[i,0] = np.log10(0.4*(10**data[i,3]))
-        #     print H2mass[i,0]
-        #     H2mass[i,1] = H2mass[i,0]/data[i,LCOindex]
-        # elif np.log10(alpha_CO_gal*data[i,LCOindex]) < np.log10(0.4*(10**data[i,3])):
-        H2mass[i,0] = alpha_CO_gal
-        H2mass[i,1] = alpha_CO_gal*data[i,LCOindex]
-        H2mass[i,2] = dalpha
-        # print H2mass[i,0]
-        # print H2mass[i,0], alpha_CO_gal
-        # if alpha_CO_gal<4.3:
-        #     print alpha_CO_gal
-    # for j in range(0,len(data)):
-    #     if H2mass[j,1] > 0.8*(10**data[j,3]):
-    #         H2mass[j,1] = 10*15
+    if len(alphaCOHMass) > 0:
+        for i in range(0,len(data)):
+            H2mass[i,0] = alphaCOHMass[i]
+            H2mass[i,1] = alphaCOHMass[i]*data[i,LCOindex]
+            H2mass[i,2] = 0
+    else:
+        for i in range(0,len(data)):
+            if data[i,3] > 10:
+                alpha_CO_gal = 4.35
+                dalpha = 0
+            else:
+                log_alpha_CO_gal = (m*data[i,Zindex]) + c
+                alpha_CO_gal = math.pow(10,log_alpha_CO_gal)
+                shallow = ((m+dm)*data[i,Zindex]) + (c-dc)
+                steep = ((m-dm)*data[i,Zindex]) + (c+dc)
+                shallow = math.pow(10,shallow)
+                steep = math.pow(10,steep)
+                dalpha = ([abs(alpha_CO_gal-shallow), abs(alpha_CO_gal-steep)])
+                dalpha = max(dalpha)
+            H2mass[i,0] = alpha_CO_gal
+            H2mass[i,1] = alpha_CO_gal*data[i,LCOindex]
+            H2mass[i,2] = dalpha
+            # if alpha_CO_gal<4.3:
+            #     print alpha_CO_gal
     data = np.hstack((data,H2mass))
     return data
 
@@ -216,7 +217,7 @@ def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG):
     ax[0,0].errorbar(totSch[2], totSch[1], fmt = 'o', markersize = 10, color = 'red', label = 'Total')
     ax[0,0].plot(xkeres, ykeres2, 'k--', label = 'Keres+03')
     ax[0,0].plot(xkeres, y_CG, 'k-', label = 'COLD GASS fit')
-    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
+    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
     ax[0,0].set_ylim(-5, -1)
     ax[0,0].set_xlim(7.5, 10.5)
@@ -226,42 +227,45 @@ def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG):
     # ax[0,0].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
     plt.legend(fontsize = 13)
     plt.savefig('img/schechter/MH2.eps', format='eps', dpi=250, transparent = False)
+    plt.savefig('img/schechter/MH2.pdf', format='pdf', dpi=250, transparent = False)
     # plt.savefig('img/MH2.png', transparent = False ,dpi=250)
 
 # schechter only ###############################################################
-def PlotRhoH2(LSch, HSch, NDSch, totSch):
+def PlotRhoH2(LSch, HSch, NDSch, totSch, x, x1, ykeresph2, yrhoCG):
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
     ax[0,0].scatter(LSch[2], LSch[4], marker = 's', s = 100, edgecolor='blue', linewidth='2', facecolor='none', label = 'Low Mass')
     ax[0,0].scatter(HSch[2], HSch[4], marker = 's', s = 100, edgecolor='green', linewidth='2', facecolor='none', label = 'High Mass')
     ax[0,0].scatter(NDSch[2], NDSch[4], marker = 's', s = 100, edgecolor='orange', linewidth='2', facecolor='none', label = 'Non Detection')
     ax[0,0].errorbar(totSch[2], totSch[4], fmt = 'o', markersize = 10, color = 'red', label = 'Total')
-    # ax[0,0].plot(x,ykeresph2, 'k--')
+
+    ax[0,0].plot(x1,ykeresph2, 'k--')
+    ax[0,0].plot(x1,yrhoCG, 'k-')
     #ax[0,0].plot(xkeres, ykeres2, 'k--', label = 'Keres+03')
     #ax[0,0].plot(xkeres, y_CG, 'k-', label = 'COLD GASS fit')
-    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
+    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, \rho_{H2}\, [M_{\odot}\, Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
-    #ax[0,0].set_ylim(-5, -1)
-    #ax[0,0].set_xlim(7.5, 10.5)
+    ax[0,0].set_ylim(4, 7.5)
+    ax[0,0].set_xlim(7, 11)
     ax[0,0].tick_params(axis='x',which='minor',bottom='on')
     #ax[0,1].set_title('Schechter', fontsize=20)
     # ax[0,0].text(9, -5.1, (r'$\phi_{*}$ = '+str(round(phi1,2))+'\n'+ r'$L_{*}$ = '+str(round(L01,2))+'\n'+ r'$\alpha$ = '+str(round(alpha1,2))), fontsize=18, color='b')
     # ax[0,0].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
     #plt.legend(fontsize = 13)
     plt.savefig('img/schechter/pH2.eps', format='eps', dpi=250, transparent = False)
+    plt.savefig('img/schechter/pH2.pdf', format='pdf', dpi=250, transparent = False)
     # plt.savefig('img/MH2.png', transparent = False ,dpi=250)
 
 # schechter only ###############################################################
 def PlotAlphaCO(data, output):
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
-    ax[0,0].scatter((data[:,output['M*']]), data[:, output['AlphaCO']], marker = 'o', s = 1, label = 'Low Mass')
-    data = data[np.log10(data[:, output['MH2']])-data[:,output['M*']] > -0.3]
-    ax[0,0].scatter(data[:,output['M*']], data[:, output['AlphaCO']], marker = 'o', s = 1, label = 'Low Mass', color = 'r')
-    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{*}\,[M_{sun}]}$', fontsize=18)
+    ax[0,0].scatter(np.log10(data[:,output['M*']]), data[:, output['AlphaCO']], marker = 'o', s = 1, label = 'Low Mass')
+    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{\alpha_{CO}}$', fontsize=18)
     #ax[0,0].set_ylim(-5, -1)
-    ax[0,0].set_ylim(0, 5)
+    #ax[0,0].set_xlim(7.5, 10.5)
     ax[0,0].tick_params(axis='x',which='minor',bottom='on')
     plt.savefig('img/schechter/aCO.eps', format='eps', dpi=250, transparent = False)
+    plt.savefig('img/schechter/aCO.pdf', format='pdf', dpi=250, transparent = False)
 # schechter only ###############################################################
 def PlotMsunvsMH2(data, output):
     x = np.linspace(8.5,12,200)
@@ -276,12 +280,20 @@ def PlotMsunvsMH2(data, output):
     ax[0,0].yaxis.set_major_locator(ymajorLocator)
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
     ax[0,0].scatter(np.log10(data[:,output['MH2']]), np.log10(data[:, output['MH2']])-data[:,output['M*']], marker = 'o', s = 1, label = 'Low Mass')
-    data = data[np.log10(data[:, output['MH2']])-data[:,output['M*']] > -0.3]
-    ax[0,0].scatter(np.log10(data[:,output['MH2']]), np.log10(data[:, output['MH2']])-data[:,output['M*']], marker = 'o', s = 1, label = 'Low Mass', color = 'r')
     # ax[0,0].plot(x,0)
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, \frac{M_{H2}}{M_{sun}}}$', fontsize=18)
     plt.savefig('img/schechter/MMH2.eps', format='eps', dpi=250, transparent = False)
+    plt.savefig('img/schechter/MMH2.pdf', format='pdf', dpi=250, transparent = False)
+# Error Sampling ###############################################################
+def errors(data, x, y):
+    newdata = np.zeros((len(data)*0.8, len(x)))
+    for i in range(0, len(newdata)):
+        idxlist = []
+        for j in range(0,len(newdata)):
+            idxlist.append(random.randint(0,len(data)-1))
+            newdata[:,i] = data[:,k]
+
 ## Read data from tables #######################################################
 highM = atpy.Table('COLDGASS_DR3_with_Z.fits')
 lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
@@ -294,8 +306,9 @@ output = {  'S_CO':0, 'z':1, 'flag':2, 'M*':3, 'Zo':4, 'SFR':5, 'sSFR':6,
             'NUV-r':7,'D_L':8, 'V/Vm':9, 'Vm':10, 'L_CO':11, 'AlphaCO':12,
             'MH2':13, 'dalpha':14}
 # New Algo #####################################################################
-HMass = np.zeros((len(highM),8))
+HMass = np.zeros((len(highM),9))
 LMass = np.zeros((len(lowM[12]),8))
+hmassalpha = []
 # High Mass Galaxies
 for i,rows in enumerate(highM):
     HMass[i,output['S_CO']] = rows[h['S_CO']]                                   # S_CO
@@ -306,6 +319,7 @@ for i,rows in enumerate(highM):
     HMass[i,output['SFR']] = rows[h['SFR']]                                     # SFR
     HMass[i,output['sSFR']] = np.log10(HMass[i,output['SFR']]) - HMass[i,output['M*']]      # NUV-r
     HMass[i,output['NUV-r']] = rows[h['NUV-r']]      # sSFR
+    HMass[i,8] = rows[17]
 
 # Low Mass Galaxies
 LMass[:,output['S_CO']] = list(lowM[l['S_CO']])                         # S_CO
@@ -331,6 +345,9 @@ SFR = np.log10(np.append(HMass[:,output['SFR']], LMass[:,output['SFR']]))
 LMassND, HMassND = LMass, HMass
 LMass = NonDetect(LMass, output['flag'], True)
 HMass = NonDetect(HMass, output['flag'], True)
+# get the alpha CO mass values for later but then delete from the data so it matches up
+alphaCOHMass = HMass[:,8]
+HMass = np.delete(HMass,8,1)
 LMassND[:,0] = list(lowM[l['L_CO']])
 LMassND = NonDetect(LMassND, output['flag'], False)
 for i,rows in enumerate(highM):
@@ -373,10 +390,7 @@ HMassND = np.hstack((HMassND, dummy))
 # Calculate MH2 ################################################################
 # | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm | L_CO | AlphaCO | MH2 | dalpha |
 LMass = H2Conversion(LMass, output['Zo'], output['L_CO'])
-HMass = H2Conversion(HMass, output['Zo'], output['L_CO'])
-a = np.where(np.log10(HMass[:, output['MH2']])-HMass[:,output['M*']] > -0.3)
-for i in range(0,len(a)):
-    HMass[a[i], output['MH2']] = (10**HMass[a[i], output['M*']])*0.3
+HMass = H2Conversion(HMass, output['Zo'], output['L_CO'], alphaCOHMass)
 LMassND = H2Conversion(LMassND, output['Zo'], output['L_CO'])
 dummy1 = np.zeros((len(HMassND),3))
 HMassND = np.hstack((HMassND, dummy1))
@@ -416,7 +430,6 @@ alphaerror = np.append(LMass[:,output['dalpha']], HMass[:,output['dalpha']])
 ND = np.vstack((LMassND, HMassND))
 total = np.vstack((LMass, HMass))
 total = np.vstack((total, ND))
-
 #N, rho, xbins = Schechter(total, output['L_CO'], output['Vm'])
 #MH2 total
 # Nh2, rhoh2, xbinsh2 = Schechter(total, output['MH2'], output['Vm'])
@@ -447,7 +460,7 @@ alpha=-1.18
 phist=np.log10(0.0089*(0.7**3))
 mst1 = 10**mst
 phist1 = 10**phist
-xkeres = np.linspace(7.5,10.5,200)
+xkeres = np.linspace(7,11,200)
 x1 = 10**xkeres
 
 bins = list(totSch[2])
@@ -456,22 +469,23 @@ for i in range(0,len(bins)):
 
 ykeres = schechter.log_schechter(xkeres, phist, mst, alpha)
 ykeres2 = np.log10((phist1)*((x1/(mst1))**(alpha+1))*np.exp(-x1/mst1)*np.log(10))
+yrho = ykeres2 + np.log10(x1)
 # ykeres2sh = np.log10((phist1)*((bins/(mst1))**(alpha+1))*np.exp(-bins/mst1)*np.log(10))
 # ykeresph2 = ykeres2sh+totSch[2]
 
 #fit our data to a schechter function and plot
-CG_para = schechter.log_schechter_fit(totSch[2][5:], totSch[1][5:])
+CG_para = schechter.log_schechter_fit(totSch[2][4:14], totSch[1][4:14])
 y_CG = schechter.log_schechter(xkeres, *CG_para)
+yrhoCG = y_CG + xkeres
+print xkeres
 
 PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG)
-PlotRhoH2(LSch, HSch, NDSch, totSch)
+PlotRhoH2(LSch, HSch, NDSch, totSch, xkeres, np.log10(x1), yrho, yrhoCG)
 PlotAlphaCO(total, output)
 PlotMsunvsMH2(total, output)
-
-# print HMassND[:,output['AlphaCO']]
-print np.sum(10**totSch[4])/(10**7)
-
-
+print total[output['AlphaCO']]
+print totSch[2][1] - totSch[2][0]
+print np.sum((10**totSch[4])*(totSch[2][1]-totSch[2][0]))/(10**7)
 
 
 # # gas fractions ################################################################

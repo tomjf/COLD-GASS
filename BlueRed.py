@@ -72,8 +72,9 @@ def PlotBaldry(L, yBaldry, yred, yblue):
     ax[0,0].plot(L,np.log10(yred), 'r', linewidth = 3)
     ax[0,0].plot(L,np.log10(yblue), 'b', linewidth = 3)
     ax[0,0].set_xlabel(r'$\mathrm{log \, M_{*}\, [M_{sun}]}$', fontsize = 20)
-    ax[0,0].set_ylabel(r'$\mathrm{log \, (number \, density) \,[Mpc^{-3} \,dex^{-1}]}$', fontsize = 20)
+    ax[0,0].set_ylabel(r'$\mathrm{log \, (number \, density) \,[Mpc^{-3}\, dex^{-1}]}$', fontsize = 20)
     plt.savefig('img/scal/Baldry.eps', format='eps', dpi=250, transparent = False)
+    plt.savefig('img/scal/Baldry.pdf', format='pdf', dpi=250, transparent = False)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def PlotMSFR(bluepop, redpop, x, z, data):
     xmajorLocator   = MultipleLocator(0.5)
@@ -93,6 +94,7 @@ def PlotMSFR(bluepop, redpop, x, z, data):
     ax[0,0].set_xlabel(r'$\mathrm{log \, M_{*}\, [M_{sun}]}$', fontsize = 20)
     ax[0,0].set_ylabel(r'$\mathrm{log \, SFR\, [M_{\odot}\,yr^{-1}]}$', fontsize = 20)
     plt.savefig('img/scal/MSFR.eps', format='eps', dpi=250, transparent = False)
+    plt.savefig('img/scal/MSFR.pdf', format='pdf', dpi=250, transparent = False)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def PlotHist(bluepop, redpop):
     bins = np.linspace(7.5,11.5,25)
@@ -103,6 +105,17 @@ def PlotHist(bluepop, redpop):
     ax[0,0].set_ylabel(r'$\mathrm{Number \, Count}}$', fontsize = 20)
     ax[0,0].set_xlim(7.8,11.5)
     plt.savefig('img/scal/Hist.pdf', format='pdf', dpi=250, transparent = False)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def PlotSimMH2(bluepop1, redpop1):
+    bins = np.linspace(7.5,11.5,25)
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].scatter(bluepop1[:,1], bluepop1[:,2], color = 'b')
+    ax[0,0].scatter(redpop1[:,1], redpop1[:,2], color = 'r')
+    ax[0,0].set_xlabel(r'$\mathrm{log \, M_{H2}\, [M_{sun}]}$', fontsize = 20)
+    ax[0,0].set_ylabel(r'$\mathrm{log \, SFR\, [M_{sun}\,yr^{-1}]}$', fontsize = 20)
+    # ax[0,0].set_xlim(7.8,11.5)
+    plt.savefig('img/scal/MH2SFR.pdf', format='pdf', dpi=250, transparent = False)
 ################################################################################
 d = 100
 L = np.linspace(8,11.9,24)
@@ -131,12 +144,24 @@ red[:,1] = 0.2
 # the number of galaxies in this luminosity bin from the schechter function
 red[:,2] = yred
 #list of all the galaxies over all the bins
-redpop = []
 for i in range(0,len(yred)):
     red[i,3] = int(red[i,2]*d*d)
+    print red[i,3], '@@@@'
+    redpop = []
     for j in range(0,int(red[i,3])):
         redpop.append(random.uniform((red[i,0]-(0.5*red[i,1])), (red[i,0]+(0.5*red[i,1]))))
-
+        print len(redpop)
+    redpopsec = np.zeros((len(redpop),5))
+    redpopsec[:,0] = red[i,0]
+    redpopsec[:,1] = red[i,1]
+    redpopsec[:,2] = red[i,2]
+    redpopsec[:,3] = red[i,3]
+    redpopsec[:,4] = redpop
+    if i == 0:
+        reds = redpopsec
+    else:
+        reds = np.vstack((reds,redpopsec))
+print len(reds)
 ###### make a table for the blue galaxies ######################################
 blue = np.zeros((len(yblue),4))
 # the luminosity bin
@@ -179,6 +204,7 @@ redpop1[:,2] = scal_relns.second2var((redpop1[:,0], redpop1[:,1]), *fit[0])
 PlotBaldry(L, yBaldry, yred, yblue)
 PlotMSFR(bluepop, redpop, x, z, data)
 PlotHist(bluepop, redpop)
+PlotSimMH2(bluepop1, redpop1)
 # bins = np.linspace(7.5,11.5,25)
 # fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
 # ax[0,0].hist(bluepop, bins, normed = 1, facecolor='blue', alpha = 0.1)
