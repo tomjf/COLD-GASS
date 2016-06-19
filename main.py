@@ -83,7 +83,6 @@ def H2Conversion(data, Zindex, LCOindex, *args):
     alphaCOHMass = []
     for arg in args:
         alphaCOHMass = arg
-    print alphaCOHMass
     # alpha_CO = mZ + c (from Genzel et al)
     c = 12.0
     dc = 2.0
@@ -143,7 +142,7 @@ def Vm(data, Dlaxis, minz, maxz, L):
     return data
 
 # schechter bins ###############################################################
-def Schechter(data, LCOaxis, Vmaxis, MH2axis, bins):
+def Schechter(data, LCOaxis, Vmaxis, bins):
     l = data[:,LCOaxis]
     l = np.log10(l)
     rho, N, xbins, sigma, rhoH2 = [], [], [], [], []
@@ -153,7 +152,7 @@ def Schechter(data, LCOaxis, Vmaxis, MH2axis, bins):
             if l[j] >= bins[i-1] and l[j] < bins[i]:
                 p += 1/data[j,Vmaxis]
                 o += 1/(data[j,Vmaxis]**2)
-                pH2 += data[j,MH2axis]/data[j,Vmaxis]
+                pH2 += data[j,LCOaxis]/data[j,Vmaxis]
                 Num+=1
         N.append(Num)
         xbins.append((bins[i]+bins[i-1])/2)
@@ -201,7 +200,7 @@ def quarterRound(num, L):
     return ans
 
 # schechter only ###############################################################
-def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG):
+def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma):
     xmajorLocator   = MultipleLocator(0.5)
     xminorLocator   = MultipleLocator(0.1)
     ymajorLocator   = MultipleLocator(0.5)
@@ -214,7 +213,7 @@ def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG):
     ax[0,0].scatter(LSch[2], LSch[1], marker = 's', s = 100, edgecolor='blue', linewidth='2', facecolor='none', label = 'Low Mass')
     ax[0,0].scatter(HSch[2], HSch[1], marker = 's', s = 100, edgecolor='green', linewidth='2', facecolor='none', label = 'High Mass')
     ax[0,0].scatter(NDSch[2], NDSch[1], marker = 's', s = 100, edgecolor='orange', linewidth='2', facecolor='none', label = 'Non Detection')
-    ax[0,0].errorbar(totSch[2], totSch[1], fmt = 'o', markersize = 10, color = 'red', label = 'Total')
+    ax[0,0].errorbar(totSch[2], totSch[1], yerr=sigma, fmt = 'o', markersize = 10, color = 'red', label = 'Total')
     ax[0,0].plot(xkeres, ykeres2, 'k--', label = 'Keres+03')
     ax[0,0].plot(xkeres, y_CG, 'k-', label = 'COLD GASS fit')
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
@@ -286,13 +285,22 @@ def PlotMsunvsMH2(data, output):
     plt.savefig('img/schechter/MMH2.eps', format='eps', dpi=250, transparent = False)
     plt.savefig('img/schechter/MMH2.pdf', format='pdf', dpi=250, transparent = False)
 # Error Sampling ###############################################################
-def errors(data, x, y):
-    newdata = np.zeros((len(data)*0.8, len(x)))
-    for i in range(0, len(newdata)):
-        idxlist = []
+def errors(data, x, y, output):
+    frac = 0.5
+    eridx = int(len(data)*frac)
+    idx = np.linspace(0,len(data)-1,len(data))
+    spread = np.zeros((eridx, len(x)-1))
+    for i in range(0, eridx):
+        random.shuffle(idx)
+        idx1 = idx[:eridx]
+        newdata = np.zeros((eridx, np.shape(data)[1]))
         for j in range(0,len(newdata)):
-            idxlist.append(random.randint(0,len(data)-1))
-            newdata[:,i] = data[:,k]
+            newdata[j,:] = data[idx[j],:]
+        newdata[:,output['Vm']] = newdata[:,output['Vm']]*0.8
+        totSch = Schechter(newdata, output['MH2'], output['Vm'], x)
+        drho = totSch[1] - y
+        spread[i,:] = drho
+    return spread
 
 ## Read data from tables #######################################################
 highM = atpy.Table('COLDGASS_DR3_with_Z.fits')
@@ -332,29 +340,23 @@ sSFRlist = sSFR(list(lowM[l['SFR']]), list(lowM[l['M*']]))
 LMass[:,output['sSFR']] = sSFRlist                                      # sSFR
 LMass[:,output['NUV-r']] = list(lowM[l['NUV-r']])      # NUV-r
 
-M = np.append(HMass[:,output['M*']], LMass[:,output['M*']])
-SFR = np.log10(np.append(HMass[:,output['SFR']], LMass[:,output['SFR']]))
-# plt.plot(M, SFR, 'ro')
-
-
-# Attach Pre-caclulate L_CO to Low-Mass dataset
-#cL_CO = np.zeros((len(list(lowM[12])),1))
-#cL_CO[:,0] = list(lowM[12])
-#lumsnew = np.concatenate((LMass,cL_CO),axis=1)   # [Lmass, L_CO]
-# Remove non-detections from all samples
+# Separate into non detections and detections
 LMassND, HMassND = LMass, HMass
 LMass = NonDetect(LMass, output['flag'], True)
 HMass = NonDetect(HMass, output['flag'], True)
 # get the alpha CO mass values for later but then delete from the data so it matches up
 alphaCOHMass = HMass[:,8]
 HMass = np.delete(HMass,8,1)
+HMassND = np.delete(HMassND,8,1)
+# for low mass non detections use the 5 sigma upper limit for L_CO
+# store this in the 0th column
 LMassND[:,0] = list(lowM[l['L_CO']])
 LMassND = NonDetect(LMassND, output['flag'], False)
+# for high mass non detections use the calculated upper limit for MH2
+# store this in the 0th column
 for i,rows in enumerate(highM):
     HMassND[i,0] = 10**rows[h['MH2']]
 HMassND = NonDetect(HMassND, output['flag'], False)
-
-#lumsnew = NonDetect(lumsnew, output['flag'])
 
 # Calculate Luminosity distance for each galaxy ################################
 # | S_CO | z | flag | Mgal | Zo | D_L |
@@ -362,36 +364,29 @@ LMass = lumdistance(LMass, output['z'])
 HMass = lumdistance(HMass, output['z'])
 LMassND = lumdistance(LMassND, output['z'])
 HMassND = lumdistance(HMassND, output['z'])
-# | S_CO | z | flag | Mgal | Zo | L_CO | D_L |
-#lumsnew = lumdistance(lumsnew, output['z'])
 # Calculate Vm #################################################################
 # | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm |
 LMass = Vm(LMass,output['D_L'], min(LMass[:,output['z']]), max(LMass[:,output['z']]), True)
 HMass = Vm(HMass,output['D_L'], min(HMass[:,output['z']]), max(HMass[:,output['z']]), False)
-LMassND = Vm(LMassND, output['D_L'], min(LMassND[:,output['z']]), max(LMassND[:,output['z']]), True)
-HMassND = Vm(HMassND, output['D_L'], min(HMassND[:,output['z']]), max(HMassND[:,output['z']]), False)
-# | S_CO | z | flag | Mgal | Zo | L_CO | D_L | V/Vm | Vm |
-#lumsnew = Vm(lumsnew,6, 0.05)
-
+LMassND = Vm(LMassND, output['D_L'], min(LMass[:,output['z']]), max(LMass[:,output['z']]), True)
+HMassND = Vm(HMassND, output['D_L'], min(HMass[:,output['z']]), max(HMass[:,output['z']]), False)
 # Calculate Luminosity Values ##################################################
 # | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm | L_CO |
 LMass = lCalc(LMass,output['S_CO'],output['z'],output['D_L'],True)
 HMass = lCalc(HMass,output['S_CO'],output['z'],output['D_L'],False)
 dummy = np.zeros((len(LMassND),1))
+# move the stored L_CO upper limit data over to the correct column
 dummy[:,0] = LMassND[:,0]
 LMassND = np.hstack((LMassND, 10**dummy))
+# leave dummy 0 data for L_CO as we already have MH2
 dummy = np.zeros((len(HMassND),1))
 HMassND = np.hstack((HMassND, dummy))
-
-#HMassND = lCalc(HMassND,output['S_CO'],output['z'],output['D_L'],False)
-# | S_CO | z | flag | Mgal | Zo | L_CO | D_L | V/Vm | Vm | L_CO |
-#lumsnew = lCalc(lumsnew,0,1,6,True)
-
 # Calculate MH2 ################################################################
 # | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm | L_CO | AlphaCO | MH2 | dalpha |
 LMass = H2Conversion(LMass, output['Zo'], output['L_CO'])
 HMass = H2Conversion(HMass, output['Zo'], output['L_CO'], alphaCOHMass)
 LMassND = H2Conversion(LMassND, output['Zo'], output['L_CO'])
+# just add 0 axes and copy over the MH2 upper limits from the table
 dummy1 = np.zeros((len(HMassND),3))
 HMassND = np.hstack((HMassND, dummy1))
 HMassND[:,output['MH2']] = HMassND[:,0]
@@ -426,7 +421,6 @@ alphaerror = np.append(LMass[:,output['dalpha']], HMass[:,output['dalpha']])
 # Nmass, Xmass = sortIntoBins(totalMass, 30)
 
 # density schechter ############################################################
-
 ND = np.vstack((LMassND, HMassND))
 total = np.vstack((LMass, HMass))
 total = np.vstack((total, ND))
@@ -435,10 +429,10 @@ total = np.vstack((total, ND))
 # Nh2, rhoh2, xbinsh2 = Schechter(total, output['MH2'], output['Vm'])
 low, high = min(np.log10(total[:,output['MH2']])), max(np.log10(total[:,output['MH2']]))
 bins = np.linspace(low, high, 16) # log-spaced bins
-LSch = Schechter(LMass, output['MH2'], output['Vm'], output['MH2'], bins)
-HSch = Schechter(HMass, output['MH2'], output['Vm'], output['MH2'], bins)
-NDSch = Schechter(ND, output['MH2'], output['Vm'], output['MH2'], bins)
-totSch = Schechter(total, output['MH2'], output['Vm'], output['MH2'], bins)
+LSch = Schechter(LMass, output['MH2'], output['Vm'], bins)
+HSch = Schechter(HMass, output['MH2'], output['Vm'], bins)
+NDSch = Schechter(ND, output['MH2'], output['Vm'], bins)
+totSch = Schechter(total, output['MH2'], output['Vm'], bins)
 #Nh2ND2, rhoh2ND2, xbinsh2ND2 = Schechter(HMassND, output['MH2'], output['Vm'])
 # fit schechter ################################################################
 # x1,x2 = xbins, xbins[4:]
@@ -463,9 +457,9 @@ phist1 = 10**phist
 xkeres = np.linspace(7,11,200)
 x1 = 10**xkeres
 
-bins = list(totSch[2])
-for i in range(0,len(bins)):
-    bins[i] = 10**bins[i]
+# bins = list(totSch[2])
+# for i in range(0,len(bins)):
+#     bins[i] = 10**bins[i]
 
 ykeres = schechter.log_schechter(xkeres, phist, mst, alpha)
 ykeres2 = np.log10((phist1)*((x1/(mst1))**(alpha+1))*np.exp(-x1/mst1)*np.log(10))
@@ -474,18 +468,26 @@ yrho = ykeres2 + np.log10(x1)
 # ykeresph2 = ykeres2sh+totSch[2]
 
 #fit our data to a schechter function and plot
-CG_para = schechter.log_schechter_fit(totSch[2][4:14], totSch[1][4:14])
+CG_para = schechter.log_schechter_fit(totSch[2][6:14], totSch[1][6:14])
 y_CG = schechter.log_schechter(xkeres, *CG_para)
 yrhoCG = y_CG + xkeres
-print xkeres
 
-PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG)
+er = errors(total, bins, totSch[1], output)
+sigma = []
+for i in range(0, np.shape(er)[1]):
+    eri = er[:,i]
+    eri = eri[abs(eri)<99]
+    sigma.append(np.std(eri))
+
+PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma)
 PlotRhoH2(LSch, HSch, NDSch, totSch, xkeres, np.log10(x1), yrho, yrhoCG)
 PlotAlphaCO(total, output)
 PlotMsunvsMH2(total, output)
-print total[output['AlphaCO']]
-print totSch[2][1] - totSch[2][0]
-print np.sum((10**totSch[4])*(totSch[2][1]-totSch[2][0]))/(10**7)
+
+# print np.sum((10**totSch[4])*(totSch[2][1]-totSch[2][0]))/(10**7)
+
+
+
 
 
 # # gas fractions ################################################################
