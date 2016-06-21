@@ -200,7 +200,7 @@ def quarterRound(num, L):
     return ans
 
 # schechter only ###############################################################
-def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma):
+def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpts, y_keres, x_keres):
     xmajorLocator   = MultipleLocator(0.5)
     xminorLocator   = MultipleLocator(0.1)
     ymajorLocator   = MultipleLocator(0.5)
@@ -210,6 +210,8 @@ def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma):
     ax[0,0].xaxis.set_minor_locator(xminorLocator)
     ax[0,0].yaxis.set_major_locator(ymajorLocator)
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
+    ax[0,0].scatter(totSch[2], yCGpts, marker = 'o', s = 100, edgecolor='black', linewidth='2', facecolor='none', label = 'pts')
+    ax[0,0].scatter(x_keres, y_keres, marker = 'o', s = 100, edgecolor='black', linewidth='2', facecolor='none', label = 'pts')
     ax[0,0].scatter(LSch[2], LSch[1], marker = 's', s = 100, edgecolor='blue', linewidth='2', facecolor='none', label = 'Low Mass')
     ax[0,0].scatter(HSch[2], HSch[1], marker = 's', s = 100, edgecolor='green', linewidth='2', facecolor='none', label = 'High Mass')
     ax[0,0].scatter(NDSch[2], NDSch[1], marker = 's', s = 100, edgecolor='orange', linewidth='2', facecolor='none', label = 'Non Detection')
@@ -229,12 +231,45 @@ def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma):
     plt.savefig('img/schechter/MH2.pdf', format='pdf', dpi=250, transparent = False)
     # plt.savefig('img/MH2.png', transparent = False ,dpi=250)
 
+################################################################################
+def PlotSchechter2(totSch, sigmatot, y_CG, detSch, sigmadet, y_det, xkeres, ykeres2):
+    xmajorLocator   = MultipleLocator(0.5)
+    xminorLocator   = MultipleLocator(0.1)
+    ymajorLocator   = MultipleLocator(0.5)
+    yminorLocator   = MultipleLocator(0.1)
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].xaxis.set_major_locator(xmajorLocator)
+    ax[0,0].xaxis.set_minor_locator(xminorLocator)
+    ax[0,0].yaxis.set_major_locator(ymajorLocator)
+    ax[0,0].yaxis.set_minor_locator(yminorLocator)
+    ax[0,0].errorbar(totSch[2], totSch[1], yerr=sigmatot, fmt = 'o', markersize = 10, color = 'red', label = 'COLD GASS D')
+    ax[0,0].errorbar(detSch[2], detSch[1], yerr=sigmadet, fmt = 's', markersize = 10, color = 'blue', label = 'COLD GASS ND+D')
+    # ax[0,0].scatter(detSch[2], detSch[1], yerr=sigmadet, marker = 's', s = 100, edgecolor='blue', linewidth='2', facecolor='none', label = 'Detections')
+    ax[0,0].fill_between(xkeres, y_CG, y_det, alpha = 0.5, color = 'green')
+    ax[0,0].plot(xkeres, ykeres2, 'k--', label = 'Keres+03')
+    ax[0,0].plot(xkeres, y_CG, 'r-', label = 'COLD GASS D')
+    ax[0,0].plot(xkeres, y_det, 'b-', label = 'COLD GASS ND+D')
+    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
+    ax[0,0].set_ylim(-5, -1)
+    ax[0,0].set_xlim(7.5, 10.5)
+    ax[0,0].tick_params(axis='x',which='minor',bottom='on')
+    #ax[0,1].set_title('Schechter', fontsize=20)
+    # ax[0,0].text(9, -5.1, (r'$\phi_{*}$ = '+str(round(phi1,2))+'\n'+ r'$L_{*}$ = '+str(round(L01,2))+'\n'+ r'$\alpha$ = '+str(round(alpha1,2))), fontsize=18, color='b')
+    # ax[0,0].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
+    plt.legend(fontsize = 12)
+    plt.savefig('img/schechter/MH2poster.eps', format='eps', dpi=250, transparent = False)
+    plt.savefig('img/schechter/MH2poster.pdf', format='pdf', dpi=250, transparent = False)
+    # plt.savefig('img/MH2.png', transparent = False ,dpi=250)
+
 # schechter only ###############################################################
-def PlotRhoH2(LSch, HSch, NDSch, totSch, x, x1, ykeresph2, yrhoCG):
+def PlotRhoH2(LSch, HSch, NDSch, totSch, x, x1, ykeresph2, yrhoCG, yrhoCGpts, yrhokeres, xkeres):
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
     ax[0,0].scatter(LSch[2], LSch[4], marker = 's', s = 100, edgecolor='blue', linewidth='2', facecolor='none', label = 'Low Mass')
     ax[0,0].scatter(HSch[2], HSch[4], marker = 's', s = 100, edgecolor='green', linewidth='2', facecolor='none', label = 'High Mass')
     ax[0,0].scatter(NDSch[2], NDSch[4], marker = 's', s = 100, edgecolor='orange', linewidth='2', facecolor='none', label = 'Non Detection')
+    ax[0,0].scatter(totSch[2], yrhoCGpts, marker = 'o', s = 100, edgecolor='black', linewidth='2', facecolor='none', label = 'pts')
+    ax[0,0].scatter(x_keres, yrhokeres, marker = 'o', s = 100, edgecolor='black', linewidth='2', facecolor='none', label = 'pts')
     ax[0,0].errorbar(totSch[2], totSch[4], fmt = 'o', markersize = 10, color = 'red', label = 'Total')
 
     ax[0,0].plot(x1,ykeresph2, 'k--')
@@ -422,8 +457,8 @@ alphaerror = np.append(LMass[:,output['dalpha']], HMass[:,output['dalpha']])
 
 # density schechter ############################################################
 ND = np.vstack((LMassND, HMassND))
-total = np.vstack((LMass, HMass))
-total = np.vstack((total, ND))
+totaldet = np.vstack((LMass, HMass))
+total = np.vstack((totaldet, ND))
 #N, rho, xbins = Schechter(total, output['L_CO'], output['Vm'])
 #MH2 total
 # Nh2, rhoh2, xbinsh2 = Schechter(total, output['MH2'], output['Vm'])
@@ -433,6 +468,7 @@ LSch = Schechter(LMass, output['MH2'], output['Vm'], bins)
 HSch = Schechter(HMass, output['MH2'], output['Vm'], bins)
 NDSch = Schechter(ND, output['MH2'], output['Vm'], bins)
 totSch = Schechter(total, output['MH2'], output['Vm'], bins)
+detSch = Schechter(totaldet, output['MH2'], output['Vm'], bins)
 #Nh2ND2, rhoh2ND2, xbinsh2ND2 = Schechter(HMassND, output['MH2'], output['Vm'])
 # fit schechter ################################################################
 # x1,x2 = xbins, xbins[4:]
@@ -456,6 +492,8 @@ mst1 = 10**mst
 phist1 = 10**phist
 xkeres = np.linspace(7,11,200)
 x1 = 10**xkeres
+xnew = np.linspace(7,11,24)
+xnew1 = 10**xnew
 
 # bins = list(totSch[2])
 # for i in range(0,len(bins)):
@@ -468,23 +506,48 @@ yrho = ykeres2 + np.log10(x1)
 # ykeresph2 = ykeres2sh+totSch[2]
 
 #fit our data to a schechter function and plot
-CG_para = schechter.log_schechter_fit(totSch[2][6:14], totSch[1][6:14])
+CG_para = schechter.log_schechter_fit(totSch[2][6:], totSch[1][6:])
 y_CG = schechter.log_schechter(xkeres, *CG_para)
 yrhoCG = y_CG + xkeres
 
+yCGpts = schechter.log_schechter(totSch[2], *CG_para)
+yrhoCGpts = yCGpts + totSch[2]
+x_keres = 10**np.linspace(7, 11, 25)
+y_keres = np.log10((phist1)*((x_keres/(mst1))**(alpha+1))*np.exp(-x_keres/mst1)*np.log(10))
+x_keres = np.log10(x_keres)
+yrhokeres = y_keres + x_keres
+
+det_para = schechter.log_schechter_fit(detSch[2][5:], detSch[1][5:])
+y_det = schechter.log_schechter(xkeres, *det_para)
+
+
+
 er = errors(total, bins, totSch[1], output)
+erdet = errors(totaldet, bins, detSch[1], output)
 sigma = []
 for i in range(0, np.shape(er)[1]):
     eri = er[:,i]
     eri = eri[abs(eri)<99]
     sigma.append(np.std(eri))
 
-PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma)
-PlotRhoH2(LSch, HSch, NDSch, totSch, xkeres, np.log10(x1), yrho, yrhoCG)
+sigmadet = []
+for i in range(0, np.shape(erdet)[1]):
+    eri = er[:,i]
+    eri = eri[abs(eri)<99]
+    sigmadet.append(np.std(eri))
+
+PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpts, y_keres, x_keres)
+PlotSchechter2(totSch, sigma, y_CG, detSch, sigmadet, y_det, xkeres, ykeres2, )
+PlotRhoH2(LSch, HSch, NDSch, totSch, xkeres, np.log10(x1), yrho, yrhoCG, yrhoCGpts, yrhokeres, x_keres)
 PlotAlphaCO(total, output)
 PlotMsunvsMH2(total, output)
 
+x1 = np.log10(x1)
+print x1
 # print np.sum((10**totSch[4])*(totSch[2][1]-totSch[2][0]))/(10**7)
+print totSch[2][1]-totSch[2][0]
+print 'p_H2 COLD GASS', np.sum((10**yrhoCGpts)*(totSch[2][1]-totSch[2][0]))/(10**7)
+print 'p_H2 Keres', np.sum((10**yrhokeres)*(totSch[2][1]-totSch[2][0]))/(10**7)
 
 
 

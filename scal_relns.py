@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.rcParams as rc
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from scipy.optimize import curve_fit
 import numpy as np
@@ -46,6 +47,7 @@ def fitdata2():
     return data, fit
 
 def plotgioscal(data):
+    matplotlib.rc['xtick.labelsize']  = 18
     xmajorLocator   = MultipleLocator(0.5)
     xminorLocator   = MultipleLocator(0.1)
     ymajorLocator   = MultipleLocator(0.5)
@@ -56,9 +58,11 @@ def plotgioscal(data):
     ax[0,0].yaxis.set_major_locator(ymajorLocator)
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
     s = ax[0,0].scatter(data[:,1], data[:,0], c=data[:,2])
+    cbar = fig.colorbar(s)
     # ax[0,0].plot(x,y, linewidth = 1)
-    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
-    ax[0,0].set_ylabel(r'$\mathrm{log\, SFR\, [M_{\odot} \, yr^{-1}]}$', fontsize=18)
+    # ax[0,0].set_xticklabels(xticklabels, fontsize = 18)
+    ax[0,0].set_xlabel(r'$\mathrm{log\, SFR\, [M_{\odot} \, yr^{-1}]}$', fontsize=28)
+    ax[0,0].set_ylabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=28)
     plt.savefig('img/scal/scalrelns.eps', format='eps', dpi=250, transparent = False)
     plt.savefig('img/scal/scalrelns.pdf', format='pdf', dpi=250, transparent = False)
 
