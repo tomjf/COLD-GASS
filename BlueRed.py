@@ -39,21 +39,34 @@ def doubleschechter(L, Ls, dL, phi1, phi2, alph1, alph2):
         philist.append(exp*log*(phibit1+phibit2))
     return philist
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def mainSequence(blues, spread, Mindex):
+def mainSequence(blues, spread, Mindex, AnotP):
     newblues = np.zeros((np.shape(blues)[0], np.shape(blues)[1]+1))
     for index, M in enumerate(blues[:,Mindex]):
         newblues[index, :5] = blues[index, :5]
-        newblues[index,5] = - (2.332*M) + (0.4156*M*M) - (0.01828*M*M*M)
-        if spread == True:
-            newblues[index,5] += random.gauss(0,0.3)
+        if AnotP == True:
+            newblues[index,5] = - (2.332*M) + (0.4156*M*M) - (0.01828*M*M*M)
+            if spread == True:
+                newblues[index,5] += random.gauss(0,0.3)
+        else:
+            logsSFR = -10.0 - (0.1*(M-10.0))
+            newblues[index,5] = logsSFR + M
+            if spread == True:
+                newblues[index,5] += random.gauss(0,0.3)
     return newblues
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def cloud(reds):
     newreds = np.zeros((np.shape(reds)[0], np.shape(reds)[1]+1))
     for index, M in enumerate(reds[:,4]):
         newreds[index, :5] = reds[index, :5]
-        newreds[index, 5] = -1 + random.gauss(0,0.3)
+        newreds[index, 5] = -1 + random.gauss(0,0.4)
     return newreds
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def OmegaH2(bins, yrho):
+    rhocrit = 9.2*(10**(-27))
+    dMH2 = bins[1] - bins[0]
+    rhoH2 = (np.sum((10**yrho)*dMH2)*(2*(10**30)))/((3.086*(10**22))**3)
+    OmegaH2 = (rhoH2/rhocrit)*(10000)
+    return OmegaH2
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def PlotBaldry(L, yBaldry, yred, yblue):
     xmajorLocator   = MultipleLocator(0.5)
@@ -104,7 +117,12 @@ def PlotHist(bluepop, redpop):
     ax[0,0].set_ylabel(r'$\mathrm{Number \, Count}}$', fontsize = 20)
     ax[0,0].set_xlim(7.8,11.5)
     plt.savefig('img/scal/Hist.pdf', format='pdf', dpi=250, transparent = False)
-
+# schechter only ###############################################################
+def PlotRhoH2(totSch, x, y):
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].scatter(totSch[2], totSch[4], marker = 's', s = 100, edgecolor='blue', linewidth='2', facecolor='none', label = 'Low Mass')
+    ax[0,0].scatter(x, y, 'k--')
+    plt.savefig('img/scal/pH2.png')
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def PlotSimMH2(blues, reds):
     bins = np.linspace(7.5,11.5,25)
@@ -117,7 +135,7 @@ def PlotSimMH2(blues, reds):
     plt.savefig('img/scal/MH2SFR.pdf', format='pdf', dpi=250, transparent = False)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def PlotSchechter(totSch, redSch, blueSch, x, y_scalfit):
+def PlotSchechter(totSch, redSch, blueSch, x, y_scalfit, x_scal, y_keres):
     xmajorLocator   = MultipleLocator(0.5)
     xminorLocator   = MultipleLocator(0.1)
     ymajorLocator   = MultipleLocator(0.5)
@@ -127,8 +145,10 @@ def PlotSchechter(totSch, redSch, blueSch, x, y_scalfit):
     ax[0,0].xaxis.set_minor_locator(xminorLocator)
     ax[0,0].yaxis.set_major_locator(ymajorLocator)
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
-    ax[0,0].errorbar(totSch[2], totSch[1], fmt = 'o', markersize = 10, color = 'black', label = 'Total')
-    ax[0,0].plot(x, y_scalfit, color ='black', label = 'Total')
+    ax[0,0].errorbar(totSch[2], totSch[1], fmt = 'o', markersize = 10, color = 'red', label = 'Scaling Relation Method')
+    ax[0,0].plot(x, y_scalfit, color ='red', label = 'Scaling Relation Fit')
+    ax[0,0].plot(np.log10(x_keres), y_keres, 'k--', label = 'Keres+03')
+    # ax[0,0].scatter(x_scal, y_scal)
     # ax[0,0].errorbar(redSch[2], redSch[1], fmt = 'o', markersize = 10, color = 'red', label = 'Red')
     # ax[0,0].errorbar(blueSch[2], blueSch[1], fmt = 'o', markersize = 10, color = 'blue', label = 'Blue')
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
@@ -138,6 +158,29 @@ def PlotSchechter(totSch, redSch, blueSch, x, y_scalfit):
     plt.legend(fontsize = 13)
     plt.savefig('img/scal/MH2.eps', format='eps', dpi=250, transparent = False)
     plt.savefig('img/scal/MH2.pdf', format='pdf', dpi=250, transparent = False)
+    # plt.savefig('img/MH2.png', transparent = False ,dpi=250)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def PlotSchechterMass(MassSchB, MassSchR, L, yred, yblue):
+    xmajorLocator   = MultipleLocator(0.5)
+    xminorLocator   = MultipleLocator(0.1)
+    ymajorLocator   = MultipleLocator(0.5)
+    yminorLocator   = MultipleLocator(0.1)
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].xaxis.set_major_locator(xmajorLocator)
+    ax[0,0].xaxis.set_minor_locator(xminorLocator)
+    ax[0,0].yaxis.set_major_locator(ymajorLocator)
+    ax[0,0].yaxis.set_minor_locator(yminorLocator)
+    ax[0,0].errorbar(MassSchB[2], MassSchB[1], fmt = 'o', markersize = 10, color = 'blue', label = 'Blue')
+    ax[0,0].errorbar(MassSchR[2], MassSchR[1], fmt = 'o', markersize = 10, color = 'red', label = 'Red')
+    ax[0,0].plot(L,np.log10(yred), 'r', linewidth = 3)
+    ax[0,0].plot(L,np.log10(yblue), 'b', linewidth = 3)
+    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{*}\,[M_{sun}]}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{M}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
+    ax[0,0].set_ylim(-5, -1)
+    ax[0,0].set_xlim(8, 11.5)
+    plt.legend(fontsize = 13)
+    plt.savefig('img/scal/Mstar.eps', format='eps', dpi=250, transparent = False)
+    plt.savefig('img/scal/Mstar.pdf', format='pdf', dpi=250, transparent = False)
     # plt.savefig('img/MH2.png', transparent = False ,dpi=250)
 
 def createGals(red, V):
@@ -189,24 +232,26 @@ def errors(data, x, y, output):
     idx = np.linspace(0,len(data)-1,len(data))
     spread = np.zeros((eridx, len(x)-1))
     for i in range(0, eridx):
+        print float(i)/float(eridx)
         random.shuffle(idx)
         idx1 = idx[:eridx]
         newdata = np.zeros((eridx, np.shape(data)[1]))
         for j in range(0,len(newdata)):
             newdata[j,:] = data[idx[j],:]
         newdata[:,output['Vm']] = newdata[:,output['Vm']]*0.8
-        totSch = Schechter(newdata, output['MH2'], output['Vm'], x)
+        totSch = Schechter(newdata, 6, 7, x)
         drho = totSch[1] - y
         spread[i,:] = drho
     return spread
 #########################################################################
-V = 500000
+V = 100000
 L = np.linspace(8,11.9,24)
 LKeres = np.linspace(4,8,200)
 
 Spheroid = (3.67/10000), 10.74, -0.525
 Disk = (0.855/10000), 10.70, -1.39
 Keres = (7.2/10000), 7.0, -1.30
+output = { 'Vm':6, 'MH2':13}
 
 # #spheroid is red
 # ySpheroid = log_schechter(L, *Spheroid)
@@ -249,9 +294,9 @@ Baldry[:,2] = yBaldry
 # total = np.append(bluepop, redpop)
 
 # add starformation rates
-blues = mainSequence(blues, True, 4)
+blues = mainSequence(blues, True, 4, False)
 reds = cloud(reds)
-trend = mainSequence(Baldry, False, 0)
+trend = mainSequence(Baldry, False, 0, False)
 data = np.zeros((len(L),2))
 data[:,0] = L
 data[:,1] = trend[:,5]
@@ -268,20 +313,54 @@ reds = np.hstack((reds, np.zeros((len(reds),1))))
 blues[:,7] = V
 reds[:,7] = V
 total = np.vstack((blues, reds))
+# bins  = np.linspace(6, 10.5, 30)
 bins  = np.linspace(min(total[:,6]), max(total[:,6]), 25)
+massbins = np.linspace(8,11.5,25)
 totSch = Schechter(total, 6, 7, bins)
 redSch = Schechter(reds, 6, 7, bins)
 blueSch = Schechter(blues, 6, 7, bins)
+MassSchB = Schechter(blues, 4, 7, massbins)
+MassSchR = Schechter(reds, 4, 7, massbins)
 x = np.linspace(7.5,10.5,200)
-scalfit = log_schechter_fit(totSch[2][8:], totSch[1][8:])
-y_scalfit = log_schechter(x, *scalfit)
+scalfit = log_schechter_fit(totSch[2], totSch[1])
+x3 = np.linspace(7.5,10.5,16)
+y_scalfit = log_schechter(x3, *scalfit)
+
+x_scal = np.linspace(7.5, 10.5, 25)
+x_keres = 10**x_scal
+mst=np.log10((2.81*(10**9))/(0.7**2))
+alpha=-1.18
+phist=np.log10(0.0089*(0.7**3))
+mst1 = 10**mst
+phist1 = 10**phist
+y_keres = np.log10((phist1)*((x_keres/(mst1))**(alpha+1))*np.exp(-x_keres/mst1)*np.log(10))
 
 
+
+scal_para = log_schechter_fit(totSch[2][9:], totSch[1][9:])
+y_scal = log_schechter(x_scal, *scal_para)
+rhoscal = y_scal + x_scal
+
+# er = errors(total, bins, totSch[1], output)
+# sigma = []
+# for i in range(0, np.shape(er)[1]):
+#     eri = er[:,i]
+#     eri = eri[abs(eri)<99]
+#     sigma.append(np.std(eri))
+# print sigma
+
+print OmegaH2(totSch[2], totSch[1]+totSch[2])
+print y_scalfit
+print x3
+print OmegaH2(x3, x3+y_scalfit)
 PlotBaldry(L, yBaldry, yred, yblue)
 PlotMSFR(blues[:,4], reds[:,4], blues[:,5], reds[:,5], data)
 PlotHist(blues[:,4], reds[:,4])
 PlotSimMH2(blues, reds)
-PlotSchechter(totSch, redSch, blueSch, x, y_scalfit)
+# PlotRhoH2(totSch, x_scal, rhoscal)
+PlotSchechter(totSch, redSch, blueSch, x3, y_scalfit, x_scal, y_keres)
+PlotSchechterMass(MassSchB, MassSchR, L, yred, yblue)
+
 # bins = np.linspace(7.5,11.5,25)
 # fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
 # ax[0,0].hist(bluepop, bins, normed = 1, facecolor='blue', alpha = 0.1)

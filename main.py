@@ -199,6 +199,14 @@ def quarterRound(num, L):
         ans = round((num*4)+0.5)/4
     return ans
 
+# Omega H2 ################################################################
+def OmegaH2(bins, yrho):
+    rhocrit = 9.2*(10**(-27))
+    dMH2 = bins[1] - bins[0]
+    rhoH2 = (np.sum((10**yrho)*dMH2)*(2*(10**30)))/((3.086*(10**22))**3)
+    OmegaH2 = (rhoH2/rhocrit)*(10000)
+    return OmegaH2
+
 # schechter only ###############################################################
 def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpts, y_keres, x_keres):
     xmajorLocator   = MultipleLocator(0.5)
@@ -242,13 +250,13 @@ def PlotSchechter2(totSch, sigmatot, y_CG, detSch, sigmadet, y_det, xkeres, yker
     ax[0,0].xaxis.set_minor_locator(xminorLocator)
     ax[0,0].yaxis.set_major_locator(ymajorLocator)
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
-    ax[0,0].errorbar(totSch[2], totSch[1], yerr=sigmatot, fmt = 'o', markersize = 10, color = 'red', label = 'COLD GASS D')
-    ax[0,0].errorbar(detSch[2], detSch[1], yerr=sigmadet, fmt = 's', markersize = 10, color = 'blue', label = 'COLD GASS ND+D')
+    ax[0,0].errorbar(totSch[2], totSch[1], yerr=sigmatot, fmt = 'o', markersize = 10, color = 'red', label = 'COLD GASS ND+D')
+    ax[0,0].errorbar(detSch[2], detSch[1], yerr=sigmadet, fmt = 's', markersize = 10, color = 'blue', label = 'COLD GASS D')
     # ax[0,0].scatter(detSch[2], detSch[1], yerr=sigmadet, marker = 's', s = 100, edgecolor='blue', linewidth='2', facecolor='none', label = 'Detections')
     ax[0,0].fill_between(xkeres, y_CG, y_det, alpha = 0.5, color = 'green')
     ax[0,0].plot(xkeres, ykeres2, 'k--', label = 'Keres+03')
-    ax[0,0].plot(xkeres, y_CG, 'r-', label = 'COLD GASS D')
-    ax[0,0].plot(xkeres, y_det, 'b-', label = 'COLD GASS ND+D')
+    ax[0,0].plot(xkeres, y_CG, 'r-', label = 'COLD GASS ND+D')
+    ax[0,0].plot(xkeres, y_det, 'b-', label = 'COLD GASS D')
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
     ax[0,0].set_ylim(-5, -1)
@@ -263,12 +271,12 @@ def PlotSchechter2(totSch, sigmatot, y_CG, detSch, sigmadet, y_det, xkeres, yker
     # plt.savefig('img/MH2.png', transparent = False ,dpi=250)
 
 # schechter only ###############################################################
-def PlotRhoH2(LSch, HSch, NDSch, totSch, x, x1, ykeresph2, yrhoCG, yrhoCGpts, yrhokeres, xkeres):
+def PlotRhoH2(LSch, HSch, NDSch, totSch, x, x1, ykeresph2, yrhoCG, yrhoCGpts, yrhoCG2, yrhokeres, x_keres):
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
     ax[0,0].scatter(LSch[2], LSch[4], marker = 's', s = 100, edgecolor='blue', linewidth='2', facecolor='none', label = 'Low Mass')
     ax[0,0].scatter(HSch[2], HSch[4], marker = 's', s = 100, edgecolor='green', linewidth='2', facecolor='none', label = 'High Mass')
     ax[0,0].scatter(NDSch[2], NDSch[4], marker = 's', s = 100, edgecolor='orange', linewidth='2', facecolor='none', label = 'Non Detection')
-    ax[0,0].scatter(totSch[2], yrhoCGpts, marker = 'o', s = 100, edgecolor='black', linewidth='2', facecolor='none', label = 'pts')
+    ax[0,0].scatter(x_keres, yrhoCG2, marker = 'o', s = 100, edgecolor='black', linewidth='2', facecolor='none', label = 'pts')
     ax[0,0].scatter(x_keres, yrhokeres, marker = 'o', s = 100, edgecolor='black', linewidth='2', facecolor='none', label = 'pts')
     ax[0,0].errorbar(totSch[2], totSch[4], fmt = 'o', markersize = 10, color = 'red', label = 'Total')
 
@@ -506,13 +514,15 @@ yrho = ykeres2 + np.log10(x1)
 # ykeresph2 = ykeres2sh+totSch[2]
 
 #fit our data to a schechter function and plot
+x_keres = 10**np.linspace(7, 11, 25)
 CG_para = schechter.log_schechter_fit(totSch[2][6:], totSch[1][6:])
 y_CG = schechter.log_schechter(xkeres, *CG_para)
 yrhoCG = y_CG + xkeres
+y_CG2 = schechter.log_schechter(np.log10(x_keres), *CG_para)
+yrhoCG2 = y_CG2 + np.log10(x_keres)
 
 yCGpts = schechter.log_schechter(totSch[2], *CG_para)
 yrhoCGpts = yCGpts + totSch[2]
-x_keres = 10**np.linspace(7, 11, 25)
 y_keres = np.log10((phist1)*((x_keres/(mst1))**(alpha+1))*np.exp(-x_keres/mst1)*np.log(10))
 x_keres = np.log10(x_keres)
 yrhokeres = y_keres + x_keres
@@ -538,19 +548,27 @@ for i in range(0, np.shape(erdet)[1]):
 
 PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpts, y_keres, x_keres)
 PlotSchechter2(totSch, sigma, y_CG, detSch, sigmadet, y_det, xkeres, ykeres2, )
-PlotRhoH2(LSch, HSch, NDSch, totSch, xkeres, np.log10(x1), yrho, yrhoCG, yrhoCGpts, yrhokeres, x_keres)
+PlotRhoH2(LSch, HSch, NDSch, totSch, xkeres, np.log10(x1), yrho, yrhoCG, yrhoCGpts, yrhoCG2, yrhokeres, x_keres)
 PlotAlphaCO(total, output)
 PlotMsunvsMH2(total, output)
-
+print '@@@@', x_keres, yrhokeres
 x1 = np.log10(x1)
 print x1
 # print np.sum((10**totSch[4])*(totSch[2][1]-totSch[2][0]))/(10**7)
 print totSch[2][1]-totSch[2][0]
 print 'p_H2 COLD GASS', np.sum((10**yrhoCGpts)*(totSch[2][1]-totSch[2][0]))/(10**7)
 print 'p_H2 Keres', np.sum((10**yrhokeres)*(totSch[2][1]-totSch[2][0]))/(10**7)
-
-
-
+print 'p_H2 COLD GASS', OmegaH2(x_keres, yrhoCG2), np.sqrt(np.sum(np.array(sigma)*np.array(sigma)))
+print 'p_H2 Keres', OmegaH2(x_keres, yrhokeres)
+print x_keres[0]
+fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+ax[0,0].scatter(x_keres, yrhokeres, marker = 's', s = 100, edgecolor='blue', linewidth='2', facecolor='none', label = 'Low Mass')
+ax[0,0].scatter(x_keres, yrhoCG2, marker = 's', s = 100, edgecolor='green', linewidth='2', facecolor='none', label = 'High Mass')
+ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
+ax[0,0].set_ylabel(r'$\mathrm{log\, \rho_{H2}\, [M_{\odot}\, Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
+ax[0,0].set_ylim(4, 7.5)
+ax[0,0].set_xlim(7, 11)
+plt.savefig('img/schechter/pH2.pdf', format='pdf', dpi=250, transparent = False)
 
 
 # # gas fractions ################################################################

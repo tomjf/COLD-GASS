@@ -1,6 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.rcParams as rc
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from scipy.optimize import curve_fit
 import numpy as np
@@ -47,7 +46,6 @@ def fitdata2():
     return data, fit
 
 def plotgioscal(data):
-    matplotlib.rc['xtick.labelsize']  = 18
     xmajorLocator   = MultipleLocator(0.5)
     xminorLocator   = MultipleLocator(0.1)
     ymajorLocator   = MultipleLocator(0.5)
