@@ -5,6 +5,8 @@ from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from schechter import log_schechter_fit, log_schechter
 import random
 import scal_relns
+import atpy
+from scipy import integrate
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # def log_schechter(logL, log_rho, log_Lstar, alpha):
 #     rholist = []
@@ -67,6 +69,36 @@ def OmegaH2(bins, yrho):
     rhoH2 = (np.sum((10**yrho)*dMH2)*(2*(10**30)))/((3.086*(10**22))**3)
     OmegaH2 = (rhoH2/rhocrit)*(10000)
     return OmegaH2
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def Vm(data, minz, maxz):
+    Omega = 2.295
+    VVmlist = np.zeros((len(data),1))
+    Vmlist = np.zeros((len(data),1))
+    x,y = np.zeros((1,1)), np.zeros((1,1))
+    x[0,0], y[0,0] = minz, maxz
+    D_in = float(lumdistance(x,0)[0,1])
+    D_out = float(lumdistance(y,0)[0,1])
+    Vm =  (1.0/3.0)*((D_out**3)-(D_in**3))*(Omega)
+    Vmlist = np.full((len(data),1), Vm)
+    data = np.hstack((data,Vmlist))
+    return data
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def lumdistance(data, zaxis):
+    omega_m = 0.31                          # from Planck
+    omega_l = 0.69                          # from Planck
+    c = 3*math.pow(10,5)                    # in km/s
+    Ho = 75                                 # in km/(s Mpc)
+    f = lambda x : (((omega_m*((1+z)**3))+omega_l)**-0.5)
+    Dlvals = np.zeros((len(data),1))
+    for i in range(0,len(data)):
+        z = data[i,zaxis]
+        integral = integrate.quad(f, 0.0, z)    # numerically integrate to calculate luminosity distance
+        Dm = (c/Ho)*integral[0]
+        Dl = (1+z)*Dm                           # calculate luminosity distance
+        #DH = (c*z)/Ho                          # calculate distance from Hubble law for comparison
+        Dlvals[i,0] = Dl
+    data = np.hstack((data,Dlvals))
+    return data
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def PlotBaldry(L, yBaldry, yred, yblue):
     xmajorLocator   = MultipleLocator(0.5)
@@ -183,6 +215,30 @@ def PlotSchechterMass(MassSchB, MassSchR, L, yred, yblue):
     plt.savefig('img/scal/Mstar.pdf', format='pdf', dpi=250, transparent = False)
     # plt.savefig('img/MH2.png', transparent = False ,dpi=250)
 
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def PlotSchechSDSS(sdssSchech, x_keres, y_keres):
+    xmajorLocator   = MultipleLocator(0.5)
+    xminorLocator   = MultipleLocator(0.1)
+    ymajorLocator   = MultipleLocator(0.5)
+    yminorLocator   = MultipleLocator(0.1)
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].xaxis.set_major_locator(xmajorLocator)
+    ax[0,0].xaxis.set_minor_locator(xminorLocator)
+    ax[0,0].yaxis.set_major_locator(ymajorLocator)
+    ax[0,0].yaxis.set_minor_locator(yminorLocator)
+    ax[0,0].errorbar(sdssSchech[2], sdssSchech[1], fmt = 'o', markersize = 10, color = 'red', label = 'Scaling Relation Method')
+    ax[0,0].plot(np.log10(x_keres), y_keres, 'k--', label = 'Keres+03')
+    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
+    ax[0,0].set_ylim(-5, -1)
+    ax[0,0].set_xlim(7.5, 10.5)
+    plt.legend(fontsize = 13)
+    plt.savefig('img/scal/SDSS.eps', format='eps', dpi=250, transparent = False)
+    plt.savefig('img/scal/SDSS.pdf', format='pdf', dpi=250, transparent = False)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# create galaxies ##############################################################
+
 def createGals(red, V):
     # make a large list with the property of each galaxy.
     for i in range(0,len(red)):
@@ -243,7 +299,41 @@ def errors(data, x, y, output):
         drho = totSch[1] - y
         spread[i,:] = drho
     return spread
-#########################################################################
+################################################################################
+def sdssMethod(zl, zh):
+    galinfo = atpy.Table('data/sdss/gal_info_dr7_v5_2.fit')
+    sfr = atpy.Table('data/sdss/gal_totsfr_dr7_v5_2.fits')
+    mstar = atpy.Table('data/sdss/totlgm_dr7_v5_2.fit')
+    sdssData = np.zeros((len(galinfo),3))
+    for i in range(0,len(galinfo)):
+        # redshift from galinfo
+        sdssData[i,0] = galinfo[i][12]
+        # stellar mass from totlgm
+        sdssData[i,1] = mstar[i][6]
+        # total sfr from totsfr
+        sdssData[i,2] = sfr[i][0]
+    sdssData = sdssData[sdssData[:,0] > zl]
+    sdssData = sdssData[sdssData[:,0] < zh]
+    sdssData = sdssData[sdssData[:,1] > 4]
+    return sdssData
+################################################################################
+def SFRMH2(data):
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].scatter(data[:,2], data[:,3], s = 1)
+    ax[0,0].set_xlim(-1.5, 2)
+    ax[0,0].set_ylim(7.5, 11)
+    ax[0,0].set_xlabel(r'$\mathrm{log\, SFR\,[M_{sun}\,yr^{-1}]}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
+    plt.savefig('img/scal/sfrmh2.pdf', format='pdf', dpi=250, transparent = False)
+def SFRMSTAR(data):
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].scatter(data[:,1], data[:,2], s = 1)
+    ax[0,0].set_xlim(8, 11.5)
+    ax[0,0].set_ylim(-2.5, 1)
+    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{*}\,[M_{sun}]}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{log\, SFR\,[M_{sun}\,yr^{-1}]}$', fontsize=18)
+    plt.savefig('img/scal/sfrmstar.pdf', format='pdf', dpi=250, transparent = False)
+################################################################################
 V = 100000
 L = np.linspace(8,11.9,24)
 LKeres = np.linspace(4,8,200)
@@ -304,6 +394,7 @@ data[:,1] = trend[:,5]
 datagio, fit = scal_relns.fitdata2()
 blues = np.hstack((blues, np.zeros((len(blues),1))))
 reds = np.hstack((reds, np.zeros((len(reds),1))))
+print '@@@@', blues[:,4], blues[:,5]
 blues[:,6] = scal_relns.second2var((blues[:,4], blues[:,5]), *fit[0])
 reds[:,6] = scal_relns.second2var((reds[:,4], reds[:,5]), *fit[0])
 
@@ -348,6 +439,18 @@ rhoscal = y_scal + x_scal
 #     eri = eri[abs(eri)<99]
 #     sigma.append(np.std(eri))
 # print sigma
+
+### SDSS METHOD~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sdssData = sdssMethod(0.005, 0.02)
+sdssData = np.hstack((sdssData, np.zeros((len(sdssData),1))))
+sdssData[:,3] = scal_relns.second2var((sdssData[:,1], sdssData[:,2]), *fit[0])
+sdssData = Vm(sdssData, min(sdssData[:,0]), max(sdssData[:,0]))
+sdssSchech = Schechter(sdssData, 3, 4, bins)
+PlotSchechSDSS(sdssSchech, x_keres, y_keres)
+SFRMH2(sdssData)
+SFRMSTAR(sdssData)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 print OmegaH2(totSch[2], totSch[1]+totSch[2])
 print y_scalfit
