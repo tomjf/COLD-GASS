@@ -333,6 +333,15 @@ def SFRMSTAR(data):
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{*}\,[M_{sun}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, SFR\,[M_{sun}\,yr^{-1}]}$', fontsize=18)
     plt.savefig('img/scal/sfrmstar.pdf', format='pdf', dpi=250, transparent = False)
+def SFRHist(sdssData, gioData):
+    bins = np.linspace(-3.0, 2.0, 25)
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].hist(sdssData[:,2], bins, normed = 1, alpha=0.5, color = 'g', label = 'SDSS')
+    ax[0,0].hist(gioData[:,1], bins, normed = 1, alpha=0.5, color = 'm', label = 'Gio Data')
+    ax[0,0].set_ylabel(r'$\mathrm{Number \,(normalised)}$', fontsize=18)
+    ax[0,0].set_xlabel(r'$\mathrm{log\, SFR\,[M_{\odot}\,yr^{-1}]}$', fontsize=18)
+    plt.legend(fontsize = 13)
+    plt.savefig('img/scal/sfrhist.pdf', format='pdf', dpi=250, transparent = False)
 ################################################################################
 V = 100000
 L = np.linspace(8,11.9,24)
@@ -391,12 +400,13 @@ data = np.zeros((len(L),2))
 data[:,0] = L
 data[:,1] = trend[:,5]
 
-datagio, fit = scal_relns.fitdata2()
+datagio, fit = scal_relns.fitdata()
 blues = np.hstack((blues, np.zeros((len(blues),1))))
 reds = np.hstack((reds, np.zeros((len(reds),1))))
-print '@@@@', blues[:,4], blues[:,5]
-blues[:,6] = scal_relns.second2var((blues[:,4], blues[:,5]), *fit[0])
-reds[:,6] = scal_relns.second2var((reds[:,4], reds[:,5]), *fit[0])
+# blues[:,6] = scal_relns.second2var((blues[:,4], blues[:,5]), *fit[0])
+# reds[:,6] = scal_relns.second2var((reds[:,4], reds[:,5]), *fit[0])
+blues[:,6] = scal_relns.third(blues[:,5], *fit[0])
+reds[:,6] = scal_relns.third(reds[:,5], *fit[0])
 
 # add V
 blues = np.hstack((blues, np.zeros((len(blues),1))))
@@ -443,7 +453,8 @@ rhoscal = y_scal + x_scal
 ### SDSS METHOD~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 sdssData = sdssMethod(0.005, 0.02)
 sdssData = np.hstack((sdssData, np.zeros((len(sdssData),1))))
-sdssData[:,3] = scal_relns.second2var((sdssData[:,1], sdssData[:,2]), *fit[0])
+# sdssData[:,3] = scal_relns.second2var((sdssData[:,1], sdssData[:,2]), *fit[0])
+sdssData[:,3] = scal_relns.third(sdssData[:,2], *fit[0])
 sdssData = Vm(sdssData, min(sdssData[:,0]), max(sdssData[:,0]))
 sdssSchech = Schechter(sdssData, 3, 4, bins)
 PlotSchechSDSS(sdssSchech, x_keres, y_keres)
@@ -463,6 +474,7 @@ PlotSimMH2(blues, reds)
 # PlotRhoH2(totSch, x_scal, rhoscal)
 PlotSchechter(totSch, redSch, blueSch, x3, y_scalfit, x_scal, y_keres)
 PlotSchechterMass(MassSchB, MassSchR, L, yred, yblue)
+SFRHist(sdssData, datagio)
 
 # bins = np.linspace(7.5,11.5,25)
 # fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))

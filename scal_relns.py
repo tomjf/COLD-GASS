@@ -35,8 +35,6 @@ def fitdata():
     df = pd.read_csv('data/cold_gass_data_gio.csv')
     data = df[['Log_Mh2', 'Log_SFR', 'Log_M', 'Log_LCO']].values
     fit = polyfit(data, 3)
-    x = np.linspace(-1.5,2.0,300)
-    y = third(x, *fit[0])
     return data, fit
 
 def fitdata2():
