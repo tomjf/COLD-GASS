@@ -344,7 +344,25 @@ def errors(data, x, y, output):
         drho = totSch[1] - y
         spread[i,:] = drho
     return spread
-
+################################################################################
+def PlotMstarMH2(data, Mstarindex, MH2index):
+    xmajorLocator   = MultipleLocator(0.5)
+    xminorLocator   = MultipleLocator(0.1)
+    ymajorLocator   = MultipleLocator(0.5)
+    yminorLocator   = MultipleLocator(0.1)
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].xaxis.set_major_locator(xmajorLocator)
+    ax[0,0].xaxis.set_minor_locator(xminorLocator)
+    ax[0,0].yaxis.set_major_locator(ymajorLocator)
+    ax[0,0].yaxis.set_minor_locator(yminorLocator)
+    ax[0,0].scatter(data[:,Mstarindex], data[:,MH2index])
+    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
+    # ax[0,0].set_ylim(-5, -1)
+    # ax[0,0].set_xlim(7.5, 10.5)
+    ax[0,0].tick_params(axis='x',which='minor',bottom='on')
+    # plt.legend(fontsize = 12)
+    plt.savefig('img/schechter/MstarvsMH2.pdf', format='pdf', dpi=250, transparent = False)
 ## Read data from tables #######################################################
 highM = atpy.Table('COLDGASS_DR3_with_Z.fits')
 lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
@@ -551,6 +569,7 @@ PlotSchechter2(totSch, sigma, y_CG, detSch, sigmadet, y_det, xkeres, ykeres2, )
 PlotRhoH2(LSch, HSch, NDSch, totSch, xkeres, np.log10(x1), yrho, yrhoCG, yrhoCGpts, yrhoCG2, yrhokeres, x_keres)
 PlotAlphaCO(total, output)
 PlotMsunvsMH2(total, output)
+PlotMstarMH2(total, output['M*'], output['MH2'])
 print '@@@@', x_keres, yrhokeres
 x1 = np.log10(x1)
 print x1

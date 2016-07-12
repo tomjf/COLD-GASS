@@ -11,5 +11,7 @@
 /Progress_Report.pdf
 *.fit
 /data/sdss/gal_info_dr7_v5_2.fit
-/data/sdss/gal_totsfr_dr7_v5_2.fit
+/data/sdss/gal_totsfr_dr7_v5_2.fits
 /data/sdss/totlgm_dr7_v5_2.fit
+scal_relns.pyc
+schechter.pyc
