@@ -333,12 +333,13 @@ def SFRMSTAR(data):
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{*}\,[M_{sun}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, SFR\,[M_{sun}\,yr^{-1}]}$', fontsize=18)
     plt.savefig('img/scal/sfrmstar.pdf', format='pdf', dpi=250, transparent = False)
-def SFRHist(sdssData, gioData):
+def SFRHist(sdssData, gioData, total):
     bins = np.linspace(-3.0, 2.0, 25)
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
     ax[0,0].hist(sdssData[:,2], bins, normed = 1, alpha=0.5, color = 'g', label = 'SDSS')
     ax[0,0].hist(gioData[:,1], bins, normed = 1, alpha=0.5, color = 'm', label = 'Gio Data')
     ax[0,0].set_ylabel(r'$\mathrm{Number \,(normalised)}$', fontsize=18)
+    ax[0,0].hist(total[:,5], bins, normed = 1, alpha=0.2, color = 'c', label = 'Simulated')
     ax[0,0].set_xlabel(r'$\mathrm{log\, SFR\,[M_{\odot}\,yr^{-1}]}$', fontsize=18)
     plt.legend(fontsize = 13)
     plt.savefig('img/scal/sfrhist.pdf', format='pdf', dpi=250, transparent = False)
@@ -474,7 +475,7 @@ PlotSimMH2(blues, reds)
 # PlotRhoH2(totSch, x_scal, rhoscal)
 PlotSchechter(totSch, redSch, blueSch, x3, y_scalfit, x_scal, y_keres)
 PlotSchechterMass(MassSchB, MassSchR, L, yred, yblue)
-SFRHist(sdssData, datagio)
+SFRHist(sdssData, datagio, total)
 
 # bins = np.linspace(7.5,11.5,25)
 # fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
