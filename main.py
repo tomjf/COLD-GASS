@@ -362,7 +362,7 @@ def PlotMstarMH2(data, Mstarindex, MH2index):
     # ax[0,0].set_xlim(7.5, 10.5)
     ax[0,0].tick_params(axis='x',which='minor',bottom='on')
     # plt.legend(fontsize = 12)
-    plt.savefig('img/schechter/MstarvsMH2.pdf', format='pdf', dpi=250, transparent = False)
+    plt.savefig('img/schechter/MstarvsMH2.png', dpi=250, transparent = False)
 ## Read data from tables #######################################################
 highM = atpy.Table('COLDGASS_DR3_with_Z.fits')
 lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
