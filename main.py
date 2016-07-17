@@ -118,12 +118,16 @@ def H2Conversion(data, Zindex, LCOindex, *args):
 
 # Vm calc ######################################################################
 def Vm(data, Dlaxis, minz, maxz, L):
-    Omega = 0.483979888662
-    if L == True:
+    # Omega = 0.483979888662
+    Omega = 0.427304474238
+    if L == 1:
         N_COLDGASS = 89.0
         N_SDSS = 764.0
-    else:
+    elif L == 2:
         N_COLDGASS = 366.0
+        N_SDSS = 12006.0
+    elif L == 3:
+        N_COLDGASS = 500.0
         N_SDSS = 12006.0
     VVmlist = np.zeros((len(data),1))
     Vmlist = np.zeros((len(data),1))
@@ -363,10 +367,34 @@ def PlotMstarMH2(data, Mstarindex, MH2index):
     ax[0,0].tick_params(axis='x',which='minor',bottom='on')
     # plt.legend(fontsize = 12)
     plt.savefig('img/schechter/MstarvsMH2.png', dpi=250, transparent = False)
+# Plot Schechter from Full dataset #############################################
+def PlotSchechterFull(FullDetSchech, FullNDSchech, FullSchech, x_keres, y_keres, y_ober):
+    xmajorLocator   = MultipleLocator(0.5)
+    xminorLocator   = MultipleLocator(0.1)
+    ymajorLocator   = MultipleLocator(0.5)
+    yminorLocator   = MultipleLocator(0.1)
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].xaxis.set_major_locator(xmajorLocator)
+    ax[0,0].xaxis.set_minor_locator(xminorLocator)
+    ax[0,0].yaxis.set_major_locator(ymajorLocator)
+    ax[0,0].yaxis.set_minor_locator(yminorLocator)
+    ax[0,0].errorbar(FullDetSchech[2], FullDetSchech[1], fmt = 'o', markersize = 10, color = 'red', label = 'Detections')
+    ax[0,0].errorbar(FullNDSchech[2], FullNDSchech[1], fmt = 's', markersize = 10, color = 'blue', label = 'Non-Detections')
+    ax[0,0].errorbar(FullSchech[2], FullSchech[1], fmt = 's', markersize = 10, color = 'green', label = 'Both')
+    ax[0,0].plot(x_keres, y_keres, 'k--', label = 'Keres+03')
+    ax[0,0].plot(x_keres, y_ober, 'k-', label = 'Obreschkow+09')
+    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
+    ax[0,0].set_ylim(-5, -1)
+    ax[0,0].set_xlim(7.5, 10.5)
+    ax[0,0].tick_params(axis='x',which='minor',bottom='on')
+    plt.legend(fontsize = 12)
+    plt.savefig('img/schechter/MH2_FULL.pdf', format='pdf', dpi=250, transparent = False)
 ## Read data from tables #######################################################
 highM = atpy.Table('COLDGASS_DR3_with_Z.fits')
 lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
 SAMI = asciidata.open('SAMI_IRAM_data.txt')
+Full = atpy.Table('data/COLDGASS_full.fits')
 # Sort Data ####################################################################
 # def dict for indices #########################################################
 l = {'S_CO':11, 'z':3, 'M*':4, 'Zo':5, 'SFR':6, 'flag':15, 'NUV-r': 8, 'L_CO': 12}
@@ -401,6 +429,24 @@ sSFRlist = sSFR(list(lowM[l['SFR']]), list(lowM[l['M*']]))
 LMass[:,output['sSFR']] = sSFRlist                                      # sSFR
 LMass[:,output['NUV-r']] = list(lowM[l['NUV-r']])      # NUV-r
 
+################################################################################
+FullData = np.zeros((len(Full),6))
+for i,rows in enumerate(Full):
+    #z|flag|MH2|limMH2|MH2_both|Lumdist
+    FullData[i,0] = rows[9]
+    FullData[i,1] = rows[37]
+    FullData[i,2] = rows[51]
+    FullData[i,3] = rows[52]
+    FullData[i,4] = 10**(FullData[i,2] + FullData[i,3])
+    FullData[i,5] = rows[10]
+FullData = Vm(FullData, 5, min(FullData[:,0]), max(FullData[:,0]), 3)
+FullData[:,2] = 10**FullData[:,2]
+FullData[:,3] = 10**FullData[:,3]
+#0:z|1:flag|2:MH2|3:limMH2|4:MH2_both|5:Lumdist|6:V/Vm|7:Vm
+FullDet = FullData[FullData[:,1] == 1]
+FullND = FullData[FullData[:,1] == 2]
+
+
 # Separate into non detections and detections
 LMassND, HMassND = LMass, HMass
 LMass = NonDetect(LMass, output['flag'], True)
@@ -427,10 +473,10 @@ LMassND = lumdistance(LMassND, output['z'])
 HMassND = lumdistance(HMassND, output['z'])
 # Calculate Vm #################################################################
 # | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm |
-LMass = Vm(LMass,output['D_L'], min(LMass[:,output['z']]), max(LMass[:,output['z']]), True)
-HMass = Vm(HMass,output['D_L'], min(HMass[:,output['z']]), max(HMass[:,output['z']]), False)
-LMassND = Vm(LMassND, output['D_L'], min(LMass[:,output['z']]), max(LMass[:,output['z']]), True)
-HMassND = Vm(HMassND, output['D_L'], min(HMass[:,output['z']]), max(HMass[:,output['z']]), False)
+LMass = Vm(LMass,output['D_L'], min(LMass[:,output['z']]), max(LMass[:,output['z']]), 1)
+HMass = Vm(HMass,output['D_L'], min(HMass[:,output['z']]), max(HMass[:,output['z']]), 2)
+LMassND = Vm(LMassND, output['D_L'], min(LMass[:,output['z']]), max(LMass[:,output['z']]), 1)
+HMassND = Vm(HMassND, output['D_L'], min(HMass[:,output['z']]), max(HMass[:,output['z']]), 2)
 # Calculate Luminosity Values ##################################################
 # | S_CO | z | flag | Mgal | Zo | D_L | V/Vm | Vm | L_CO |
 LMass = lCalc(LMass,output['S_CO'],output['z'],output['D_L'],True)
@@ -495,6 +541,9 @@ HSch = Schechter(HMass, output['MH2'], output['Vm'], bins)
 NDSch = Schechter(ND, output['MH2'], output['Vm'], bins)
 totSch = Schechter(total, output['MH2'], output['Vm'], bins)
 detSch = Schechter(totaldet, output['MH2'], output['Vm'], bins)
+FullDetSchech = Schechter(FullDet, 2, 7, bins)
+FullNDSchech = Schechter(FullND, 3, 7, bins)
+FullSchech = Schechter(FullData, 4, 7, bins)
 #Nh2ND2, rhoh2ND2, xbinsh2ND2 = Schechter(HMassND, output['MH2'], output['Vm'])
 # fit schechter ################################################################
 # x1,x2 = xbins, xbins[4:]
@@ -532,7 +581,13 @@ yrho = ykeres2 + np.log10(x1)
 # ykeresph2 = ykeres2sh+totSch[2]
 
 #fit our data to a schechter function and plot
-x_keres = 10**np.linspace(7, 11, 25)
+x_keres = 10**np.linspace(7, 11, 500)
+##ober##########################################################################
+mstcorr = (7.5*(10**8))/(0.7**2)
+alphacorr = -1.07
+phistcorr = 0.0243*(0.7**3)
+y_ober = np.log10((phistcorr)*((x_keres/(mstcorr))**(alphacorr+1))*np.exp(-x_keres/mstcorr)*np.log(10))
+################################################################################
 CG_para = schechter.log_schechter_fit(totSch[2][6:], totSch[1][6:])
 y_CG = schechter.log_schechter(xkeres, *CG_para)
 yrhoCG = y_CG + xkeres
@@ -547,6 +602,7 @@ yrhokeres = y_keres + x_keres
 
 det_para = schechter.log_schechter_fit(detSch[2][5:], detSch[1][5:])
 y_det = schechter.log_schechter(xkeres, *det_para)
+
 
 
 
@@ -569,12 +625,10 @@ PlotSchechter2(totSch, sigma, y_CG, detSch, sigmadet, y_det, xkeres, ykeres2, )
 PlotRhoH2(LSch, HSch, NDSch, totSch, xkeres, np.log10(x1), yrho, yrhoCG, yrhoCGpts, yrhoCG2, yrhokeres, x_keres)
 PlotAlphaCO(total, output)
 PlotMsunvsMH2(total, output)
-PlotMstarMH2(total, output['M*'], output['MH2'])
-print '@@@@', x_keres, yrhokeres
+PlotSchechterFull(FullDetSchech, FullNDSchech, FullSchech, x_keres, y_keres, y_ober)
+# PlotMstarMH2(total, output['M*'], output['MH2'])
 x1 = np.log10(x1)
-print x1
 # print np.sum((10**totSch[4])*(totSch[2][1]-totSch[2][0]))/(10**7)
-print totSch[2][1]-totSch[2][0]
 print 'p_H2 COLD GASS', np.sum((10**yrhoCGpts)*(totSch[2][1]-totSch[2][0]))/(10**7)
 print 'p_H2 Keres', np.sum((10**yrhokeres)*(totSch[2][1]-totSch[2][0]))/(10**7)
 print 'p_H2 COLD GASS', OmegaH2(x_keres, yrhoCG2), np.sqrt(np.sum(np.array(sigma)*np.array(sigma)))
