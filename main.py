@@ -16,7 +16,7 @@ def lumdistance(data, zaxis):
     omega_m = 0.31                          # from Planck
     omega_l = 0.69                          # from Planck
     c = 3*math.pow(10,5)                    # in km/s
-    Ho = 75                                 # in km/(s Mpc)
+    Ho = 69                                 # in km/(s Mpc)
     f = lambda x : (((omega_m*((1+z)**3))+omega_l)**-0.5)
     Dlvals = np.zeros((len(data),1))
     for i in range(0,len(data)):
@@ -147,12 +147,14 @@ def Vm(data, Dlaxis, minz, maxz, L):
 
 # schechter bins ###############################################################
 def Schechter(data, LCOaxis, Vmaxis, bins):
+    # print bins
     l = data[:,LCOaxis]
     l = np.log10(l)
     rho, N, xbins, sigma, rhoH2 = [], [], [], [], []
     for i in range (1,len(bins)):
         p, Num, o, pH2 = 0, 0, 0, 0
         for j in range(0,len(l)):
+            # print l[j], bins[i-1], bins[i]
             if l[j] >= bins[i-1] and l[j] < bins[i]:
                 p += 1/data[j,Vmaxis]
                 o += 1/(data[j,Vmaxis]**2)
@@ -222,8 +224,8 @@ def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpt
     ax[0,0].xaxis.set_minor_locator(xminorLocator)
     ax[0,0].yaxis.set_major_locator(ymajorLocator)
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
-    ax[0,0].scatter(totSch[2], yCGpts, marker = 'o', s = 100, edgecolor='black', linewidth='2', facecolor='none', label = 'pts')
-    ax[0,0].scatter(x_keres, y_keres, marker = 'o', s = 100, edgecolor='black', linewidth='2', facecolor='none', label = 'pts')
+    # ax[0,0].scatter(totSch[2], yCGpts, marker = 'o', s = 100, edgecolor='black', linewidth='2', facecolor='none', label = 'pts')
+    # ax[0,0].scatter(x_keres, y_keres, marker = 'o', s = 100, edgecolor='black', linewidth='2', facecolor='none', label = 'pts')
     ax[0,0].scatter(LSch[2], LSch[1], marker = 's', s = 100, edgecolor='blue', linewidth='2', facecolor='none', label = 'Low Mass')
     ax[0,0].scatter(HSch[2], HSch[1], marker = 's', s = 100, edgecolor='green', linewidth='2', facecolor='none', label = 'High Mass')
     ax[0,0].scatter(NDSch[2], NDSch[1], marker = 's', s = 100, edgecolor='orange', linewidth='2', facecolor='none', label = 'Non Detection')
@@ -349,24 +351,19 @@ def errors(data, x, y, output):
         spread[i,:] = drho
     return spread
 ################################################################################
-def PlotMstarMH2(data, Mstarindex, MH2index):
-    xmajorLocator   = MultipleLocator(0.5)
-    xminorLocator   = MultipleLocator(0.1)
-    ymajorLocator   = MultipleLocator(0.5)
-    yminorLocator   = MultipleLocator(0.1)
+def PlotMstarMH2(total, FullData, ND, FullND, output):
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
-    ax[0,0].xaxis.set_major_locator(xmajorLocator)
-    ax[0,0].xaxis.set_minor_locator(xminorLocator)
-    ax[0,0].yaxis.set_major_locator(ymajorLocator)
-    ax[0,0].yaxis.set_minor_locator(yminorLocator)
-    ax[0,0].scatter(data[:,Mstarindex], data[:,MH2index])
-    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
-    ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
-    # ax[0,0].set_ylim(-5, -1)
-    # ax[0,0].set_xlim(7.5, 10.5)
-    ax[0,0].tick_params(axis='x',which='minor',bottom='on')
-    # plt.legend(fontsize = 12)
-    plt.savefig('img/schechter/MstarvsMH2.png', dpi=250, transparent = False)
+    ax[0,0].scatter(total[:,output['M*']], np.log10(total[:,output['MH2']]), color = 'r', label = 'Mine', s=10)
+    ax[0,0].scatter(FullData[:,6], np.log10(FullData[:,4]), color = 'k', label = 'Amelie', s=10)
+    ax[0,0].scatter(FullND[:,6], np.log10(FullND[:,4]), color = 'c', label = 'Amelie ND', s=10)
+    ax[0,0].scatter(ND[:,output['M*']], np.log10(ND[:,output['MH2']]), color = 'g', label = 'My ND', s=10)
+    ax[0,0].vlines(10,7.5,10.5, color='k')
+    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{*}\,[M_{\odot}]}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
+    ax[0,0].set_ylim(7.5, 10.5)
+    ax[0,0].set_xlim(8.5, 12.0)
+    plt.legend(fontsize = 12)
+    plt.savefig('img/schechter/MstarvsMH2.pdf', dpi=250, transparent = False)
 # Plot Schechter from Full dataset #############################################
 def PlotSchechterFull(FullDetSchech, FullNDSchech, FullSchech, x_keres, y_keres, y_ober):
     xmajorLocator   = MultipleLocator(0.5)
@@ -390,6 +387,34 @@ def PlotSchechterFull(FullDetSchech, FullNDSchech, FullSchech, x_keres, y_keres,
     ax[0,0].tick_params(axis='x',which='minor',bottom='on')
     plt.legend(fontsize = 12)
     plt.savefig('img/schechter/MH2_FULL.pdf', format='pdf', dpi=250, transparent = False)
+################################################################################
+def comparefull(Full, compare):
+    data = np.zeros((len(Full), len(compare)))
+    for i,rows in enumerate(Full):
+        data[i,0] = rows[compare['ID']]
+        data[i,1] = rows[compare['flag']]
+        data[i,2] = rows[compare['M*']]
+        data[i,3] = rows[compare['AlphaCO']]
+        data[i,4] = rows[compare['D_L']]
+        data[i,5] = rows[compare['L_CO']]
+        data[i,6] = rows[compare['MH2']]
+        data[i,7] = rows[compare['limMH2']]
+    return data
+################################################################################
+def compareIDforID(Full, total, output, compareoutput):
+    # print output['M*']
+    # print total[:,4]
+    # totalH = total[total[:,output['M*']] > 10.0]
+    # totalHND = totalH[totalH[:,output['flag']] == 2]
+    # FullH = Full[Full[:,compareoutput['M*']] > 10.0]
+    # FullHND = FullH[FullH[:,compareoutput['flag']] == 2]
+    Full = Full[Full[:,0].argsort()]
+    total = total[total[:,0].argsort()]
+    print Full[0,:]
+    print total[0,:]
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].scatter(total[:,output['D_L']], (Full[:,compareoutput['D_L']]), color = 'r', label = 'Mine', s=10)
+    plt.savefig('img/schechter/COMPAREDL.pdf', format='pdf', dpi=250, transparent = False)
 ## Read data from tables #######################################################
 highM = atpy.Table('COLDGASS_DR3_with_Z.fits')
 lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
@@ -397,17 +422,22 @@ SAMI = asciidata.open('SAMI_IRAM_data.txt')
 Full = atpy.Table('data/COLDGASS_full.fits')
 # Sort Data ####################################################################
 # def dict for indices #########################################################
-l = {'S_CO':11, 'z':3, 'M*':4, 'Zo':5, 'SFR':6, 'flag':15, 'NUV-r': 8, 'L_CO': 12}
-h = {'S_CO':16, 'z':4, 'M*':5, 'Zo':12, 'SFR':7, 'flag':21, 'NUV-r': 10, 'MH2': 19}
-output = {  'S_CO':0, 'z':1, 'flag':2, 'M*':3, 'Zo':4, 'SFR':5, 'sSFR':6,
-            'NUV-r':7,'D_L':8, 'V/Vm':9, 'Vm':10, 'L_CO':11, 'AlphaCO':12,
-            'MH2':13, 'dalpha':14}
+l = {'S_CO':11, 'z':3, 'M*':4, 'Zo':5, 'SFR':6, 'flag':15, 'NUV-r': 8, 'L_CO': 12, 'ID':0}
+h = {'S_CO':16, 'z':4, 'M*':5, 'Zo':12, 'SFR':7, 'flag':21, 'NUV-r': 10, 'MH2': 19, 'ID':0}
+output = {  'ID':0, 'S_CO':1, 'z':2, 'flag':3, 'M*':4, 'Zo':5, 'SFR':6, 'sSFR':7,
+            'NUV-r':8,'D_L':9, 'V/Vm':10, 'Vm':11, 'L_CO':12, 'AlphaCO':13,
+            'MH2':14, 'dalpha':15}
+compare = {'ID':0, 'flag':37, 'M*':20, 'AlphaCO':39, 'D_L':10, 'L_CO':44, 'MH2':51, 'limMH2':52}
+compareoutput = {'ID':0, 'flag':1, 'M*':2, 'AlphaCO':3, 'D_L':4, 'L_CO':5, 'MH2':6, 'limMH2':7}
 # New Algo #####################################################################
-HMass = np.zeros((len(highM),9))
-LMass = np.zeros((len(lowM[12]),8))
+HMass = np.zeros((len(highM),10))
+LMass = np.zeros((len(lowM[12]),9))
 hmassalpha = []
 # High Mass Galaxies
 for i,rows in enumerate(highM):
+
+    HMass[i,output['ID']] = rows[h['ID']]                                       #ID
+    print rows[h['ID']], HMass[i,output['ID']]
     HMass[i,output['S_CO']] = rows[h['S_CO']]                                   # S_CO
     HMass[i,output['z']] = rows[h['z']]                                         # z
     HMass[i,output['flag']] = rows[h['flag']]                                   # flag
@@ -416,9 +446,10 @@ for i,rows in enumerate(highM):
     HMass[i,output['SFR']] = rows[h['SFR']]                                     # SFR
     HMass[i,output['sSFR']] = np.log10(HMass[i,output['SFR']]) - HMass[i,output['M*']]      # NUV-r
     HMass[i,output['NUV-r']] = rows[h['NUV-r']]      # sSFR
-    HMass[i,8] = rows[17]
+    HMass[i,8] = rows[17]                               # alpha CO
 
 # Low Mass Galaxies
+LMass[:,output['ID']] = list(lowM[l['ID']])                              #ID
 LMass[:,output['S_CO']] = list(lowM[l['S_CO']])                         # S_CO
 LMass[:,output['z']] = list(lowM[l['z']])                               # z
 LMass[:,output['flag']] = list(lowM[l['flag']])                         # flag
@@ -430,23 +461,26 @@ LMass[:,output['sSFR']] = sSFRlist                                      # sSFR
 LMass[:,output['NUV-r']] = list(lowM[l['NUV-r']])      # NUV-r
 
 ################################################################################
-FullData = np.zeros((len(Full),6))
+FullData = np.zeros((len(Full),7))
 for i,rows in enumerate(Full):
-    #z|flag|MH2|limMH2|MH2_both|Lumdist
+    #z|flag|MH2|limMH2|MH2_both|Lumdist|M*|
     FullData[i,0] = rows[9]
     FullData[i,1] = rows[37]
     FullData[i,2] = rows[51]
     FullData[i,3] = rows[52]
     FullData[i,4] = 10**(FullData[i,2] + FullData[i,3])
     FullData[i,5] = rows[10]
+    FullData[i,6] = rows[20]
 FullData = Vm(FullData, 5, min(FullData[:,0]), max(FullData[:,0]), 3)
 FullData[:,2] = 10**FullData[:,2]
 FullData[:,3] = 10**FullData[:,3]
-#0:z|1:flag|2:MH2|3:limMH2|4:MH2_both|5:Lumdist|6:V/Vm|7:Vm
+#0:z|1:flag|2:MH2|3:limMH2|4:MH2_both|5:Lumdist|6:M*|7:V/Vm|8:Vm
 FullDet = FullData[FullData[:,1] == 1]
 FullND = FullData[FullData[:,1] == 2]
+################################################################################
 
 
+################################################################################
 # Separate into non detections and detections
 LMassND, HMassND = LMass, HMass
 LMass = NonDetect(LMass, output['flag'], True)
@@ -457,13 +491,19 @@ HMass = np.delete(HMass,8,1)
 HMassND = np.delete(HMassND,8,1)
 # for low mass non detections use the 5 sigma upper limit for L_CO
 # store this in the 0th column
-LMassND[:,0] = list(lowM[l['L_CO']])
+LMassND[:,1] = list(lowM[l['L_CO']])
 LMassND = NonDetect(LMassND, output['flag'], False)
 # for high mass non detections use the calculated upper limit for MH2
 # store this in the 0th column
 for i,rows in enumerate(highM):
-    HMassND[i,0] = 10**rows[h['MH2']]
+    HMassND[i,1] = 10**rows[h['MH2']]
 HMassND = NonDetect(HMassND, output['flag'], False)
+
+print HMass[:,0], 'HM'
+print LMass[:,0], 'LM'
+print HMassND[:,0], 'HMND'
+print LMassND[:,0], 'LMND'
+print len(LMass), len(HMass), len(LMassND), len(HMassND)
 
 # Calculate Luminosity distance for each galaxy ################################
 # | S_CO | z | flag | Mgal | Zo | D_L |
@@ -505,6 +545,7 @@ alphaerror = np.append(LMass[:,output['dalpha']], HMass[:,output['dalpha']])
 # NH2L ,xH2L = sortIntoBins(LMass[:,output['MH2']], 15)
 # NH2H ,xH2H = sortIntoBins(HMass[:,output['MH2']], 15)
 #
+
 # ################################################################################
 # lumsL = LMass[:,output['L_CO']]
 # lumsH = HMass[:,output['L_CO']]
@@ -535,6 +576,7 @@ total = np.vstack((totaldet, ND))
 #MH2 total
 # Nh2, rhoh2, xbinsh2 = Schechter(total, output['MH2'], output['Vm'])
 low, high = min(np.log10(total[:,output['MH2']])), max(np.log10(total[:,output['MH2']]))
+print '@@@@1112323', total[:,output['MH2']]
 bins = np.linspace(low, high, 16) # log-spaced bins
 LSch = Schechter(LMass, output['MH2'], output['Vm'], bins)
 HSch = Schechter(HMass, output['MH2'], output['Vm'], bins)
@@ -543,7 +585,7 @@ totSch = Schechter(total, output['MH2'], output['Vm'], bins)
 detSch = Schechter(totaldet, output['MH2'], output['Vm'], bins)
 FullDetSchech = Schechter(FullDet, 2, 7, bins)
 FullNDSchech = Schechter(FullND, 3, 7, bins)
-FullSchech = Schechter(FullData, 4, 7, bins)
+FullSchech = Schechter(FullData, 4, 8, bins)
 #Nh2ND2, rhoh2ND2, xbinsh2ND2 = Schechter(HMassND, output['MH2'], output['Vm'])
 # fit schechter ################################################################
 # x1,x2 = xbins, xbins[4:]
@@ -603,9 +645,6 @@ yrhokeres = y_keres + x_keres
 det_para = schechter.log_schechter_fit(detSch[2][5:], detSch[1][5:])
 y_det = schechter.log_schechter(xkeres, *det_para)
 
-
-
-
 er = errors(total, bins, totSch[1], output)
 erdet = errors(totaldet, bins, detSch[1], output)
 sigma = []
@@ -619,14 +658,15 @@ for i in range(0, np.shape(erdet)[1]):
     eri = er[:,i]
     eri = eri[abs(eri)<99]
     sigmadet.append(np.std(eri))
-
+fullcomparedata = comparefull(Full, compare)
 PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpts, y_keres, x_keres)
 PlotSchechter2(totSch, sigma, y_CG, detSch, sigmadet, y_det, xkeres, ykeres2, )
 PlotRhoH2(LSch, HSch, NDSch, totSch, xkeres, np.log10(x1), yrho, yrhoCG, yrhoCGpts, yrhoCG2, yrhokeres, x_keres)
 PlotAlphaCO(total, output)
 PlotMsunvsMH2(total, output)
 PlotSchechterFull(FullDetSchech, FullNDSchech, FullSchech, x_keres, y_keres, y_ober)
-# PlotMstarMH2(total, output['M*'], output['MH2'])
+PlotMstarMH2(total, FullData, ND, FullND, output)
+compareIDforID(fullcomparedata, total, output, compareoutput)
 x1 = np.log10(x1)
 # print np.sum((10**totSch[4])*(totSch[2][1]-totSch[2][0]))/(10**7)
 print 'p_H2 COLD GASS', np.sum((10**yrhoCGpts)*(totSch[2][1]-totSch[2][0]))/(10**7)
