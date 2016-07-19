@@ -241,7 +241,27 @@ def PlotSchechSDSS(FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2, x_kere
     plt.savefig('img/scal/'+ 'SDSS' + '.eps', format='eps', dpi=250, transparent = False)
     plt.savefig('img/scal/'+ 'SDSS' + '.pdf', format='pdf', dpi=250, transparent = False)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+def PlotSchechSDSSv2(FullSchech, FullSchech_Best, totSch_data, sigma, x_keres, y_keres, y_ober):
+    xmajorLocator   = MultipleLocator(0.5)
+    xminorLocator   = MultipleLocator(0.1)
+    ymajorLocator   = MultipleLocator(0.5)
+    yminorLocator   = MultipleLocator(0.1)
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].xaxis.set_major_locator(xmajorLocator)
+    ax[0,0].xaxis.set_minor_locator(xminorLocator)
+    ax[0,0].yaxis.set_major_locator(ymajorLocator)
+    ax[0,0].yaxis.set_minor_locator(yminorLocator)
+    ax[0,0].errorbar(FullSchech_Best[2], FullSchech_Best[1], fmt = 'o', markersize = 8, color = 'g', label = 'COLD GASS, using SFR_BEST')
+    ax[0,0].errorbar(FullSchech[2], FullSchech[1], fmt = 'o', markersize = 8, color = 'c', label = 'COLD GASS, using SFR_SDSS')
+    ax[0,0].errorbar(totSch_data[2], totSch_data[1], yerr=sigma, fmt = 's', markersize = 8, color = 'r', label = 'COLD GASS data pts')
+    ax[0,0].plot(np.log10(x_keres), y_keres, 'k--', label = 'Keres+03')
+    ax[0,0].plot(np.log10(x_keres), y_ober, 'k', label = 'Obreschkow+09')
+    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
+    ax[0,0].set_ylim(-5, -1)
+    ax[0,0].set_xlim(7.5, 10.5)
+    plt.legend(fontsize = 10)
+    plt.savefig('img/scal/'+ 'SDSSv3' + '.pdf', format='pdf', dpi=250, transparent = False)
 # create galaxies ##############################################################
 
 def createGals(red, V):
@@ -362,18 +382,29 @@ def AmGasFrac(data, Mindex, SFRindex, printvar):
 ################################################################################
 def GetCOLDGASS():
     Full = atpy.Table('data/COLDGASS_full.fits')
-    FullData = np.zeros((len(Full),5))
+    FullData = np.zeros((len(Full),6))
     for i,rows in enumerate(Full):
-        #z|flag|SFR|M*|Lumdist
+        #z|flag|SFR|SFR_BEST|M*|Lumdist
         FullData[i,0] = rows[9]
         FullData[i,1] = rows[37]
-        FullData[i,2] = rows[23]
-        FullData[i,3] = rows[20]
-        FullData[i,4] = rows[10]
+        FullData[i,2] = rows[23] # 23 for sfr_sdss 24 for sfr_best
+        FullData[i,3] = np.log10(rows[24])
+        FullData[i,4] = rows[20]
+        FullData[i,5] = rows[10]
     FullData = Vm1(FullData, 4, min(FullData[:,0]), max(FullData[:,0]), 3)
-    #0:z|1:flag|2:SFR|3:M*|4:Lumdist|5:V/Vm|6:Vm|7:MH2
-    FullData = AmGasFrac(FullData, 3, 2, True)
+    #0:z|1:flag|2:SFR|3:SFR_BEST|4:M*|5:Lumdist|6:V/Vm|7:Vm|8:MH2_SDSS|9:MH2_BEST
+    FullData = AmGasFrac(FullData, 4, 2, True) # SFR_SDSS
+    FullData = AmGasFrac(FullData, 4, 3, True) # SFR_BEST
     return FullData
+################################################################################
+def sfrbest(FullData):
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].scatter(FullData[:,2], FullData[:,8], label='SDSS', color = 'b')
+    ax[0,0].scatter(FullData[:,3], FullData[:,9], label='best', color = 'r')
+    ax[0,0].set_xlabel(r'$\mathrm{log \, SFR}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{log\, MH2}$', fontsize=18)
+    plt.legend(fontsize = 13)
+    plt.savefig('img/scal/SFR_Best.pdf', format='pdf', dpi=250, transparent = False)
 ################################################################################
 def Vm1(data, Dlaxis, minz, maxz, L):
     # Omega = 0.483979888662
@@ -403,7 +434,7 @@ def Vm1(data, Dlaxis, minz, maxz, L):
     data = np.hstack((data,Vmlist))
     return data
 
-def main(bins):
+def main(bins, totSch_data, sigma):
     ################################################################################
     V = 100000
     L = np.linspace(8,11.9,24)
@@ -520,7 +551,8 @@ def main(bins):
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #COLD GASS
     FullData = GetCOLDGASS()
-    FullSchech = Schechter(FullData, 7, 6, bins)
+    FullSchech = Schechter(FullData, 8, 7, bins)
+    FullSchech_Best = Schechter(FullData, 9, 7, bins)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ### SDSS METHOD~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # get the SDSS data from the fits tables
@@ -536,17 +568,19 @@ def main(bins):
     # calculate gas fraction using amelie's method z,M*,SFR,MH2_gio,Vm,MH2_am
     sdssData = AmGasFrac(sdssData, 1, 2, False)
     sdssSchechAm = Schechter(sdssData, 5, 4, bins)
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     PlotSchechSDSS(FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2, x_keres, y_keres, y_ober)
     SFRMH2(sdssData)
     SFRMSTAR(sdssData, FullData)
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    PlotBaldry(L, yBaldry, yred, yblue)
-    PlotMSFR(blues[:,4], reds[:,4], blues[:,5], reds[:,5], data)
-    PlotHist(blues[:,4], reds[:,4])
-    PlotSimMH2(blues, reds)
+    # PlotBaldry(L, yBaldry, yred, yblue)
+    # PlotMSFR(blues[:,4], reds[:,4], blues[:,5], reds[:,5], data)
+    # PlotHist(blues[:,4], reds[:,4])
+    # PlotSimMH2(blues, reds)
     # PlotRhoH2(totSch, x_scal, rhoscal)
+    sfrbest(FullData)
     PlotSchechter(totSch, redSch, blueSch, x3, y_scalfit, x_scal, y_keres)
     PlotSchechterMass(MassSchB, MassSchR, L, yred, yblue)
+    PlotSchechSDSSv2(FullSchech, FullSchech_Best, totSch_data, sigma, x_keres, y_keres, y_ober)
     SFRHist(sdssData, datagio, FullData, total)
     return FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2
 

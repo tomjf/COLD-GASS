@@ -664,7 +664,7 @@ for i in range(0, np.shape(erdet)[1]):
     eri = eri[abs(eri)<99]
     sigmadet.append(np.std(eri))
 # BlueRed#######################################################################
-FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2 = BlueRed.main(bins)
+FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2 = BlueRed.main(bins, totSch, sigma)
 ################################################################################
 fullcomparedata = comparefull(Full, compare)
 PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpts, y_keres, x_keres, FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2, y_ober)
