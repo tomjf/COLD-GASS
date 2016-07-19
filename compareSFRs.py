@@ -41,10 +41,10 @@ def SFRMSTAR(CGData2):
 def SFRcomparison(CGData2):
     x = np.linspace(-3,2,200)
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
-    ax[0,0].scatter(CGData2[:,4], CGData2[:,9], s = 10, color = 'k', label = 'COLD GASS')
-    ax[0,0].plot(x,x)
-    ax[0,0].set_xlabel(r'$\mathrm{SDSS}$', fontsize=18)
-    ax[0,0].set_ylabel(r'$\mathrm{COLDGASS}$', fontsize=18)
+    ax[0,0].scatter(CGData2[:,4], CGData2[:,9]-CGData2[:,4], s = 10, color = 'k', label = 'COLD GASS')
+    # ax[0,0].plot(x,x)
+    ax[0,0].set_ylabel(r'$\mathrm{SDSS}$', fontsize=18)
+    ax[0,0].set_xlabel(r'$\mathrm{COLD\,GASS}$', fontsize=18)
     plt.savefig('img/scal/sfrcomparison.pdf', format='pdf', dpi=250, transparent = False)
 
 def MH2SFR(CGData2, datagio):

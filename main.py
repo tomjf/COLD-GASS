@@ -10,6 +10,7 @@ import schechter
 import csv
 import pandas as pd
 import random
+import BlueRed
 
 # Function to calculate the luminosity distance from z #########################
 def lumdistance(data, zaxis):
@@ -214,7 +215,7 @@ def OmegaH2(bins, yrho):
     return OmegaH2
 
 # schechter only ###############################################################
-def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpts, y_keres, x_keres):
+def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpts, y_keres, x_keres, FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2, y_ober):
     xmajorLocator   = MultipleLocator(0.5)
     xminorLocator   = MultipleLocator(0.1)
     ymajorLocator   = MultipleLocator(0.5)
@@ -224,8 +225,14 @@ def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpt
     ax[0,0].xaxis.set_minor_locator(xminorLocator)
     ax[0,0].yaxis.set_major_locator(ymajorLocator)
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
-    # ax[0,0].scatter(totSch[2], yCGpts, marker = 'o', s = 100, edgecolor='black', linewidth='2', facecolor='none', label = 'pts')
-    # ax[0,0].scatter(x_keres, y_keres, marker = 'o', s = 100, edgecolor='black', linewidth='2', facecolor='none', label = 'pts')
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ax[0,0].errorbar(sdssSchech[2], sdssSchech[1], fmt = 'o', markersize = 8, color = 'm', label = 'SDSS-G')
+    ax[0,0].errorbar(totSch1[2], totSch1[1], fmt = 's', markersize = 8, color = 'm', label = 'Sim-G')
+    ax[0,0].errorbar(totSch2[2], totSch2[1], fmt = 's', markersize = 8, color = 'c', label = 'Sim-A')
+    ax[0,0].errorbar(FullSchech[2], FullSchech[1], fmt = 's', markersize = 8, color = 'r', label = 'COLD GASS SFRs')
+    ax[0,0].errorbar(sdssSchechAm[2], sdssSchechAm[1], fmt = 'o', markersize = 8, color = 'c', label = 'SDSS-A')
+    ax[0,0].plot(x_keres, y_ober, 'k-.', label = 'Obreschkow+09')
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ax[0,0].scatter(LSch[2], LSch[1], marker = 's', s = 100, edgecolor='blue', linewidth='2', facecolor='none', label = 'Low Mass')
     ax[0,0].scatter(HSch[2], HSch[1], marker = 's', s = 100, edgecolor='green', linewidth='2', facecolor='none', label = 'High Mass')
     ax[0,0].scatter(NDSch[2], NDSch[1], marker = 's', s = 100, edgecolor='orange', linewidth='2', facecolor='none', label = 'Non Detection')
@@ -237,14 +244,9 @@ def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpt
     ax[0,0].set_ylim(-5, -1)
     ax[0,0].set_xlim(7.5, 10.5)
     ax[0,0].tick_params(axis='x',which='minor',bottom='on')
-    #ax[0,1].set_title('Schechter', fontsize=20)
-    # ax[0,0].text(9, -5.1, (r'$\phi_{*}$ = '+str(round(phi1,2))+'\n'+ r'$L_{*}$ = '+str(round(L01,2))+'\n'+ r'$\alpha$ = '+str(round(alpha1,2))), fontsize=18, color='b')
-    # ax[0,0].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
-    plt.legend(fontsize = 13)
+    plt.legend(fontsize = 8)
     plt.savefig('img/schechter/MH2.eps', format='eps', dpi=250, transparent = False)
     plt.savefig('img/schechter/MH2.pdf', format='pdf', dpi=250, transparent = False)
-    # plt.savefig('img/MH2.png', transparent = False ,dpi=250)
-
 ################################################################################
 def PlotSchechter2(totSch, sigmatot, y_CG, detSch, sigmadet, y_det, xkeres, ykeres2):
     xmajorLocator   = MultipleLocator(0.5)
@@ -413,8 +415,15 @@ def compareIDforID(Full, total, output, compareoutput):
     print Full[0,:]
     print total[0,:]
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
-    ax[0,0].scatter(total[:,output['D_L']], (Full[:,compareoutput['D_L']]), color = 'r', label = 'Mine', s=10)
-    plt.savefig('img/schechter/COMPAREDL.pdf', format='pdf', dpi=250, transparent = False)
+    ax[0,0].scatter(total[:,output['AlphaCO']], (total[:,output['AlphaCO']]-Full[:,compareoutput['AlphaCO']]), color = 'r', label = 'Mine', s=10)
+    x = np.linspace(-4,20,200)
+    y = np.zeros((len(x),1))
+    ax[0,0].plot(x,y)
+    ax[0,0].set_xlim(-5, 20)
+    ax[0,0].set_ylim(-10, 12)
+    ax[0,0].set_xlabel(r'$\mathrm{my\, \alpha_{CO}}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{my\, \alpha_{CO}\, - \,G12 \,from\, full}$', fontsize=18)
+    plt.savefig('img/schechter/COMPAREACO.pdf', format='pdf', dpi=250, transparent = False)
 ## Read data from tables #######################################################
 highM = atpy.Table('COLDGASS_DR3_with_Z.fits')
 lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
@@ -437,7 +446,6 @@ hmassalpha = []
 for i,rows in enumerate(highM):
 
     HMass[i,output['ID']] = rows[h['ID']]                                       #ID
-    print rows[h['ID']], HMass[i,output['ID']]
     HMass[i,output['S_CO']] = rows[h['S_CO']]                                   # S_CO
     HMass[i,output['z']] = rows[h['z']]                                         # z
     HMass[i,output['flag']] = rows[h['flag']]                                   # flag
@@ -499,11 +507,6 @@ for i,rows in enumerate(highM):
     HMassND[i,1] = 10**rows[h['MH2']]
 HMassND = NonDetect(HMassND, output['flag'], False)
 
-print HMass[:,0], 'HM'
-print LMass[:,0], 'LM'
-print HMassND[:,0], 'HMND'
-print LMassND[:,0], 'LMND'
-print len(LMass), len(HMass), len(LMassND), len(HMassND)
 
 # Calculate Luminosity distance for each galaxy ################################
 # | S_CO | z | flag | Mgal | Zo | D_L |
@@ -523,7 +526,7 @@ LMass = lCalc(LMass,output['S_CO'],output['z'],output['D_L'],True)
 HMass = lCalc(HMass,output['S_CO'],output['z'],output['D_L'],False)
 dummy = np.zeros((len(LMassND),1))
 # move the stored L_CO upper limit data over to the correct column
-dummy[:,0] = LMassND[:,0]
+dummy[:,0] = LMassND[:,1]
 LMassND = np.hstack((LMassND, 10**dummy))
 # leave dummy 0 data for L_CO as we already have MH2
 dummy = np.zeros((len(HMassND),1))
@@ -536,7 +539,7 @@ LMassND = H2Conversion(LMassND, output['Zo'], output['L_CO'])
 # just add 0 axes and copy over the MH2 upper limits from the table
 dummy1 = np.zeros((len(HMassND),3))
 HMassND = np.hstack((HMassND, dummy1))
-HMassND[:,output['MH2']] = HMassND[:,0]
+HMassND[:,output['MH2']] = HMassND[:,1]
 Mass = np.append(LMass[:,output['M*']], HMass[:,output['M*']])
 alpha = np.append(LMass[:,output['AlphaCO']], HMass[:,output['AlphaCO']])
 alphaerror = np.append(LMass[:,output['dalpha']], HMass[:,output['dalpha']])
@@ -572,11 +575,13 @@ alphaerror = np.append(LMass[:,output['dalpha']], HMass[:,output['dalpha']])
 ND = np.vstack((LMassND, HMassND))
 totaldet = np.vstack((LMass, HMass))
 total = np.vstack((totaldet, ND))
+
+
 #N, rho, xbins = Schechter(total, output['L_CO'], output['Vm'])
 #MH2 total
 # Nh2, rhoh2, xbinsh2 = Schechter(total, output['MH2'], output['Vm'])
 low, high = min(np.log10(total[:,output['MH2']])), max(np.log10(total[:,output['MH2']]))
-print '@@@@1112323', total[:,output['MH2']]
+# print '@@@@1112323', total[:,output['MH2']]
 bins = np.linspace(low, high, 16) # log-spaced bins
 LSch = Schechter(LMass, output['MH2'], output['Vm'], bins)
 HSch = Schechter(HMass, output['MH2'], output['Vm'], bins)
@@ -658,8 +663,11 @@ for i in range(0, np.shape(erdet)[1]):
     eri = er[:,i]
     eri = eri[abs(eri)<99]
     sigmadet.append(np.std(eri))
+# BlueRed#######################################################################
+FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2 = BlueRed.main(bins)
+################################################################################
 fullcomparedata = comparefull(Full, compare)
-PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpts, y_keres, x_keres)
+PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpts, y_keres, x_keres, FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2, y_ober)
 PlotSchechter2(totSch, sigma, y_CG, detSch, sigmadet, y_det, xkeres, ykeres2, )
 PlotRhoH2(LSch, HSch, NDSch, totSch, xkeres, np.log10(x1), yrho, yrhoCG, yrhoCGpts, yrhoCG2, yrhokeres, x_keres)
 PlotAlphaCO(total, output)
@@ -668,6 +676,7 @@ PlotSchechterFull(FullDetSchech, FullNDSchech, FullSchech, x_keres, y_keres, y_o
 PlotMstarMH2(total, FullData, ND, FullND, output)
 compareIDforID(fullcomparedata, total, output, compareoutput)
 x1 = np.log10(x1)
+
 # print np.sum((10**totSch[4])*(totSch[2][1]-totSch[2][0]))/(10**7)
 print 'p_H2 COLD GASS', np.sum((10**yrhoCGpts)*(totSch[2][1]-totSch[2][0]))/(10**7)
 print 'p_H2 Keres', np.sum((10**yrhokeres)*(totSch[2][1]-totSch[2][0]))/(10**7)

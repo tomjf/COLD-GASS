@@ -179,7 +179,7 @@ def PlotSchechter(totSch, redSch, blueSch, x, y_scalfit, x_scal, y_keres):
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
     ax[0,0].errorbar(totSch[2], totSch[1], fmt = 'o', markersize = 10, color = 'red', label = 'Scaling Relation Method')
     ax[0,0].plot(x, y_scalfit, color ='red', label = 'Scaling Relation Fit')
-    ax[0,0].plot(np.log10(x_keres), y_keres, 'k--', label = 'Keres+03')
+    ax[0,0].plot(x_scal, y_keres, 'k--', label = 'Keres+03')
     # ax[0,0].scatter(x_scal, y_scal)
     # ax[0,0].errorbar(redSch[2], redSch[1], fmt = 'o', markersize = 10, color = 'red', label = 'Red')
     # ax[0,0].errorbar(blueSch[2], blueSch[1], fmt = 'o', markersize = 10, color = 'blue', label = 'Blue')
@@ -373,7 +373,6 @@ def GetCOLDGASS():
     FullData = Vm1(FullData, 4, min(FullData[:,0]), max(FullData[:,0]), 3)
     #0:z|1:flag|2:SFR|3:M*|4:Lumdist|5:V/Vm|6:Vm|7:MH2
     FullData = AmGasFrac(FullData, 3, 2, True)
-    print FullData[:,2]
     return FullData
 ################################################################################
 def Vm1(data, Dlaxis, minz, maxz, L):
@@ -403,151 +402,155 @@ def Vm1(data, Dlaxis, minz, maxz, L):
     data = np.hstack((data,VVmlist))
     data = np.hstack((data,Vmlist))
     return data
-################################################################################
-V = 100000
-L = np.linspace(8,11.9,24)
-LKeres = np.linspace(4,8,200)
 
-Spheroid = (3.67/10000), 10.74, -0.525
-Disk = (0.855/10000), 10.70, -1.39
-Keres = (7.2/10000), 7.0, -1.30
-output = { 'Vm':6, 'MH2':13}
-################################################################################
-# #spheroid is red
-# ySpheroid = log_schechter(L, *Spheroid)
-# #disk is blue
-# yDisk = log_schechter(L, *Disk)
-# yKeres = schechter(LKeres, Keres[1], (L[1]-L[0]), Keres[0], Keres[2])
+def main(bins):
+    ################################################################################
+    V = 100000
+    L = np.linspace(8,11.9,24)
+    LKeres = np.linspace(4,8,200)
 
-yBaldry = doubleschechter(L, 10.66, (L[1]-L[0]), 0.00396, 0.00079, -0.35, -1.47)
-yred = schechter(L, 10.66, (L[1]-L[0]), 0.00396, -0.35)
-yblue = schechter(L, 10.66, (L[1]-L[0]), 0.00079, -1.47)
+    Spheroid = (3.67/10000), 10.74, -0.525
+    Disk = (0.855/10000), 10.70, -1.39
+    Keres = (7.2/10000), 7.0, -1.30
+    output = { 'Vm':6, 'MH2':13}
+    ################################################################################
+    # #spheroid is red
+    # ySpheroid = log_schechter(L, *Spheroid)
+    # #disk is blue
+    # yDisk = log_schechter(L, *Disk)
+    # yKeres = schechter(LKeres, Keres[1], (L[1]-L[0]), Keres[0], Keres[2])
 
-###### make a table for the red galaxies #######################################
-red = np.zeros((len(yred),4))
-# the luminosity bin
-red[:,0] = L
-# spacing between bins
-red[:,1] = L[1]-L[0]
-# the number of galaxies in this luminosity bin from the schechter function
-red[:,2] = yred
-#list of all the galaxies over all the bins
-reds = createGals(red, V)
-###### make a table for the blue galaxies ######################################
-blue = np.zeros((len(yblue),4))
-# the luminosity bin
-blue[:,0] = L
-# spacing between bins
-blue[:,1] = L[1]-L[0]
-# the number of galaxies in this luminosity bin from the schechter function
-blue[:,2] = yblue
-#list of all the galaxies over all the bins
-bluepop = []
-# list all gals
-blues = createGals(blue, V)
-# M*group | dM* | phi | N | M*
-###### make a table for all the galaxies #######################################
-Baldry = np.zeros((len(yBaldry),5))
-Baldry[:,0] = L
-Baldry[:,1] = 0.2
-Baldry[:,2] = yBaldry
-# total = np.append(bluepop, redpop)
+    yBaldry = doubleschechter(L, 10.66, (L[1]-L[0]), 0.00396, 0.00079, -0.35, -1.47)
+    yred = schechter(L, 10.66, (L[1]-L[0]), 0.00396, -0.35)
+    yblue = schechter(L, 10.66, (L[1]-L[0]), 0.00079, -1.47)
 
-# add starformation rates
-blues = mainSequence(blues, True, 4, False)
-reds = cloud(reds)
-trend = mainSequence(Baldry, False, 0, False)
-data = np.zeros((len(L),2))
-data[:,0] = L
-data[:,1] = trend[:,5]
+    ###### make a table for the red galaxies #######################################
+    red = np.zeros((len(yred),4))
+    # the luminosity bin
+    red[:,0] = L
+    # spacing between bins
+    red[:,1] = L[1]-L[0]
+    # the number of galaxies in this luminosity bin from the schechter function
+    red[:,2] = yred
+    #list of all the galaxies over all the bins
+    reds = createGals(red, V)
+    ###### make a table for the blue galaxies ######################################
+    blue = np.zeros((len(yblue),4))
+    # the luminosity bin
+    blue[:,0] = L
+    # spacing between bins
+    blue[:,1] = L[1]-L[0]
+    # the number of galaxies in this luminosity bin from the schechter function
+    blue[:,2] = yblue
+    #list of all the galaxies over all the bins
+    bluepop = []
+    # list all gals
+    blues = createGals(blue, V)
+    # M*group | dM* | phi | N | M*
+    ###### make a table for all the galaxies #######################################
+    Baldry = np.zeros((len(yBaldry),5))
+    Baldry[:,0] = L
+    Baldry[:,1] = 0.2
+    Baldry[:,2] = yBaldry
+    # total = np.append(bluepop, redpop)
 
-datagio, fit = scal_relns.fitdata()
-blues = np.hstack((blues, np.zeros((len(blues),1))))
-reds = np.hstack((reds, np.zeros((len(reds),1))))
-# blues[:,6] = scal_relns.second2var((blues[:,4], blues[:,5]), *fit[0])
-# reds[:,6] = scal_relns.second2var((reds[:,4], reds[:,5]), *fit[0])
-blues[:,6] = scal_relns.third(blues[:,5], *fit[0])
-reds[:,6] = scal_relns.third(reds[:,5], *fit[0])
+    # add starformation rates
+    blues = mainSequence(blues, True, 4, False)
+    reds = cloud(reds)
+    trend = mainSequence(Baldry, False, 0, False)
+    data = np.zeros((len(L),2))
+    data[:,0] = L
+    data[:,1] = trend[:,5]
 
-# add V
-blues = np.hstack((blues, np.zeros((len(blues),1))))
-reds = np.hstack((reds, np.zeros((len(reds),1))))
-blues[:,7] = V
-reds[:,7] = V
-total = np.vstack((blues, reds))
-total = AmGasFrac(total, 4, 5, False)
-# bins  = np.linspace(6, 10.5, 30)
-bins  = np.linspace(min(total[:,6]), max(total[:,6]), 25)
-massbins = np.linspace(8,11.5,25)
-totSch = Schechter(total, 6, 7, bins)
-totSch2 = Schechter(total, 8, 7, bins)
-redSch = Schechter(reds, 6, 7, bins)
-blueSch = Schechter(blues, 6, 7, bins)
-MassSchB = Schechter(blues, 4, 7, massbins)
-MassSchR = Schechter(reds, 4, 7, massbins)
-x = np.linspace(7.5,10.5,200)
-scalfit = log_schechter_fit(totSch[2], totSch[1])
-x3 = np.linspace(7.5,10.5,16)
-y_scalfit = log_schechter(x3, *scalfit)
+    datagio, fit = scal_relns.fitdata()
+    blues = np.hstack((blues, np.zeros((len(blues),1))))
+    reds = np.hstack((reds, np.zeros((len(reds),1))))
+    # blues[:,6] = scal_relns.second2var((blues[:,4], blues[:,5]), *fit[0])
+    # reds[:,6] = scal_relns.second2var((reds[:,4], reds[:,5]), *fit[0])
+    blues[:,6] = scal_relns.third(blues[:,5], *fit[0])
+    reds[:,6] = scal_relns.third(reds[:,5], *fit[0])
 
-x_scal = np.linspace(7.5, 10.5, 25)
-x_keres = 10**x_scal
-mst=np.log10((2.81*(10**9))/(0.7**2))
-alpha=-1.18
-phist=np.log10(0.0089*(0.7**3))
-mst1 = 10**mst
-phist1 = 10**phist
-y_keres = np.log10((phist1)*((x_keres/(mst1))**(alpha+1))*np.exp(-x_keres/mst1)*np.log(10))
-#####################################
-# corrected values from Obreschkow and Rawlings
-mstcorr = (7.5*(10**8))/(0.7**2)
-alphacorr = -1.07
-phistcorr = 0.0243*(0.7**3)
-y_ober = np.log10((phistcorr)*((x_keres/(mstcorr))**(alphacorr+1))*np.exp(-x_keres/mstcorr)*np.log(10))
+    # add V
+    blues = np.hstack((blues, np.zeros((len(blues),1))))
+    reds = np.hstack((reds, np.zeros((len(reds),1))))
+    blues[:,7] = V
+    reds[:,7] = V
+    total = np.vstack((blues, reds))
+    total = AmGasFrac(total, 4, 5, False)
+    # bins  = np.linspace(6, 10.5, 30)
+    # bins  = np.linspace(min(total[:,6]), max(total[:,6]), 16)
+    massbins = np.linspace(8,11.5,25)
+    totSch = Schechter(total, 6, 7, bins)
+    totSch2 = Schechter(total, 8, 7, bins)
+    redSch = Schechter(reds, 6, 7, bins)
+    blueSch = Schechter(blues, 6, 7, bins)
+    MassSchB = Schechter(blues, 4, 7, massbins)
+    MassSchR = Schechter(reds, 4, 7, massbins)
+    x = np.linspace(7.5,10.5,200)
+    scalfit = log_schechter_fit(totSch[2], totSch[1])
+    x3 = np.linspace(7.5,10.5,16)
+    y_scalfit = log_schechter(x3, *scalfit)
+
+    x_scal = np.linspace(7.5, 10.5, 25)
+    x_keres = 10**x_scal
+    mst=np.log10((2.81*(10**9))/(0.7**2))
+    alpha=-1.18
+    phist=np.log10(0.0089*(0.7**3))
+    mst1 = 10**mst
+    phist1 = 10**phist
+    y_keres = np.log10((phist1)*((x_keres/(mst1))**(alpha+1))*np.exp(-x_keres/mst1)*np.log(10))
+    #####################################
+    # corrected values from Obreschkow and Rawlings
+    mstcorr = (7.5*(10**8))/(0.7**2)
+    alphacorr = -1.07
+    phistcorr = 0.0243*(0.7**3)
+    y_ober = np.log10((phistcorr)*((x_keres/(mstcorr))**(alphacorr+1))*np.exp(-x_keres/mstcorr)*np.log(10))
 
 
-scal_para = log_schechter_fit(totSch[2][9:], totSch[1][9:])
-y_scal = log_schechter(x_scal, *scal_para)
-rhoscal = y_scal + x_scal
+    scal_para = log_schechter_fit(totSch[2][9:], totSch[1][9:])
+    y_scal = log_schechter(x_scal, *scal_para)
+    rhoscal = y_scal + x_scal
 
-# er = errors(total, bins, totSch[1], output)
-# sigma = []
-# for i in range(0, np.shape(er)[1]):
-#     eri = er[:,i]
-#     eri = eri[abs(eri)<99]
-#     sigma.append(np.std(eri))
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#COLD GASS
-FullData = GetCOLDGASS()
-FullSchech = Schechter(FullData, 7, 6, bins)
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-### SDSS METHOD~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# get the SDSS data from the fits tables
-sdssData = sdssMethod(0.005, 0.02)
-sdssData = np.hstack((sdssData, np.zeros((len(sdssData),1))))
-# sdssData[:,3] = scal_relns.second2var((sdssData[:,1], sdssData[:,2]), *fit[0])
-# calculate the H2 mass by fitting to gio's scaling relation
-sdssData[:,3] = scal_relns.third(sdssData[:,2], *fit[0])
-# calculate Vm from the redshift limit and area of sky covered z,M*,SFR,MH2,Vm
-sdssData = Vm(sdssData, min(sdssData[:,0]), max(sdssData[:,0]))
-# bin the H2 data
-sdssSchech = Schechter(sdssData, 3, 4, bins)
-# calculate gas fraction using amelie's method z,M*,SFR,MH2_gio,Vm,MH2_am
-sdssData = AmGasFrac(sdssData, 1, 2, False)
-sdssSchechAm = Schechter(sdssData, 5, 4, bins)
-PlotSchechSDSS(FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2, x_keres, y_keres, y_ober)
-SFRMH2(sdssData)
-SFRMSTAR(sdssData, FullData)
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-PlotBaldry(L, yBaldry, yred, yblue)
-PlotMSFR(blues[:,4], reds[:,4], blues[:,5], reds[:,5], data)
-PlotHist(blues[:,4], reds[:,4])
-PlotSimMH2(blues, reds)
-# PlotRhoH2(totSch, x_scal, rhoscal)
-PlotSchechter(totSch, redSch, blueSch, x3, y_scalfit, x_scal, y_keres)
-PlotSchechterMass(MassSchB, MassSchR, L, yred, yblue)
-SFRHist(sdssData, datagio, FullData, total)
+    # er = errors(total, bins, totSch[1], output)
+    # sigma = []
+    # for i in range(0, np.shape(er)[1]):
+    #     eri = er[:,i]
+    #     eri = eri[abs(eri)<99]
+    #     sigma.append(np.std(eri))
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #COLD GASS
+    FullData = GetCOLDGASS()
+    FullSchech = Schechter(FullData, 7, 6, bins)
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ### SDSS METHOD~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # get the SDSS data from the fits tables
+    sdssData = sdssMethod(0.005, 0.02)
+    sdssData = np.hstack((sdssData, np.zeros((len(sdssData),1))))
+    # sdssData[:,3] = scal_relns.second2var((sdssData[:,1], sdssData[:,2]), *fit[0])
+    # calculate the H2 mass by fitting to gio's scaling relation
+    sdssData[:,3] = scal_relns.third(sdssData[:,2], *fit[0])
+    # calculate Vm from the redshift limit and area of sky covered z,M*,SFR,MH2,Vm
+    sdssData = Vm(sdssData, min(sdssData[:,0]), max(sdssData[:,0]))
+    # bin the H2 data
+    sdssSchech = Schechter(sdssData, 3, 4, bins)
+    # calculate gas fraction using amelie's method z,M*,SFR,MH2_gio,Vm,MH2_am
+    sdssData = AmGasFrac(sdssData, 1, 2, False)
+    sdssSchechAm = Schechter(sdssData, 5, 4, bins)
+    PlotSchechSDSS(FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2, x_keres, y_keres, y_ober)
+    SFRMH2(sdssData)
+    SFRMSTAR(sdssData, FullData)
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    PlotBaldry(L, yBaldry, yred, yblue)
+    PlotMSFR(blues[:,4], reds[:,4], blues[:,5], reds[:,5], data)
+    PlotHist(blues[:,4], reds[:,4])
+    PlotSimMH2(blues, reds)
+    # PlotRhoH2(totSch, x_scal, rhoscal)
+    PlotSchechter(totSch, redSch, blueSch, x3, y_scalfit, x_scal, y_keres)
+    PlotSchechterMass(MassSchB, MassSchR, L, yred, yblue)
+    SFRHist(sdssData, datagio, FullData, total)
+    return FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2
 
+# FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2 = main()
 # bins = np.linspace(7.5,11.5,25)
 # fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
 # ax[0,0].hist(bluepop, bins, normed = 1, facecolor='blue', alpha = 0.1)
