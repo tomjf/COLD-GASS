@@ -14,10 +14,10 @@ import BlueRed
 
 # Function to calculate the luminosity distance from z #########################
 def lumdistance(data, zaxis):
-    omega_m = 0.31                          # from Planck
-    omega_l = 0.69                          # from Planck
+    omega_m = 0.3                          # from Planck
+    omega_l = 0.7                       # from Planck
     c = 3*math.pow(10,5)                    # in km/s
-    Ho = 69                                 # in km/(s Mpc)
+    Ho = 70                                 # in km/(s Mpc)
     f = lambda x : (((omega_m*((1+z)**3))+omega_l)**-0.5)
     Dlvals = np.zeros((len(data),1))
     for i in range(0,len(data)):
@@ -121,10 +121,11 @@ def H2Conversion(data, Zindex, LCOindex, *args):
 def Vm(data, Dlaxis, minz, maxz, L):
     # Omega = 0.483979888662
     Omega = 0.427304474238
-    if L == 1:
+    if L == 1: # low mass
+        Omega = 0.353621392624
         N_COLDGASS = 89.0
         N_SDSS = 764.0
-    elif L == 2:
+    elif L == 2: # high mass
         N_COLDGASS = 366.0
         N_SDSS = 12006.0
     elif L == 3:
@@ -148,14 +149,12 @@ def Vm(data, Dlaxis, minz, maxz, L):
 
 # schechter bins ###############################################################
 def Schechter(data, LCOaxis, Vmaxis, bins):
-    # print bins
     l = data[:,LCOaxis]
     l = np.log10(l)
     rho, N, xbins, sigma, rhoH2 = [], [], [], [], []
     for i in range (1,len(bins)):
         p, Num, o, pH2 = 0, 0, 0, 0
         for j in range(0,len(l)):
-            # print l[j], bins[i-1], bins[i]
             if l[j] >= bins[i-1] and l[j] < bins[i]:
                 p += 1/data[j,Vmaxis]
                 o += 1/(data[j,Vmaxis]**2)
@@ -412,10 +411,8 @@ def compareIDforID(Full, total, output, compareoutput):
     # FullHND = FullH[FullH[:,compareoutput['flag']] == 2]
     Full = Full[Full[:,0].argsort()]
     total = total[total[:,0].argsort()]
-    print Full[0,:]
-    print total[0,:]
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
-    ax[0,0].scatter(total[:,output['AlphaCO']], (total[:,output['AlphaCO']]-Full[:,compareoutput['AlphaCO']]), color = 'r', label = 'Mine', s=10)
+    ax[0,0].scatter(total[:,output['D_L']], (total[:,output['D_L']]-Full[:,compareoutput['D_L']]), color = 'r', label = 'Mine', s=10)
     x = np.linspace(-4,20,200)
     y = np.zeros((len(x),1))
     ax[0,0].plot(x,y)
@@ -423,7 +420,54 @@ def compareIDforID(Full, total, output, compareoutput):
     ax[0,0].set_ylim(-10, 12)
     ax[0,0].set_xlabel(r'$\mathrm{my\, \alpha_{CO}}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{my\, \alpha_{CO}\, - \,G12 \,from\, full}$', fontsize=18)
-    plt.savefig('img/schechter/COMPAREACO.pdf', format='pdf', dpi=250, transparent = False)
+    plt.savefig('img/schechter/COMPAREID.pdf', format='pdf', dpi=250, transparent = False)
+################################################################################
+def GetFull(Full, output):
+    FullData = np.zeros((len(Full),13))
+    lorh = []
+    for j,rows1 in enumerate(Full):
+        lorh.append(rows1[1])
+    for i,rows in enumerate(Full):
+        #z|flag|MH2|limMH2|MH2_both|Lumdist|M*|
+        FullData[i,output['ID']] = rows[0]
+        FullData[i,output['S_CO']] = 0
+        FullData[i,output['z']] = rows[9]
+        FullData[i,output['flag']] = rows[37]
+        FullData[i,output['M*']] = rows[20]
+        FullData[i,output['Zo']] = 0
+        FullData[i,output['SFR']] = np.log10(rows[24]) #sfr_best
+        FullData[i,output['sSFR']] = FullData[i,output['SFR']] - FullData[i,output['M*']]
+        FullData[i,output['NUV-r']] = 0
+        FullData[i,output['D_L']] = rows[10]
+        FullData[i,10] = rows[51] # log MH2
+        FullData[i,11] = rows[52] # lim log MH2 3 sig
+        FullData[i,12] = rows[52] + rows[51]
+    data = pd.DataFrame({   'group':lorh, 'ID': FullData[:,output['ID']], 'S_CO': FullData[:,output['S_CO']], 'z': FullData[:,output['z']],
+                            'flag': FullData[:,output['flag']], 'M*': FullData[:,output['M*']], 'Zo': FullData[:,output['Zo']], 'SFR': FullData[:,output['SFR']],
+                            'sSFR': FullData[:,output['sSFR']],'NUV-r': FullData[:,output['NUV-r']],'D_L': FullData[:,output['D_L']],
+                            'MH2': FullData[:,10], 'limMH2': FullData[:,11], 'MH2both': FullData[:,12]})
+    LMass = (data.loc[data['group'] == 'L'])
+    HMass = (data.loc[data['group'] == 'H'])
+    Lz, Hz = LMass[['z']].values, HMass[['z']].values
+    LMassND = (LMass.loc[LMass['flag'] == 2])
+    HMassND = (HMass.loc[HMass['flag'] == 2])
+    LMass1 = (LMass.loc[LMass['flag'] == 1])
+    HMass1 = (HMass.loc[HMass['flag'] == 1])
+    LMassNDarr = LMassND[['ID', 'S_CO', 'z', 'flag', 'M*', 'Zo', 'SFR', 'sSFR', 'NUV-r', 'D_L']].values
+    HMassNDarr = HMassND[['ID', 'S_CO', 'z', 'flag', 'M*', 'Zo', 'SFR', 'sSFR', 'NUV-r', 'D_L']].values
+    LMassNDarr = Vm(LMassNDarr, output['D_L'], min(Lz), max(Lz), 1)
+    HMassNDarr = Vm(HMassNDarr, output['D_L'], min(Hz), max(Hz), 2)
+    LMassND['L_CO'], LMassND['Vm'], LMassND['V/Vm'], LMassND['AlphaCO'], LMassND['dalpha'] = np.zeros((len(LMassND),1)), LMassNDarr[:,output['Vm']], LMassNDarr[:,output['V/Vm']], np.zeros((len(LMassND),1)), np.zeros((len(LMassND),1))
+    HMassND['L_CO'], HMassND['Vm'], HMassND['V/Vm'], HMassND['AlphaCO'], HMassND['dalpha'] = np.zeros((len(HMassND),1)), HMassNDarr[:,output['Vm']], HMassNDarr[:,output['V/Vm']], np.zeros((len(HMassND),1)), np.zeros((len(HMassND),1))
+    # z|1:flag|2:MH2|3:limMH2|4:MH2_both|5:Lumdist|6:M*|7:V/Vm|8:Vm
+    LMass['Vm'], LMass['V/Vm'] = np.full((len(LMass),1), LMassNDarr[0,output['Vm']]), np.zeros((len(LMass),1))
+    HMass['Vm'], HMass['V/Vm'] = np.full((len(HMass),1), HMassNDarr[0,output['Vm']]), np.zeros((len(HMass),1))
+    LMassFull = LMass[['z', 'flag', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm']].values
+    HMassFull = HMass[['z', 'flag', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm']].values
+    Fulldata = np.vstack((LMassFull, HMassFull))
+    LMassNDarr = LMassND[['ID', 'S_CO', 'z', 'flag', 'M*', 'Zo', 'SFR', 'sSFR', 'NUV-r', 'D_L', 'V/Vm', 'Vm', 'L_CO', 'AlphaCO', 'limMH2', 'dalpha']].values
+    HMassNDarr = HMassND[['ID', 'S_CO', 'z', 'flag', 'M*', 'Zo', 'SFR', 'sSFR', 'NUV-r', 'D_L', 'V/Vm', 'Vm', 'L_CO', 'AlphaCO', 'limMH2', 'dalpha']].values
+    return LMassNDarr, HMassNDarr, Fulldata
 ## Read data from tables #######################################################
 highM = atpy.Table('COLDGASS_DR3_with_Z.fits')
 lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
@@ -467,22 +511,17 @@ LMass[:,output['SFR']] = list(lowM[l['SFR']])                           # SFR
 sSFRlist = sSFR(list(lowM[l['SFR']]), list(lowM[l['M*']]))
 LMass[:,output['sSFR']] = sSFRlist                                      # sSFR
 LMass[:,output['NUV-r']] = list(lowM[l['NUV-r']])      # NUV-r
-
+#ID:0|S_CO:1|z:2|flag:3|M*:4|Zo:5|SFR:6|sSFR:7|NUV-r:8|D_L:9|V/Vm:10|Vm:11|L_CO:12|ACO:13|MH2:14|dACO:15|
 ################################################################################
-FullData = np.zeros((len(Full),7))
-for i,rows in enumerate(Full):
-    #z|flag|MH2|limMH2|MH2_both|Lumdist|M*|
-    FullData[i,0] = rows[9]
-    FullData[i,1] = rows[37]
-    FullData[i,2] = rows[51]
-    FullData[i,3] = rows[52]
-    FullData[i,4] = 10**(FullData[i,2] + FullData[i,3])
-    FullData[i,5] = rows[10]
-    FullData[i,6] = rows[20]
-FullData = Vm(FullData, 5, min(FullData[:,0]), max(FullData[:,0]), 3)
+LND, HND, FullData = GetFull(Full, output)
+LND[:,output['MH2']] = 10**LND[:,output['MH2']]
+HND[:,output['MH2']] = 10**HND[:,output['MH2']]
+# FullData = Vm(FullData, 5, min(FullData[:,0]), max(FullData[:,0]), 3)
 FullData[:,2] = 10**FullData[:,2]
 FullData[:,3] = 10**FullData[:,3]
+FullData[:,4] = 10**FullData[:,4]
 #0:z|1:flag|2:MH2|3:limMH2|4:MH2_both|5:Lumdist|6:M*|7:V/Vm|8:Vm
+# print len(FullData), '@@@@'
 FullDet = FullData[FullData[:,1] == 1]
 FullND = FullData[FullData[:,1] == 2]
 ################################################################################
@@ -575,8 +614,6 @@ alphaerror = np.append(LMass[:,output['dalpha']], HMass[:,output['dalpha']])
 ND = np.vstack((LMassND, HMassND))
 totaldet = np.vstack((LMass, HMass))
 total = np.vstack((totaldet, ND))
-
-
 #N, rho, xbins = Schechter(total, output['L_CO'], output['Vm'])
 #MH2 total
 # Nh2, rhoh2, xbinsh2 = Schechter(total, output['MH2'], output['Vm'])
@@ -588,9 +625,15 @@ HSch = Schechter(HMass, output['MH2'], output['Vm'], bins)
 NDSch = Schechter(ND, output['MH2'], output['Vm'], bins)
 totSch = Schechter(total, output['MH2'], output['Vm'], bins)
 detSch = Schechter(totaldet, output['MH2'], output['Vm'], bins)
-FullDetSchech = Schechter(FullDet, 2, 7, bins)
-FullNDSchech = Schechter(FullND, 3, 7, bins)
+FullDetSchech = Schechter(FullDet, 2, 8, bins)
+print FullDet[:,2]
+FullNDSchech = Schechter(FullND, 3, 8, bins)
 FullSchech = Schechter(FullData, 4, 8, bins)
+total3sig = np.vstack((totaldet, LND))
+total3sig = np.vstack((total3sig, HND))
+totSch2 = Schechter(total3sig, output['MH2'], output['Vm'], bins)
+totSch3 = Schechter(FullData, 4, 8, bins)
+NDSch2 = Schechter(np.vstack((LND, HND)), output['MH2'], output['Vm'], bins)
 #Nh2ND2, rhoh2ND2, xbinsh2ND2 = Schechter(HMassND, output['MH2'], output['Vm'])
 # fit schechter ################################################################
 # x1,x2 = xbins, xbins[4:]
@@ -664,7 +707,7 @@ for i in range(0, np.shape(erdet)[1]):
     eri = eri[abs(eri)<99]
     sigmadet.append(np.std(eri))
 # BlueRed#######################################################################
-FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2 = BlueRed.main(bins, totSch, sigma)
+FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2 = BlueRed.main(bins, totSch, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, FullDetSchech)
 ################################################################################
 fullcomparedata = comparefull(Full, compare)
 PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpts, y_keres, x_keres, FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2, y_ober)

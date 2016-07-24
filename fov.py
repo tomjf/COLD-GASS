@@ -98,9 +98,11 @@ def calcArea2(phis, top, bottom):
     return Area
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 df = pd.read_csv('data/PS_100701.csv')
-coords = df[['GASS', 'ra', 'dec']].values
+coords = df[['GASS', 'ra', 'dec', 'MASS_P50']].values
+print len(coords)
 df = pd.read_csv('data/LOWMASS_MASTER.csv')
-coords_L = df[['GASSID', 'RA', 'DEC']].values
+coords_L = df[['GASSID', 'RA', 'DEC', 'MASS']].values
+print len(coords_L)
 df = pd.read_csv('data/COLDGASS_DR3_with_Z.csv')
 COLD_GASS_H = df[['GASSID', 'RA', 'DEC']].values
 lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
@@ -184,6 +186,15 @@ areaF = calcArea(0, 2*np.pi, 0, np.pi)
 print areaA, areaB, areaC, areaD, areaD-(areaB+areaC)
 print areaE, areaF/np.pi
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+x7 = np.array([-np.pi/3.25,-np.pi/3.25,np.pi/4.75,np.pi/4.75,-np.pi/3.25])
+y7 = np.array([0,np.pi/5,np.pi/5,0,0])
+H = stack(x7,y7)
+areas.append([H, Ainside, areaS(H, Ainside)])
+top7 = [[-np.pi/3.25, np.pi/4.75], [np.pi/5, np.pi/5]]
+bottom7 = [[-np.pi/3.25, np.pi/4.75], [0, 0]]
+phis7, top7, bottom7 = interpolateEdge2(top7, bottom7, 500)
+areas2.append(calcArea2(phis7, top7, bottom7))
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # print area(np.pi/1.195, np.pi, 0, np.pi/120)
 A1 =  area(-np.pi/3, np.pi/3, 0, np.pi/5)
 totA = totalArea(areas)
@@ -194,12 +205,15 @@ topcoords = [[-np.pi/2.7, -np.pi/2.86, -np.pi/3.25], [np.pi/6, np.pi/5, np.pi/5]
 bottomcoords = [[-np.pi/2.7, -np.pi/2.8, -np.pi/3.25], [np.pi/6, np.pi/10, 0]]
 phis2, top2, bottom2 = interpolateEdge2(topcoords, bottomcoords, 500)
 print '@@@@', calcArea2(phis2, top2, bottom2)
-print '1@@@@', np.sum(areas2)
+print '1@@@@', np.sum(areas2) - areas2[-1]
+print np.sum(areas2) - areas2[0]
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 fig = plt.figure(figsize=(8,6))
 ax = fig.add_subplot(111, projection="mollweide")
-ax.scatter(((GASS[:,1]-180)*(math.pi/180.0)), (GASS[:,2]*(math.pi/180.0)), s=0.1, alpha = 0.5, label = 'SDSS')
-ax.scatter(((COLDGASS[:,1]-180)*(math.pi/180.0)), (COLDGASS[:,2]*(math.pi/180.0)), s=0.1, color='red', label = 'COLD GASS')
+# ax.scatter(((coords[:,1]-180)*(math.pi/180.0)), (coords[:,2]*(math.pi/180.0)), s=0.1, alpha = 0.5, label = 'SDSS')
+ax.scatter(((coords_L[:,1]-180)*(math.pi/180.0)), (coords_L[:,2]*(math.pi/180.0)), s=0.1, color='red', label = 'COLD GASS')
+# ax.scatter(((LMass[:,1]-180)*(math.pi/180.0)), (LMass[:,2]*(math.pi/180.0)), s=10, alpha = 1, color='blue', label = 'LMASS')
+# ax.scatter(((COLD_GASS_H[:,1]-180)*(math.pi/180.0)), (COLD_GASS_H[:,2]*(math.pi/180.0)), s=10, alpha = 1, color='green', label = 'HMASS')
 for i in range(0,len(areas)):
     ax.plot(areas[i][0][:,0],areas[i][0][:,1], linewidth=1)
     ax.text(areas[i][1][:,0], areas[i][1][:,1], str(round(areas[i][2],4)), color = 'r', fontsize=12)
