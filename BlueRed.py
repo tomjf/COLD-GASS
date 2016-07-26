@@ -242,7 +242,7 @@ def PlotSchechSDSS(FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2, x_kere
     plt.savefig('img/scal/'+ 'SDSS' + '.eps', format='eps', dpi=250, transparent = False)
     plt.savefig('img/scal/'+ 'SDSS' + '.pdf', format='pdf', dpi=250, transparent = False)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def PlotSchechSDSSv2(FullSchech, FullSchech_Best, totSch_data, totSch2, totSch3, LSch, HSch, NDSch, NDSch2, sigma, x_keres, y_keres, y_ober, FullDetSchech):
+def PlotSchechSDSSv2(GASS_Schech, FullSchech, FullSchech_Best, totSch_data, totSch2, totSch3, LSch, HSch, NDSch, NDSch2, sigma, x_keres, y_keres, y_ober, FullDetSchech):
     xmajorLocator   = MultipleLocator(0.5)
     xminorLocator   = MultipleLocator(0.1)
     ymajorLocator   = MultipleLocator(0.5)
@@ -258,6 +258,7 @@ def PlotSchechSDSSv2(FullSchech, FullSchech_Best, totSch_data, totSch2, totSch3,
     # ax[0,0].scatter(totSch2[2], totSch2[1], marker = 's', s = 100, edgecolor = 'b', linewidth='2', facecolor='none', label = 'COLD GASS data pts2')
     # ax[0,0].scatter(totSch3[2], totSch3[1], marker = 's', s = 100, edgecolor = 'green', linewidth='2', facecolor='none', label = 'fulldata')
     ax[0,0].scatter(FullDetSchech[2], FullDetSchech[1], marker = 's', s = 100, edgecolor = 'blue', linewidth='2', facecolor='none', label = 'detections only')
+    ax[0,0].scatter(GASS_Schech[2], GASS_Schech[1], marker = 'o', s = 50, edgecolor = 'red', linewidth='2', facecolor='red', label = 'GASS')
     # ax[0,0].scatter(LSch[2], LSch[1], marker = 's', s = 100, edgecolor = 'coral', linewidth='2', facecolor='none', label = 'L')
     # ax[0,0].scatter(HSch[2], HSch[1], marker = 's', s = 100, edgecolor = 'green', linewidth='2', facecolor='none', label = 'H')
     # ax[0,0].scatter(NDSch[2], NDSch[1], marker = 's', s = 100, edgecolor = 'black', linewidth='2', facecolor='none', label = 'ND 5sig')
@@ -331,6 +332,7 @@ def errors(data, x, y, output):
 ################################################################################
 def sdssMethod(zl, zh):
     galinfo = atpy.Table('data/sdss/gal_info_dr7_v5_2.fit')
+    print 'sdss', len(galinfo)
     sfr = atpy.Table('data/sdss/gal_totsfr_dr7_v5_2.fits')
     mstar = atpy.Table('data/sdss/totlgm_dr7_v5_2.fit')
     sdssData = np.zeros((len(galinfo),3))
@@ -424,7 +426,7 @@ def sfrbest(FullData, SFRBL):
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
     ax[0,0].scatter(FullData[:,2], FullData[:,8], alpha = 0.1, label='SDSS', color = 'b')
     ax[0,0].scatter(FullData[:,3], FullData[:,9], alpha = 0.1, label='best', color = 'r')
-    ax[0,0].scatter(SFRBL[:,1], SFRBL[:,5], alpha = 0.1, label='GASS', color = 'g')
+    ax[0,0].scatter(SFRBL[:,1], SFRBL[:,6], alpha = 0.1, label='GASS', color = 'g')
     ax[0,0].set_xlabel(r'$\mathrm{log \, SFR}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, MH2}$', fontsize=18)
     plt.legend(fontsize = 13)
@@ -441,8 +443,9 @@ def Vm1(data, Dlaxis, minz, maxz, L):
         N_COLDGASS = 366.0
         N_SDSS = 12006.0
     elif L == 3:
-        N_COLDGASS = 1
-        N_SDSS = 1
+        Omega = 0.427304474238
+        N_COLDGASS = 1255.0
+        N_SDSS = 12770
     VVmlist = np.zeros((len(data),1))
     Vmlist = np.zeros((len(data),1))
     x,y = np.zeros((1,1)), np.zeros((1,1))
@@ -463,28 +466,30 @@ def sfrbest13k():
     df = pd.read_csv('data/allGASS_SFRbest_simple_t1.csv')
     SFRBL = df[['GASS', 'SFR_best', 'SFRerr_best', 'SFRcase_best']].values
     df = pd.read_csv('data/PS_100701.csv')
-    coords_H = df[['GASS', 'ra', 'dec', 'MASS_P50']].values
+    coords_H = df[['GASS', 'z', 'ra', 'dec', 'MASS_P50']].values
     df = pd.read_csv('data/LOWMASS_MASTER.csv')
-    coords_L = df[['GASSID', 'RA', 'DEC', 'MASS']].values
+    coords_L = df[['GASSID', 'Z', 'RA', 'DEC', 'MASS']].values
     GASS = np.vstack((coords_H, coords_L))
-    mstar = np.zeros((len(SFRBL),1))
+    mstar, z = np.zeros((len(SFRBL),1)), np.zeros((len(SFRBL),1))
     for index, element in enumerate(SFRBL):
         for index1, element1 in enumerate(GASS):
             if element[0] == element1[0]:
-                mstar[index] = element1[3]
+                mstar[index] = element1[4]
+                z[index] == element1[1]
     SFRBL = np.hstack((SFRBL, mstar))
+    SFRBL = np.hstack((SFRBL, z))
     SFRBL = SFRBL[SFRBL[:,4]>0]
-    print min(SFRBL[:,1]), max(SFRBL[:,1])
     SFRBL[:,1] = np.log10(1.46*SFRBL[:,1])
     SFRBL = AmGasFrac(SFRBL, 4, 1)
+    SFRBL = np.hstack((SFRBL, np.zeros((len(SFRBL),1))))
+    SFRBL = Vm1(SFRBL, 7, min(GASS[:,1]), max(GASS[:,1]), 3)
+    # 0:ID|1:SFGRbest|2:err|3:case|4:M*|5:z|6:MH2|7:Dl|8:V/Vm|9:Vm
     return SFRBL
-
+################################################################################
 def main(bins, totSch_data, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, FullDetSchech):
-    ################################################################################
     V = 100000
     L = np.linspace(8,11.9,24)
     LKeres = np.linspace(4,8,200)
-
     Spheroid = (3.67/10000), 10.74, -0.525
     Disk = (0.855/10000), 10.70, -1.39
     Keres = (7.2/10000), 7.0, -1.30
@@ -617,6 +622,7 @@ def main(bins, totSch_data, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     # calculate gas fraction using amelie's method z,M*,SFR,MH2_gio,Vm,MH2_am
     sdssData = AmGasFrac(sdssData, 1, 2)
     sdssSchechAm = Schechter(sdssData, 5, 4, bins)
+    GASS_Schech = Schechter(SFRBL, 6, 9, bins)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     PlotSchechSDSS(FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2, x_keres, y_keres, y_ober)
     SFRMH2(sdssData)
@@ -629,7 +635,7 @@ def main(bins, totSch_data, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     sfrbest(FullData, SFRBL)
     PlotSchechter(totSch, redSch, blueSch, x3, y_scalfit, x_scal, y_keres)
     PlotSchechterMass(MassSchB, MassSchR, L, yred, yblue)
-    PlotSchechSDSSv2(FullSchech, FullSchech_Best_D, totSch_data, totSch2, totSch3,  LSch, HSch, NDSch, NDSch2, sigma, x_keres, y_keres, y_ober, FullDetSchech)
+    PlotSchechSDSSv2(GASS_Schech, FullSchech, FullSchech_Best_D, totSch_data, totSch2, totSch3,  LSch, HSch, NDSch, NDSch2, sigma, x_keres, y_keres, y_ober, FullDetSchech)
     SFRHist(sdssData, datagio, FullData, total)
     return FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2
 
