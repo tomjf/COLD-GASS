@@ -137,6 +137,7 @@ def Vm(data, Dlaxis, minz, maxz, L):
     x[0,0], y[0,0] = minz, maxz
     D_in = float(lumdistance(x,0)[0,1])
     D_out = float(lumdistance(y,0)[0,1])
+    print D_in, D_out, L
     Vm =  (1.0/3.0)*(N_COLDGASS/N_SDSS)*((D_out**3)-(D_in**3))*(Omega)
     for i in range(0,len(data)):
         Dl = data[i,Dlaxis]
@@ -244,7 +245,6 @@ def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpt
     ax[0,0].set_xlim(7.5, 10.5)
     ax[0,0].tick_params(axis='x',which='minor',bottom='on')
     plt.legend(fontsize = 8)
-    plt.savefig('img/schechter/MH2.eps', format='eps', dpi=250, transparent = False)
     plt.savefig('img/schechter/MH2.pdf', format='pdf', dpi=250, transparent = False)
 ################################################################################
 def PlotSchechter2(totSch, sigmatot, y_CG, detSch, sigmadet, y_det, xkeres, ykeres2):
@@ -273,7 +273,6 @@ def PlotSchechter2(totSch, sigmatot, y_CG, detSch, sigmadet, y_det, xkeres, yker
     # ax[0,0].text(9, -5.1, (r'$\phi_{*}$ = '+str(round(phi1,2))+'\n'+ r'$L_{*}$ = '+str(round(L01,2))+'\n'+ r'$\alpha$ = '+str(round(alpha1,2))), fontsize=18, color='b')
     # ax[0,0].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
     plt.legend(fontsize = 12)
-    plt.savefig('img/schechter/MH2poster.eps', format='eps', dpi=250, transparent = False)
     plt.savefig('img/schechter/MH2poster.pdf', format='pdf', dpi=250, transparent = False)
     # plt.savefig('img/MH2.png', transparent = False ,dpi=250)
 
@@ -300,7 +299,6 @@ def PlotRhoH2(LSch, HSch, NDSch, totSch, x, x1, ykeresph2, yrhoCG, yrhoCGpts, yr
     # ax[0,0].text(9, -5.1, (r'$\phi_{*}$ = '+str(round(phi1,2))+'\n'+ r'$L_{*}$ = '+str(round(L01,2))+'\n'+ r'$\alpha$ = '+str(round(alpha1,2))), fontsize=18, color='b')
     # ax[0,0].text(9, -5.8, (r'$\phi_{*}$ = '+str(round(phi2,2))+'\n'+ r'$L_{*}$ = '+str(round(L02,2))+'\n'+ r'$\alpha$ = '+str(round(alpha2,2))), fontsize=18, color='r')
     #plt.legend(fontsize = 13)
-    plt.savefig('img/schechter/pH2.eps', format='eps', dpi=250, transparent = False)
     plt.savefig('img/schechter/pH2.pdf', format='pdf', dpi=250, transparent = False)
     # plt.savefig('img/MH2.png', transparent = False ,dpi=250)
 
@@ -313,7 +311,6 @@ def PlotAlphaCO(data, output):
     #ax[0,0].set_ylim(-5, -1)
     #ax[0,0].set_xlim(7.5, 10.5)
     ax[0,0].tick_params(axis='x',which='minor',bottom='on')
-    plt.savefig('img/schechter/aCO.eps', format='eps', dpi=250, transparent = False)
     plt.savefig('img/schechter/aCO.pdf', format='pdf', dpi=250, transparent = False)
 # schechter only ###############################################################
 def PlotMsunvsMH2(data, output):
@@ -332,7 +329,6 @@ def PlotMsunvsMH2(data, output):
     # ax[0,0].plot(x,0)
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, \frac{M_{H2}}{M_{sun}}}$', fontsize=18)
-    plt.savefig('img/schechter/MMH2.eps', format='eps', dpi=250, transparent = False)
     plt.savefig('img/schechter/MMH2.pdf', format='pdf', dpi=250, transparent = False)
 # Error Sampling ###############################################################
 def errors(data, x, y, output):
@@ -352,12 +348,13 @@ def errors(data, x, y, output):
         spread[i,:] = drho
     return spread
 ################################################################################
-def PlotMstarMH2(total, FullData, ND, FullND, output):
+def PlotMstarMH2(total, FullData, ND, FullND, output, FullDatasim):
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
     ax[0,0].scatter(total[:,output['M*']], np.log10(total[:,output['MH2']]), color = 'r', label = 'Mine', s=10)
     ax[0,0].scatter(FullData[:,6], np.log10(FullData[:,4]), color = 'k', label = 'Amelie', s=10)
     ax[0,0].scatter(FullND[:,6], np.log10(FullND[:,4]), color = 'c', label = 'Amelie ND', s=10)
     ax[0,0].scatter(ND[:,output['M*']], np.log10(ND[:,output['MH2']]), color = 'g', label = 'My ND', s=10)
+    ax[0,0].scatter(FullDatasim[:,4], FullDatasim[:,9], color = 'm', label = 'Sim', s=10)
     ax[0,0].vlines(10,7.5,10.5, color='k')
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{*}\,[M_{\odot}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
@@ -467,6 +464,7 @@ def GetFull(Full, output):
     Fulldata = np.vstack((LMassFull, HMassFull))
     LMassNDarr = LMassND[['ID', 'S_CO', 'z', 'flag', 'M*', 'Zo', 'SFR', 'sSFR', 'NUV-r', 'D_L', 'V/Vm', 'Vm', 'L_CO', 'AlphaCO', 'limMH2', 'dalpha']].values
     HMassNDarr = HMassND[['ID', 'S_CO', 'z', 'flag', 'M*', 'Zo', 'SFR', 'sSFR', 'NUV-r', 'D_L', 'V/Vm', 'Vm', 'L_CO', 'AlphaCO', 'limMH2', 'dalpha']].values
+    print LMass['Vm'], HMass['Vm']
     return LMassNDarr, HMassNDarr, Fulldata
 ## Read data from tables #######################################################
 highM = atpy.Table('COLDGASS_DR3_with_Z.fits')
@@ -626,7 +624,6 @@ NDSch = Schechter(ND, output['MH2'], output['Vm'], bins)
 totSch = Schechter(total, output['MH2'], output['Vm'], bins)
 detSch = Schechter(totaldet, output['MH2'], output['Vm'], bins)
 FullDetSchech = Schechter(FullDet, 2, 8, bins)
-print FullDet[:,2]
 FullNDSchech = Schechter(FullND, 3, 8, bins)
 FullSchech = Schechter(FullData, 4, 8, bins)
 total3sig = np.vstack((totaldet, LND))
@@ -707,7 +704,7 @@ for i in range(0, np.shape(erdet)[1]):
     eri = eri[abs(eri)<99]
     sigmadet.append(np.std(eri))
 # BlueRed#######################################################################
-FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2 = BlueRed.main(bins, totSch, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, FullDetSchech)
+FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2, FullDatasim = BlueRed.main(bins, totSch, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, FullDetSchech)
 ################################################################################
 fullcomparedata = comparefull(Full, compare)
 PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpts, y_keres, x_keres, FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2, y_ober)
@@ -716,7 +713,7 @@ PlotRhoH2(LSch, HSch, NDSch, totSch, xkeres, np.log10(x1), yrho, yrhoCG, yrhoCGp
 PlotAlphaCO(total, output)
 PlotMsunvsMH2(total, output)
 PlotSchechterFull(FullDetSchech, FullNDSchech, FullSchech, x_keres, y_keres, y_ober)
-PlotMstarMH2(total, FullData, ND, FullND, output)
+PlotMstarMH2(total, FullData, ND, FullND, output, FullDatasim)
 compareIDforID(fullcomparedata, total, output, compareoutput)
 x1 = np.log10(x1)
 

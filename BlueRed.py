@@ -8,6 +8,8 @@ import scal_relns
 import atpy
 from scipy import integrate
 import pandas as pd
+from scipy.stats import kde
+from matplotlib import cm
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # def log_schechter(logL, log_rho, log_Lstar, alpha):
 #     rholist = []
@@ -118,7 +120,6 @@ def PlotBaldry(L, yBaldry, yred, yblue):
     ax[0,0].plot(L,np.log10(yblue), 'b', linewidth = 3)
     ax[0,0].set_xlabel(r'$\mathrm{log \, M_{*}\, [M_{sun}]}$', fontsize = 20)
     ax[0,0].set_ylabel(r'$\mathrm{log \, (number \, density) \,[Mpc^{-3}\, dex^{-1}]}$', fontsize = 20)
-    plt.savefig('img/scal/Baldry.eps', format='eps', dpi=250, transparent = False)
     plt.savefig('img/scal/Baldry.pdf', format='pdf', dpi=250, transparent = False)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def PlotMSFR(bluepop, redpop, x, z, data):
@@ -138,7 +139,6 @@ def PlotMSFR(bluepop, redpop, x, z, data):
     ax[0,0].plot(data[:,0], data[:,1], '-', color = 'limegreen', linewidth = 5)
     ax[0,0].set_xlabel(r'$\mathrm{log \, M_{*}\, [M_{sun}]}$', fontsize = 20)
     ax[0,0].set_ylabel(r'$\mathrm{log \, SFR\, [M_{\odot}\,yr^{-1}]}$', fontsize = 20)
-    plt.savefig('img/scal/MSFR.eps', format='eps', dpi=250, transparent = False)
     plt.savefig('img/scal/MSFR.pdf', format='pdf', dpi=250, transparent = False)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def PlotHist(bluepop, redpop):
@@ -189,7 +189,6 @@ def PlotSchechter(totSch, redSch, blueSch, x, y_scalfit, x_scal, y_keres):
     ax[0,0].set_ylim(-5, -1)
     ax[0,0].set_xlim(7.5, 10.5)
     plt.legend(fontsize = 13)
-    plt.savefig('img/scal/MH2.eps', format='eps', dpi=250, transparent = False)
     plt.savefig('img/scal/MH2.pdf', format='pdf', dpi=250, transparent = False)
     # plt.savefig('img/MH2.png', transparent = False ,dpi=250)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -212,7 +211,6 @@ def PlotSchechterMass(MassSchB, MassSchR, L, yred, yblue):
     ax[0,0].set_ylim(-5, -1)
     ax[0,0].set_xlim(8, 11.5)
     plt.legend(fontsize = 13)
-    plt.savefig('img/scal/Mstar.eps', format='eps', dpi=250, transparent = False)
     plt.savefig('img/scal/Mstar.pdf', format='pdf', dpi=250, transparent = False)
     # plt.savefig('img/MH2.png', transparent = False ,dpi=250)
 
@@ -239,7 +237,6 @@ def PlotSchechSDSS(FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2, x_kere
     ax[0,0].set_ylim(-5, -1)
     ax[0,0].set_xlim(7.5, 10.5)
     plt.legend(fontsize = 13)
-    plt.savefig('img/scal/'+ 'SDSS' + '.eps', format='eps', dpi=250, transparent = False)
     plt.savefig('img/scal/'+ 'SDSS' + '.pdf', format='pdf', dpi=250, transparent = False)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def PlotSchechSDSSv2(GASS_Schech, FullSchech, FullSchech_Best, totSch_data, totSch2, totSch3, LSch, HSch, NDSch, NDSch2, sigma, x_keres, y_keres, y_ober, FullDetSchech):
@@ -332,7 +329,6 @@ def errors(data, x, y, output):
 ################################################################################
 def sdssMethod(zl, zh):
     galinfo = atpy.Table('data/sdss/gal_info_dr7_v5_2.fit')
-    print 'sdss', len(galinfo)
     sfr = atpy.Table('data/sdss/gal_totsfr_dr7_v5_2.fits')
     mstar = atpy.Table('data/sdss/totlgm_dr7_v5_2.fit')
     sdssData = np.zeros((len(galinfo),3))
@@ -358,9 +354,16 @@ def SFRMH2(data):
     plt.savefig('img/scal/sfrmh2.pdf', format='pdf', dpi=250, transparent = False)
 ################################################################################
 def SFRMSTAR(data, FullData):
+    nbins=200
+    data2 = np.vstack((data[:,1], data[:,2]))
+    x, y = data[:,1], data[:,2]
+    k = kde.gaussian_kde(data2)
+    xi, yi = np.mgrid[x.min():x.max():nbins*1j, y.min():y.max():nbins*1j]
+    zi = k(np.vstack([xi.flatten(), yi.flatten()]))
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
-    ax[0,0].scatter(data[:,1], data[:,2], s = 1, color = 'k', label = 'SDSS')
-    ax[0,0].scatter(FullData[:,3], FullData[:,2], s = 10, color = 'r', label = 'COLD GASS')
+    ax[0,0].contourf(xi, yi, zi.reshape(xi.shape), 15, cmap = cm.gray_r)
+    ax[0,0].scatter(data[:,1], data[:,2], s = .1, alpha=0.5, color = 'b', label = 'COLD GASS')
+    # ax[0,0].scatter(FullData[:,3], FullData[:,2], s = 10, color = 'r', label = 'COLD GASS')
     ax[0,0].set_xlim(8, 11.5)
     ax[0,0].set_ylim(-2.5, 1)
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{*}\,[M_{sun}]}$', fontsize=18)
@@ -416,7 +419,6 @@ def GetCOLDGASS():
     HMassa = Vm1(HMassa, 5, min(HMassa[:,0]), max(HMassa[:,0]), 2)
     #0:z|1:flag|2:SFR|3:SFR_BEST|4:M*|5:Lumdist|6:V/Vm|7:Vm|8:MH2_SDSS|9:MH2_BEST
     FullData = np.vstack((LMassa, HMassa))
-    print np.shape(FullData)
     FullData = AmGasFrac(FullData, 4, 2) # SFR_SDSS
     FullData = AmGasFrac(FullData, 4, 3) # SFR_BEST
     FullDet = FullData[FullData[:,1] == 1]
@@ -637,7 +639,7 @@ def main(bins, totSch_data, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     PlotSchechterMass(MassSchB, MassSchR, L, yred, yblue)
     PlotSchechSDSSv2(GASS_Schech, FullSchech, FullSchech_Best_D, totSch_data, totSch2, totSch3,  LSch, HSch, NDSch, NDSch2, sigma, x_keres, y_keres, y_ober, FullDetSchech)
     SFRHist(sdssData, datagio, FullData, total)
-    return FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2
+    return FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2, FullData
 
 # FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2 = main()
 # bins = np.linspace(7.5,11.5,25)

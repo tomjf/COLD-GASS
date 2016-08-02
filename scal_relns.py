@@ -43,7 +43,10 @@ def fitdata2():
     fit = curve_fit(second2var, (data[:,2], data[:,1]), data[:,0])
     return data, fit
 
-def plotgioscal(data):
+def plotgioscal(data, fit):
+    x = np.linspace(-1.5,2,500)
+    y = third(x, *fit[0])
+    print fit[0]
     xmajorLocator   = MultipleLocator(0.5)
     xminorLocator   = MultipleLocator(0.1)
     ymajorLocator   = MultipleLocator(0.5)
@@ -53,13 +56,16 @@ def plotgioscal(data):
     ax[0,0].xaxis.set_minor_locator(xminorLocator)
     ax[0,0].yaxis.set_major_locator(ymajorLocator)
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
+    ax[0,0].set_xlim(-1.5,2)
+    ax[0,0].set_ylim(7.5,11)
     s = ax[0,0].scatter(data[:,1], data[:,0], c=data[:,2])
+    ax[0,0].plot(x,y, color='k')
     cbar = fig.colorbar(s)
+    cbar.set_label(r'$\mathrm{log\, M_*\, [M_{\odot}]}$', rotation=270, labelpad=40, fontsize = 18)
     # ax[0,0].plot(x,y, linewidth = 1)
     # ax[0,0].set_xticklabels(xticklabels, fontsize = 18)
-    ax[0,0].set_xlabel(r'$\mathrm{log\, SFR\, [M_{\odot} \, yr^{-1}]}$', fontsize=28)
-    ax[0,0].set_ylabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=28)
-    plt.savefig('img/scal/scalrelns.eps', format='eps', dpi=250, transparent = False)
+    ax[0,0].set_xlabel(r'$\mathrm{log\, SFR\, [M_{\odot} \, yr^{-1}]}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
     plt.savefig('img/scal/scalrelns.pdf', format='pdf', dpi=250, transparent = False)
 
 data, fit = fitdata()
@@ -76,5 +82,5 @@ for i in range(0, len(data[:,0])):
 # plt.scatter(data[:,1], MH2)
 # plt.scatter(data[:,1], data[:,0], color = 'r')
 # plt.show()
-#
-plotgioscal(data)
+
+plotgioscal(data, fit)
