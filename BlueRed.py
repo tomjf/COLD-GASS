@@ -10,6 +10,7 @@ from scipy import integrate
 import pandas as pd
 from scipy.stats import kde
 from matplotlib import cm
+from sfrBestSDSS import convertsdss
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # def log_schechter(logL, log_rho, log_Lstar, alpha):
 #     rholist = []
@@ -239,7 +240,7 @@ def PlotSchechSDSS(FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2, x_kere
     plt.legend(fontsize = 13)
     plt.savefig('img/scal/'+ 'SDSS' + '.pdf', format='pdf', dpi=250, transparent = False)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def PlotSchechSDSSv2(GASS_Schech, FullSchech, FullSchech_Best, totSch_data, totSch2, totSch3, LSch, HSch, NDSch, NDSch2, sigma, x_keres, y_keres, y_ober, FullDetSchech):
+def PlotSchechSDSSv2(GASS_Schech, FullSchech, FullSchech_Best, totSch_data, totSch, totSch2, LSch, HSch, NDSch, NDSch2, sigma, x_keres, y_keres, y_ober, FullDetSchech, FullSchech_m):
     xmajorLocator   = MultipleLocator(0.5)
     xminorLocator   = MultipleLocator(0.1)
     ymajorLocator   = MultipleLocator(0.5)
@@ -249,19 +250,21 @@ def PlotSchechSDSSv2(GASS_Schech, FullSchech, FullSchech_Best, totSch_data, totS
     ax[0,0].xaxis.set_minor_locator(xminorLocator)
     ax[0,0].yaxis.set_major_locator(ymajorLocator)
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
-    ax[0,0].errorbar(FullSchech_Best[2], FullSchech_Best[1], fmt = 'o', markersize = 8, color = 'g', label = 'COLD GASS, using SFR_BEST')
+    ax[0,0].errorbar(FullSchech_Best[2], FullSchech_Best[1], fmt = 'o', markersize = 8, color = 'g', label = 'CG with SFRbest')
+    ax[0,0].errorbar(FullSchech_m[2], FullSchech_m[1], fmt = 's', markersize = 4, color = 'k', label = 'All data')
     # ax[0,0].errorbar(FullSchech[2], FullSchech[1], fmt = 'o', markersize = 8, color = 'c', label = 'COLD GASS, using SFR_SDSS')
     # ax[0,0].errorbar(totSch_data[2], totSch_data[1], yerr=sigma, fmt = 's', markersize = 8, color = 'r', label = 'COLD GASS data pts')
-    # ax[0,0].scatter(totSch2[2], totSch2[1], marker = 's', s = 100, edgecolor = 'b', linewidth='2', facecolor='none', label = 'COLD GASS data pts2')
-    # ax[0,0].scatter(totSch3[2], totSch3[1], marker = 's', s = 100, edgecolor = 'green', linewidth='2', facecolor='none', label = 'fulldata')
-    ax[0,0].scatter(FullDetSchech[2], FullDetSchech[1], marker = 's', s = 100, edgecolor = 'blue', linewidth='2', facecolor='none', label = 'detections only')
+    ax[0,0].scatter(totSch2[2], totSch2[1], marker = 'h', s = 100, edgecolor = 'm', linewidth='2', facecolor='hotpink', label = 'Amelie Sim')
+    ax[0,0].scatter(totSch[2], totSch[1], marker = 'h', s = 100, edgecolor = 'green', linewidth='2', facecolor='lawngreen', label = 'Gio Sim')
+    ax[0,0].scatter(FullDetSchech[2], FullDetSchech[1], marker = 's', s = 100, edgecolor = 'blue', linewidth='2', facecolor='none', label = 'CG det')
     ax[0,0].scatter(GASS_Schech[2], GASS_Schech[1], marker = 'o', s = 50, edgecolor = 'red', linewidth='2', facecolor='red', label = 'GASS')
+    ax[0,0].fill_between(totSch2[2], totSch2[1], totSch[1], alpha = 0.2, color = 'k')
     # ax[0,0].scatter(LSch[2], LSch[1], marker = 's', s = 100, edgecolor = 'coral', linewidth='2', facecolor='none', label = 'L')
     # ax[0,0].scatter(HSch[2], HSch[1], marker = 's', s = 100, edgecolor = 'green', linewidth='2', facecolor='none', label = 'H')
     # ax[0,0].scatter(NDSch[2], NDSch[1], marker = 's', s = 100, edgecolor = 'black', linewidth='2', facecolor='none', label = 'ND 5sig')
     # ax[0,0].scatter(NDSch2[2], NDSch2[1], marker = 's', s = 100, edgecolor = 'm', linewidth='2', facecolor='none', label = 'ND 3sig')
     ax[0,0].plot(np.log10(x_keres), y_keres, 'k--', label = 'Keres+03')
-    ax[0,0].plot(np.log10(x_keres), y_ober, 'k', label = 'Obreschkow+09')
+    # ax[0,0].plot(np.log10(x_keres), y_ober, 'k', label = 'Obreschkow+09')
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
     ax[0,0].set_ylim(-5, -1)
@@ -488,7 +491,7 @@ def sfrbest13k():
     # 0:ID|1:SFGRbest|2:err|3:case|4:M*|5:z|6:MH2|7:Dl|8:V/Vm|9:Vm
     return SFRBL
 ################################################################################
-def main(bins, totSch_data, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, FullDetSchech):
+def main(bins, totSch_data, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, FullDetSchech, FullSchech_m):
     V = 100000
     L = np.linspace(8,11.9,24)
     LKeres = np.linspace(4,8,200)
@@ -540,6 +543,7 @@ def main(bins, totSch_data, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     # add starformation rates
     blues = mainSequence(blues, True, 4, False)
     reds = cloud(reds)
+    blues[:,5] = convertsdss(blues[:,5])
     trend = mainSequence(Baldry, False, 0, False)
     data = np.zeros((len(L),2))
     data[:,0] = L
@@ -566,8 +570,8 @@ def main(bins, totSch_data, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     # bins  = np.linspace(6, 10.5, 30)
     # bins  = np.linspace(min(total[:,6]), max(total[:,6]), 16)
     massbins = np.linspace(8,11.5,25)
-    totSch = Schechter(total, 6, 7, bins)
-    totSch2 = Schechter(total, 8, 7, bins)
+    totSch = Schechter(total, 6, 7, bins) # simulated gio's
+    totSch2 = Schechter(total, 8, 7, bins) # simulated am's
     redSch = Schechter(reds, 6, 7, bins)
     blueSch = Schechter(blues, 6, 7, bins)
     MassSchB = Schechter(blues, 4, 7, massbins)
@@ -630,14 +634,14 @@ def main(bins, totSch_data, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     SFRMH2(sdssData)
     SFRMSTAR(sdssData, FullData)
     # PlotBaldry(L, yBaldry, yred, yblue)
-    # PlotMSFR(blues[:,4], reds[:,4], blues[:,5], reds[:,5], data)
+    PlotMSFR(blues[:,4], reds[:,4], blues[:,5], reds[:,5], data)
     # PlotHist(blues[:,4], reds[:,4])
     # PlotSimMH2(blues, reds)
     # PlotRhoH2(totSch, x_scal, rhoscal)
     sfrbest(FullData, SFRBL)
     PlotSchechter(totSch, redSch, blueSch, x3, y_scalfit, x_scal, y_keres)
     PlotSchechterMass(MassSchB, MassSchR, L, yred, yblue)
-    PlotSchechSDSSv2(GASS_Schech, FullSchech, FullSchech_Best_D, totSch_data, totSch2, totSch3,  LSch, HSch, NDSch, NDSch2, sigma, x_keres, y_keres, y_ober, FullDetSchech)
+    PlotSchechSDSSv2(GASS_Schech, FullSchech, FullSchech_Best_D, totSch_data, totSch, totSch2,  LSch, HSch, NDSch, NDSch2, sigma, x_keres, y_keres, y_ober, FullDetSchech, FullSchech_m)
     SFRHist(sdssData, datagio, FullData, total)
     return FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2, FullData
 

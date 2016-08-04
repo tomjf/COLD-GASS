@@ -137,7 +137,6 @@ def Vm(data, Dlaxis, minz, maxz, L):
     x[0,0], y[0,0] = minz, maxz
     D_in = float(lumdistance(x,0)[0,1])
     D_out = float(lumdistance(y,0)[0,1])
-    print D_in, D_out, L
     Vm =  (1.0/3.0)*(N_COLDGASS/N_SDSS)*((D_out**3)-(D_in**3))*(Omega)
     for i in range(0,len(data)):
         Dl = data[i,Dlaxis]
@@ -313,6 +312,20 @@ def PlotAlphaCO(data, output):
     ax[0,0].tick_params(axis='x',which='minor',bottom='on')
     plt.savefig('img/schechter/aCO.pdf', format='pdf', dpi=250, transparent = False)
 # schechter only ###############################################################
+def Plotweights(data):
+    x = np.linspace(9,12,2)
+    y = [1,1]
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].scatter((data[:,4]), data[:,13], marker = 'o', s = 1,)
+    ax[0,0].plot(x,y)
+    # ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
+    # ax[0,0].set_ylabel(r'$\mathrm{\alpha_{CO}}$', fontsize=18)
+    #ax[0,0].set_ylim(-5, -1)
+    #ax[0,0].set_xlim(7.5, 10.5)
+    # ax[0,0].hlines(10 ,12, 1, color='k')
+    ax[0,0].tick_params(axis='x',which='minor',bottom='on')
+    plt.savefig('img/schechter/weights.pdf', format='pdf', dpi=250, transparent = False)
+# schechter only ###############################################################
 def PlotMsunvsMH2(data, output):
     x = np.linspace(8.5,12,200)
     y = np.zeros((200,1))
@@ -420,7 +433,7 @@ def compareIDforID(Full, total, output, compareoutput):
     plt.savefig('img/schechter/COMPAREID.pdf', format='pdf', dpi=250, transparent = False)
 ################################################################################
 def GetFull(Full, output):
-    FullData = np.zeros((len(Full),13))
+    FullData = np.zeros((len(Full),14))
     lorh = []
     for j,rows1 in enumerate(Full):
         lorh.append(rows1[1])
@@ -439,10 +452,11 @@ def GetFull(Full, output):
         FullData[i,10] = rows[51] # log MH2
         FullData[i,11] = rows[52] # lim log MH2 3 sig
         FullData[i,12] = rows[52] + rows[51]
+        FullData[i,13] = rows[64] #weighting
     data = pd.DataFrame({   'group':lorh, 'ID': FullData[:,output['ID']], 'S_CO': FullData[:,output['S_CO']], 'z': FullData[:,output['z']],
                             'flag': FullData[:,output['flag']], 'M*': FullData[:,output['M*']], 'Zo': FullData[:,output['Zo']], 'SFR': FullData[:,output['SFR']],
                             'sSFR': FullData[:,output['sSFR']],'NUV-r': FullData[:,output['NUV-r']],'D_L': FullData[:,output['D_L']],
-                            'MH2': FullData[:,10], 'limMH2': FullData[:,11], 'MH2both': FullData[:,12]})
+                            'MH2': FullData[:,10], 'limMH2': FullData[:,11], 'MH2both': FullData[:,12], 'Weight':FullData[:,13]})
     LMass = (data.loc[data['group'] == 'L'])
     HMass = (data.loc[data['group'] == 'H'])
     Lz, Hz = LMass[['z']].values, HMass[['z']].values
@@ -459,13 +473,16 @@ def GetFull(Full, output):
     # z|1:flag|2:MH2|3:limMH2|4:MH2_both|5:Lumdist|6:M*|7:V/Vm|8:Vm
     LMass['Vm'], LMass['V/Vm'] = np.full((len(LMass),1), LMassNDarr[0,output['Vm']]), np.zeros((len(LMass),1))
     HMass['Vm'], HMass['V/Vm'] = np.full((len(HMass),1), HMassNDarr[0,output['Vm']]), np.zeros((len(HMass),1))
-    LMassFull = LMass[['z', 'flag', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm']].values
-    HMassFull = HMass[['z', 'flag', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm']].values
+    LMassFull = LMass[['z', 'flag', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm', 'Weight']].values
+    HMassFull = HMass[['z', 'flag', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm', 'Weight']].values
     Fulldata = np.vstack((LMassFull, HMassFull))
+    '0 z, 1 flag, 2 MH2, 3 limMH2, 4 MH2both, 5 D_L, 6 M*, 7 V/Vm, 8 Vm, 9 Weight, 10 newVm'
+    a = np.zeros((len(Fulldata),1))
+    a[:,0] = Fulldata[:,8]/Fulldata[:,9]
+    Fulldata = np.hstack((Fulldata, a))
     LMassNDarr = LMassND[['ID', 'S_CO', 'z', 'flag', 'M*', 'Zo', 'SFR', 'sSFR', 'NUV-r', 'D_L', 'V/Vm', 'Vm', 'L_CO', 'AlphaCO', 'limMH2', 'dalpha']].values
     HMassNDarr = HMassND[['ID', 'S_CO', 'z', 'flag', 'M*', 'Zo', 'SFR', 'sSFR', 'NUV-r', 'D_L', 'V/Vm', 'Vm', 'L_CO', 'AlphaCO', 'limMH2', 'dalpha']].values
-    print LMass['Vm'], HMass['Vm']
-    return LMassNDarr, HMassNDarr, Fulldata
+    return LMassNDarr, HMassNDarr, Fulldata, FullData
 ## Read data from tables #######################################################
 highM = atpy.Table('COLDGASS_DR3_with_Z.fits')
 lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
@@ -511,7 +528,7 @@ LMass[:,output['sSFR']] = sSFRlist                                      # sSFR
 LMass[:,output['NUV-r']] = list(lowM[l['NUV-r']])      # NUV-r
 #ID:0|S_CO:1|z:2|flag:3|M*:4|Zo:5|SFR:6|sSFR:7|NUV-r:8|D_L:9|V/Vm:10|Vm:11|L_CO:12|ACO:13|MH2:14|dACO:15|
 ################################################################################
-LND, HND, FullData = GetFull(Full, output)
+LND, HND, FullData, weights = GetFull(Full, output)
 LND[:,output['MH2']] = 10**LND[:,output['MH2']]
 HND[:,output['MH2']] = 10**HND[:,output['MH2']]
 # FullData = Vm(FullData, 5, min(FullData[:,0]), max(FullData[:,0]), 3)
@@ -704,8 +721,9 @@ for i in range(0, np.shape(erdet)[1]):
     eri = eri[abs(eri)<99]
     sigmadet.append(np.std(eri))
 # BlueRed#######################################################################
-FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2, FullDatasim = BlueRed.main(bins, totSch, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, FullDetSchech)
+FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2, FullDatasim = BlueRed.main(bins, totSch, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, FullDetSchech, FullSchech)
 ################################################################################
+Plotweights(weights)
 fullcomparedata = comparefull(Full, compare)
 PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpts, y_keres, x_keres, FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2, y_ober)
 PlotSchechter2(totSch, sigma, y_CG, detSch, sigmadet, y_det, xkeres, ykeres2, )
