@@ -110,8 +110,8 @@ def convertsdss(newdata):
     sfr_sdss, sfr_best = data[:num,6], np.log10(data[:num,1])
     fit, x, y = polyfit(sfr_sdss, sfr_best, 2)
     y = second(newdata, *fit[0])
-    for i in range(0,len(y)):
-        y[i] += random.gauss(0,0.4)
+    # for i in range(0,len(y)):
+    #     y[i] += random.gauss(0,0.4)
     return y
 
 # SFRBL = sfrbest13k()

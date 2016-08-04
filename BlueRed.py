@@ -51,20 +51,20 @@ def mainSequence(blues, spread, Mindex, AnotP):
         newblues[index, :5] = blues[index, :5]
         if AnotP == True:
             newblues[index,5] = - (2.332*M) + (0.4156*M*M) - (0.01828*M*M*M)
-            if spread == True:
-                newblues[index,5] += random.gauss(0,0.3)
+            # if spread == True:
+            #     newblues[index,5] += random.gauss(0,0.3)
         else:
             logsSFR = -10.0 - (0.1*(M-10.0))
             newblues[index,5] = logsSFR + M
-            if spread == True:
-                newblues[index,5] += random.gauss(0,0.3)
+            # if spread == True:
+            #     newblues[index,5] += random.gauss(0,0.3)
     return newblues
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def cloud(reds):
     newreds = np.zeros((np.shape(reds)[0], np.shape(reds)[1]+1))
     for index, M in enumerate(reds[:,4]):
         newreds[index, :5] = reds[index, :5]
-        newreds[index, 5] = -1 + random.gauss(0,0.4)
+        # newreds[index, 5] = -1 + random.gauss(0,0.4)
     return newreds
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def OmegaH2(bins, yrho):
@@ -543,6 +543,7 @@ def main(bins, totSch_data, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     # add starformation rates
     blues = mainSequence(blues, True, 4, False)
     reds = cloud(reds)
+    reds[:,5] = convertsdss(reds[:,5])
     blues[:,5] = convertsdss(blues[:,5])
     trend = mainSequence(Baldry, False, 0, False)
     data = np.zeros((len(L),2))
