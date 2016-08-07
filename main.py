@@ -213,6 +213,17 @@ def OmegaH2(bins, yrho):
     OmegaH2 = (rhoH2/rhocrit)*(10000)
     return OmegaH2
 
+# Omega H2 ################################################################
+def CalcOmega(massfitx, massfity):
+    yrho = []
+    dMH2 = massfitx[1] - massfitx[0]
+    for i in range(0,len(massfity)):
+        yrho.append(massfity[i]+massfitx[i])
+    rhocrit = 9.2*(10**(-27))
+    rhoH2 = (np.sum((10**yrho)*dMH2)*(2*(10**30)))/((3.086*(10**22))**3)
+    OmegaH2 = (rhoH2/rhocrit)*(10000)
+    return OmegaH2
+
 # schechter only ###############################################################
 def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpts, y_keres, x_keres, FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2, y_ober):
     xmajorLocator   = MultipleLocator(0.5)
@@ -354,7 +365,7 @@ def errors(data, x, y, output):
         idx1 = idx[:eridx]
         newdata = np.zeros((eridx, np.shape(data)[1]))
         for j in range(0,len(newdata)):
-            newdata[j,:] = data[idx[j],:]
+            newdata[j,:] = data[int(idx[j]),:]
         newdata[:,output['Vm']] = newdata[:,output['Vm']]*0.8
         totSch = Schechter(newdata, output['MH2'], output['Vm'], x)
         drho = totSch[1] - y
@@ -433,7 +444,7 @@ def compareIDforID(Full, total, output, compareoutput):
     plt.savefig('img/schechter/COMPAREID.pdf', format='pdf', dpi=250, transparent = False)
 ################################################################################
 def GetFull(Full, output):
-    FullData = np.zeros((len(Full),14))
+    FullData = np.zeros((len(Full),15))
     lorh = []
     for j,rows1 in enumerate(Full):
         lorh.append(rows1[1])
@@ -453,10 +464,12 @@ def GetFull(Full, output):
         FullData[i,11] = rows[52] # lim log MH2 3 sig
         FullData[i,12] = rows[52] + rows[51]
         FullData[i,13] = rows[64] #weighting
+        FullData[i,14] = rows[44] #weighting
     data = pd.DataFrame({   'group':lorh, 'ID': FullData[:,output['ID']], 'S_CO': FullData[:,output['S_CO']], 'z': FullData[:,output['z']],
                             'flag': FullData[:,output['flag']], 'M*': FullData[:,output['M*']], 'Zo': FullData[:,output['Zo']], 'SFR': FullData[:,output['SFR']],
                             'sSFR': FullData[:,output['sSFR']],'NUV-r': FullData[:,output['NUV-r']],'D_L': FullData[:,output['D_L']],
-                            'MH2': FullData[:,10], 'limMH2': FullData[:,11], 'MH2both': FullData[:,12], 'Weight':FullData[:,13]})
+                            'MH2': FullData[:,10], 'limMH2': FullData[:,11], 'MH2both': FullData[:,12], 'Weight':FullData[:,13],
+                            'LCO':FullData[:,14]})
     LMass = (data.loc[data['group'] == 'L'])
     HMass = (data.loc[data['group'] == 'H'])
     Lz, Hz = LMass[['z']].values, HMass[['z']].values
@@ -482,7 +495,13 @@ def GetFull(Full, output):
     Fulldata = np.hstack((Fulldata, a))
     LMassNDarr = LMassND[['ID', 'S_CO', 'z', 'flag', 'M*', 'Zo', 'SFR', 'sSFR', 'NUV-r', 'D_L', 'V/Vm', 'Vm', 'L_CO', 'AlphaCO', 'limMH2', 'dalpha']].values
     HMassNDarr = HMassND[['ID', 'S_CO', 'z', 'flag', 'M*', 'Zo', 'SFR', 'sSFR', 'NUV-r', 'D_L', 'V/Vm', 'Vm', 'L_CO', 'AlphaCO', 'limMH2', 'dalpha']].values
-    return LMassNDarr, HMassNDarr, Fulldata, FullData
+    ############
+    LMassFull2 = LMass[['z', 'flag', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm', 'Weight', 'LCO']].values
+    HMassFull2 = HMass[['z', 'flag', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm', 'Weight', 'LCO']].values
+    LCO = np.vstack((LMassFull2, HMassFull2))
+    bins = np.linspace(5.5,11,18)
+    LCO = Schechter(LCO, 10, 8, bins)
+    return LMassNDarr, HMassNDarr, Fulldata, FullData, LCO
 ## Read data from tables #######################################################
 highM = atpy.Table('COLDGASS_DR3_with_Z.fits')
 lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
@@ -528,7 +547,7 @@ LMass[:,output['sSFR']] = sSFRlist                                      # sSFR
 LMass[:,output['NUV-r']] = list(lowM[l['NUV-r']])      # NUV-r
 #ID:0|S_CO:1|z:2|flag:3|M*:4|Zo:5|SFR:6|sSFR:7|NUV-r:8|D_L:9|V/Vm:10|Vm:11|L_CO:12|ACO:13|MH2:14|dACO:15|
 ################################################################################
-LND, HND, FullData, weights = GetFull(Full, output)
+LND, HND, FullData, weights, LCO = GetFull(Full, output)
 LND[:,output['MH2']] = 10**LND[:,output['MH2']]
 HND[:,output['MH2']] = 10**HND[:,output['MH2']]
 # FullData = Vm(FullData, 5, min(FullData[:,0]), max(FullData[:,0]), 3)
@@ -721,7 +740,7 @@ for i in range(0, np.shape(erdet)[1]):
     eri = eri[abs(eri)<99]
     sigmadet.append(np.std(eri))
 # BlueRed#######################################################################
-FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2, FullDatasim = BlueRed.main(bins, totSch, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, FullDetSchech, FullSchech)
+FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2, FullDatasim = BlueRed.main(bins, totSch, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, FullDetSchech, FullSchech, FullDet)
 ################################################################################
 Plotweights(weights)
 fullcomparedata = comparefull(Full, compare)

@@ -11,6 +11,19 @@ import pandas as pd
 from scipy.stats import kde
 from matplotlib import cm
 from sfrBestSDSS import convertsdss
+from GAMA import MH2varSFR
+from GAMA import PlotdMH2
+
+# Omega H2 ################################################################
+def CalcOmega(massfitx, massfity):
+    yrho = []
+    dMH2 = massfitx[1] - massfitx[0]
+    for i in range(0,len(massfity)):
+        yrho.append(massfity[i]+massfitx[i])
+    rhocrit = 9.2*(10**(-27))
+    rhoH2 = (np.sum((10**yrho)*dMH2)*(2*(10**30)))/((3.086*(10**22))**3)
+    OmegaH2 = (rhoH2/rhocrit)*(10000)
+    return OmegaH2
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # def log_schechter(logL, log_rho, log_Lstar, alpha):
 #     rholist = []
@@ -51,20 +64,20 @@ def mainSequence(blues, spread, Mindex, AnotP):
         newblues[index, :5] = blues[index, :5]
         if AnotP == True:
             newblues[index,5] = - (2.332*M) + (0.4156*M*M) - (0.01828*M*M*M)
-            # if spread == True:
-            #     newblues[index,5] += random.gauss(0,0.3)
+            if spread == True:
+                newblues[index,5] += random.gauss(0,0.3)
         else:
             logsSFR = -10.0 - (0.1*(M-10.0))
             newblues[index,5] = logsSFR + M
-            # if spread == True:
-            #     newblues[index,5] += random.gauss(0,0.3)
+            if spread == True:
+                newblues[index,5] += random.gauss(0,0.3)
     return newblues
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def cloud(reds):
     newreds = np.zeros((np.shape(reds)[0], np.shape(reds)[1]+1))
     for index, M in enumerate(reds[:,4]):
         newreds[index, :5] = reds[index, :5]
-        # newreds[index, 5] = -1 + random.gauss(0,0.4)
+        newreds[index, 5] = -1 + random.gauss(0,0.4)
     return newreds
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def OmegaH2(bins, yrho):
@@ -116,11 +129,12 @@ def PlotBaldry(L, yBaldry, yred, yblue):
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
     ax[0,0].set_xlim(8,11.6)
     ax[0,0].set_ylim(-5,-1)
-    ax[0,0].plot(L,np.log10(yBaldry), 'k', linewidth = 3)
-    ax[0,0].plot(L,np.log10(yred), 'r', linewidth = 3)
-    ax[0,0].plot(L,np.log10(yblue), 'b', linewidth = 3)
-    ax[0,0].set_xlabel(r'$\mathrm{log \, M_{*}\, [M_{sun}]}$', fontsize = 20)
-    ax[0,0].set_ylabel(r'$\mathrm{log \, (number \, density) \,[Mpc^{-3}\, dex^{-1}]}$', fontsize = 20)
+    ax[0,0].plot(L,np.log10(yBaldry), 'k', linewidth = 3, label = 'Total')
+    ax[0,0].plot(L,np.log10(yred), 'r', linewidth = 3, label = 'Red')
+    ax[0,0].plot(L,np.log10(yblue), 'b', linewidth = 3, label = 'Blue')
+    ax[0,0].set_xlabel(r'$\mathrm{log \, M_{*}\, [M_{\odot}]}$', fontsize = 20)
+    ax[0,0].set_ylabel(r'$\mathrm{log \, \phi \,[Mpc^{-3}\, dex^{-1}]}$', fontsize = 20)
+    plt.legend(fontsize=13)
     plt.savefig('img/scal/Baldry.pdf', format='pdf', dpi=250, transparent = False)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def PlotMSFR(bluepop, redpop, x, z, data):
@@ -152,9 +166,9 @@ def PlotHist(bluepop, redpop):
     ax[0,0].set_xlim(7.8,11.5)
     plt.savefig('img/scal/Hist.pdf', format='pdf', dpi=250, transparent = False)
 # schechter only ###############################################################
-def PlotRhoH2(totSch, x, y):
+def PlotRhoH2(PengAmelie,x, y):
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
-    ax[0,0].scatter(totSch[2], totSch[4], marker = 's', s = 100, edgecolor='blue', linewidth='2', facecolor='none', label = 'Low Mass')
+    ax[0,0].scatter(PengAmelie[2], PengAmelie[4], marker = 's', s = 100, edgecolor='blue', linewidth='2', facecolor='none', label = 'Low Mass')
     ax[0,0].scatter(x, y, 'k--')
     plt.savefig('img/scal/pH2.png')
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -169,7 +183,7 @@ def PlotSimMH2(blues, reds):
     plt.savefig('img/scal/MH2SFR.pdf', format='pdf', dpi=250, transparent = False)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def PlotSchechter(totSch, redSch, blueSch, x, y_scalfit, x_scal, y_keres):
+def PlotSchechter(PengAmelie,redSch, blueSch, x, y_scalfit, x_scal, y_keres):
     xmajorLocator   = MultipleLocator(0.5)
     xminorLocator   = MultipleLocator(0.1)
     ymajorLocator   = MultipleLocator(0.5)
@@ -179,7 +193,7 @@ def PlotSchechter(totSch, redSch, blueSch, x, y_scalfit, x_scal, y_keres):
     ax[0,0].xaxis.set_minor_locator(xminorLocator)
     ax[0,0].yaxis.set_major_locator(ymajorLocator)
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
-    ax[0,0].errorbar(totSch[2], totSch[1], fmt = 'o', markersize = 10, color = 'red', label = 'Scaling Relation Method')
+    ax[0,0].errorbar(PengAmelie[2], PengAmelie[1], fmt = 'o', markersize = 10, color = 'red', label = 'Scaling Relation Method')
     ax[0,0].plot(x, y_scalfit, color ='red', label = 'Scaling Relation Fit')
     ax[0,0].plot(x_scal, y_keres, 'k--', label = 'Keres+03')
     # ax[0,0].scatter(x_scal, y_scal)
@@ -216,7 +230,7 @@ def PlotSchechterMass(MassSchB, MassSchR, L, yred, yblue):
     # plt.savefig('img/MH2.png', transparent = False ,dpi=250)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def PlotSchechSDSS(FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2, x_keres, y_keres, y_ober):
+def PlotSchechSDSS(FullSchech, sdssSchech, sdssSchechAm, PengAmelie,PengGio, x_keres, y_keres, y_ober):
     xmajorLocator   = MultipleLocator(0.5)
     xminorLocator   = MultipleLocator(0.1)
     ymajorLocator   = MultipleLocator(0.5)
@@ -227,8 +241,8 @@ def PlotSchechSDSS(FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2, x_kere
     ax[0,0].yaxis.set_major_locator(ymajorLocator)
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
     ax[0,0].errorbar(sdssSchech[2], sdssSchech[1], fmt = 'o', markersize = 8, color = 'm', label = 'SDSS-G')
-    ax[0,0].errorbar(totSch[2], totSch[1], fmt = 's', markersize = 8, color = 'm', label = 'Sim-G')
-    ax[0,0].errorbar(totSch2[2], totSch2[1], fmt = 's', markersize = 8, color = 'c', label = 'Sim-A')
+    ax[0,0].errorbar(PengAmelie[2], PengAmelie[1], fmt = 's', markersize = 8, color = 'm', label = 'Sim-G')
+    ax[0,0].errorbar(PengGio[2], PengGio[1], fmt = 's', markersize = 8, color = 'c', label = 'Sim-A')
     ax[0,0].errorbar(FullSchech[2], FullSchech[1], fmt = 's', markersize = 8, color = 'r', label = 'COLD GASS SFRs')
     ax[0,0].errorbar(sdssSchechAm[2], sdssSchechAm[1], fmt = 'o', markersize = 8, color = 'c', label = 'SDSS-A')
     ax[0,0].plot(np.log10(x_keres), y_keres, 'k--', label = 'Keres+03')
@@ -240,7 +254,7 @@ def PlotSchechSDSS(FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2, x_kere
     plt.legend(fontsize = 13)
     plt.savefig('img/scal/'+ 'SDSS' + '.pdf', format='pdf', dpi=250, transparent = False)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def PlotSchechSDSSv2(GASS_Schech, FullSchech, FullSchech_Best, totSch_data, totSch, totSch2, LSch, HSch, NDSch, NDSch2, sigma, x_keres, y_keres, y_ober, FullDetSchech, FullSchech_m):
+def PlotSchechSDSSv2(GASS_Schech, FullSchech, FullSchech_Best, totSch_data, PengAmelie,PengGio, LSch, HSch, NDSch, NDSch2, sigma, x_keres, y_keres, y_ober, FullDetSchech, FullSchech_m):
     xmajorLocator   = MultipleLocator(0.5)
     xminorLocator   = MultipleLocator(0.1)
     ymajorLocator   = MultipleLocator(0.5)
@@ -251,14 +265,14 @@ def PlotSchechSDSSv2(GASS_Schech, FullSchech, FullSchech_Best, totSch_data, totS
     ax[0,0].yaxis.set_major_locator(ymajorLocator)
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
     ax[0,0].errorbar(FullSchech_Best[2], FullSchech_Best[1], fmt = 'o', markersize = 8, color = 'g', label = 'CG with SFRbest')
-    ax[0,0].errorbar(FullSchech_m[2], FullSchech_m[1], fmt = 's', markersize = 4, color = 'k', label = 'All data')
+    # ax[0,0].errorbar(FullSchech_m[2], FullSchech_m[1], fmt = 's', markersize = 4, color = 'k', label = 'All data')
     # ax[0,0].errorbar(FullSchech[2], FullSchech[1], fmt = 'o', markersize = 8, color = 'c', label = 'COLD GASS, using SFR_SDSS')
     # ax[0,0].errorbar(totSch_data[2], totSch_data[1], yerr=sigma, fmt = 's', markersize = 8, color = 'r', label = 'COLD GASS data pts')
-    ax[0,0].scatter(totSch2[2], totSch2[1], marker = 'h', s = 100, edgecolor = 'm', linewidth='2', facecolor='hotpink', label = 'Amelie Sim')
-    ax[0,0].scatter(totSch[2], totSch[1], marker = 'h', s = 100, edgecolor = 'green', linewidth='2', facecolor='lawngreen', label = 'Gio Sim')
+    # ax[0,0].scatter(PengGio[2], PengGio[1], marker = 'h', s = 100, edgecolor = 'm', linewidth='2', facecolor='hotpink', label = 'Amelie Sim')
+    # ax[0,0].scatter(PengAmelie[2], PengAmelie[1], marker = 'h', s = 100, edgecolor = 'green', linewidth='2', facecolor='lawngreen', label = 'Gio Sim')
     ax[0,0].scatter(FullDetSchech[2], FullDetSchech[1], marker = 's', s = 100, edgecolor = 'blue', linewidth='2', facecolor='none', label = 'CG det')
     ax[0,0].scatter(GASS_Schech[2], GASS_Schech[1], marker = 'o', s = 50, edgecolor = 'red', linewidth='2', facecolor='red', label = 'GASS')
-    ax[0,0].fill_between(totSch2[2], totSch2[1], totSch[1], alpha = 0.2, color = 'k')
+    # ax[0,0].fill_between(PengGio[2], PengGio[1], PengAmelie[1], alpha = 0.2, color = 'k')
     # ax[0,0].scatter(LSch[2], LSch[1], marker = 's', s = 100, edgecolor = 'coral', linewidth='2', facecolor='none', label = 'L')
     # ax[0,0].scatter(HSch[2], HSch[1], marker = 's', s = 100, edgecolor = 'green', linewidth='2', facecolor='none', label = 'H')
     # ax[0,0].scatter(NDSch[2], NDSch[1], marker = 's', s = 100, edgecolor = 'black', linewidth='2', facecolor='none', label = 'ND 5sig')
@@ -326,7 +340,7 @@ def errors(data, x, y, output):
             newdata[j,:] = data[idx[j],:]
         newdata[:,output['Vm']] = newdata[:,output['Vm']]*0.8
         totSch = Schechter(newdata, 6, 7, x)
-        drho = totSch[1] - y
+        drho = PengAmelie[1] - y
         spread[i,:] = drho
     return spread
 ################################################################################
@@ -394,7 +408,7 @@ def AmGasFrac(data, Mindex, SFRindex):
         MH2list[i,0] = np.log10(fH2*(10**logM))
     return np.hstack((data, MH2list))
 ################################################################################
-def GetCOLDGASS():
+def GetCOLDGASS(fit, res):
     Full = atpy.Table('data/COLDGASS_full.fits')
     FullData = np.zeros((len(Full),6))
     lorh = []
@@ -420,10 +434,13 @@ def GetCOLDGASS():
     HMassa = HMass[['z', 'flag', 'SFR', 'SFR_Best', 'M*', 'D_L']].values
     LMassa = Vm1(LMassa, 5, min(LMassa[:,0]), max(LMassa[:,0]), 1)
     HMassa = Vm1(HMassa, 5, min(HMassa[:,0]), max(HMassa[:,0]), 2)
-    #0:z|1:flag|2:SFR|3:SFR_BEST|4:M*|5:Lumdist|6:V/Vm|7:Vm|8:MH2_SDSS|9:MH2_BEST
+    #0:z|1:flag|2:SFR|3:SFR_BEST|4:M*|5:Lumdist|6:V/Vm|7:Vm|8:MH2_SDSS_A|9:MH2_BEST_A|10:MH2_BEST_G|11:MH2_SDSS_G|
     FullData = np.vstack((LMassa, HMassa))
     FullData = AmGasFrac(FullData, 4, 2) # SFR_SDSS
     FullData = AmGasFrac(FullData, 4, 3) # SFR_BEST
+    FullData = np.hstack((FullData, np.zeros((len(FullData),2))))
+    FullData[:,10] = scal_relns.third(FullData[:,3], *fit[0])
+    FullData[:,11] = scal_relns.third(FullData[:,2], *fit[0])
     FullDet = FullData[FullData[:,1] == 1]
     return FullData, FullDet
 ################################################################################
@@ -491,9 +508,10 @@ def sfrbest13k():
     # 0:ID|1:SFGRbest|2:err|3:case|4:M*|5:z|6:MH2|7:Dl|8:V/Vm|9:Vm
     return SFRBL
 ################################################################################
-def main(bins, totSch_data, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, FullDetSchech, FullSchech_m):
+def main(bins, totSch_data, PengGio, totSch3, sigma, LSch, HSch, NDSch, NDSch2, FullDetSchech, FullSchech_m, Fulldetmain):
+    random.seed(13990)
     V = 100000
-    L = np.linspace(8,11.9,24)
+    L = np.linspace(6,12.5,35)
     LKeres = np.linspace(4,8,200)
     Spheroid = (3.67/10000), 10.74, -0.525
     Disk = (0.855/10000), 10.70, -1.39
@@ -540,45 +558,52 @@ def main(bins, totSch_data, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     Baldry[:,2] = yBaldry
     # total = np.append(bluepop, redpop)
 
+    # 0: M*group | 1: dM* | 2: phi | 3: N | 4: M* | 5:SFR_SDSS | 6: SFR_Best
+    #|7: MH2_SDSS_G |8: MH2_Best_G | 9: Vm | 10: MH2_SDSS_A |11: MH2_Best_A
+
     # add starformation rates
+
     blues = mainSequence(blues, True, 4, False)
     reds = cloud(reds)
-    reds[:,5] = convertsdss(reds[:,5])
-    blues[:,5] = convertsdss(blues[:,5])
+    blues = np.hstack((blues, np.zeros((len(blues),4))))
+    reds = np.hstack((reds, np.zeros((len(reds),4))))
+    reds[:,6] = convertsdss(reds[:,5])
+    blues[:,6] = convertsdss(blues[:,5])
     trend = mainSequence(Baldry, False, 0, False)
     data = np.zeros((len(L),2))
     data[:,0] = L
     data[:,1] = trend[:,5]
 
-    datagio, fit = scal_relns.fitdata()
-    blues = np.hstack((blues, np.zeros((len(blues),1))))
-    reds = np.hstack((reds, np.zeros((len(reds),1))))
+    datagio, fit, res = scal_relns.fitdata()
     # blues[:,6] = scal_relns.second2var((blues[:,4], blues[:,5]), *fit[0])
     # reds[:,6] = scal_relns.second2var((reds[:,4], reds[:,5]), *fit[0])
-    blues[:,6] = scal_relns.third(blues[:,5], *fit[0])
-    reds[:,6] = scal_relns.third(reds[:,5], *fit[0])
+    blues[:,7] = scal_relns.third(blues[:,5], *fit[0])
+    reds[:,7] = scal_relns.third(reds[:,5], *fit[0])
+    blues[:,8] = scal_relns.third(blues[:,6], *fit[0])
+    reds[:,8] = scal_relns.third(reds[:,6], *fit[0])
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     SFRBL = sfrbest13k()
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     # add V
-    blues = np.hstack((blues, np.zeros((len(blues),1))))
-    reds = np.hstack((reds, np.zeros((len(reds),1))))
-    blues[:,7] = V
-    reds[:,7] = V
+    blues[:,9] = V
+    reds[:,9] = V
     total = np.vstack((blues, reds))
     total = AmGasFrac(total, 4, 5)
+    total = AmGasFrac(total, 4, 6)
     # bins  = np.linspace(6, 10.5, 30)
     # bins  = np.linspace(min(total[:,6]), max(total[:,6]), 16)
     massbins = np.linspace(8,11.5,25)
-    totSch = Schechter(total, 6, 7, bins) # simulated gio's
-    totSch2 = Schechter(total, 8, 7, bins) # simulated am's
+    PengAmelie = Schechter(total, 10, 9, bins) # peng amelie
+    BestAmelie = Schechter(total, 11, 9, bins) # peng amelie
+    PengGio = Schechter(total, 7, 9, bins) # peng amelie
+    BestGio = Schechter(total, 8, 9, bins) # peng amelie
     redSch = Schechter(reds, 6, 7, bins)
     blueSch = Schechter(blues, 6, 7, bins)
     MassSchB = Schechter(blues, 4, 7, massbins)
     MassSchR = Schechter(reds, 4, 7, massbins)
     x = np.linspace(7.5,10.5,200)
-    scalfit = log_schechter_fit(totSch[2], totSch[1])
+    scalfit = log_schechter_fit(PengAmelie[2], PengAmelie[1])
     x3 = np.linspace(7.5,10.5,16)
     y_scalfit = log_schechter(x3, *scalfit)
 
@@ -598,11 +623,11 @@ def main(bins, totSch_data, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     y_ober = np.log10((phistcorr)*((x_keres/(mstcorr))**(alphacorr+1))*np.exp(-x_keres/mstcorr)*np.log(10))
 
 
-    scal_para = log_schechter_fit(totSch[2][9:], totSch[1][9:])
+    scal_para = log_schechter_fit(PengAmelie[2][9:], PengAmelie[1][9:])
     y_scal = log_schechter(x_scal, *scal_para)
     rhoscal = y_scal + x_scal
 
-    # er = errors(total, bins, totSch[1], output)
+    # er = errors(total, bins, PengAmelie[1], output)
     # sigma = []
     # for i in range(0, np.shape(er)[1]):
     #     eri = er[:,i]
@@ -610,10 +635,13 @@ def main(bins, totSch_data, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     #     sigma.append(np.std(eri))
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #COLD GASS
-    FullData, FullDet = GetCOLDGASS()
+    FullData, FullDet = GetCOLDGASS(fit, res)
     FullSchech = Schechter(FullData, 8, 7, bins)
     FullSchech_Best = Schechter(FullData, 9, 7, bins)
-    FullSchech_Best_D = Schechter(FullDet, 9, 7, bins)
+    FullSchech_Best_D = Schechter(FullDet, 11, 7, bins)
+    FullSchech_Best_D_G = Schechter(FullDet, 10, 7, bins)
+    FullSchech_Best_D_S_A = Schechter(FullDet, 8, 7, bins)
+    FullSchech_Best_D_S_G = Schechter(FullDet, 11, 7, bins)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ### SDSS METHOD~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # get the SDSS data from the fits tables
@@ -630,23 +658,27 @@ def main(bins, totSch_data, totSch2, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     sdssData = AmGasFrac(sdssData, 1, 2)
     sdssSchechAm = Schechter(sdssData, 5, 4, bins)
     GASS_Schech = Schechter(SFRBL, 6, 9, bins)
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #SFR COMPARISON
+    MH2varSFR(total, bins, x_keres, y_keres, res)
+    PlotdMH2(FullDet, Fulldetmain)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    PlotSchechSDSS(FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2, x_keres, y_keres, y_ober)
-    SFRMH2(sdssData)
-    SFRMSTAR(sdssData, FullData)
-    # PlotBaldry(L, yBaldry, yred, yblue)
+    # PlotSchechSDSS(FullSchech, sdssSchech, sdssSchechAm, PengAmelie,PengGio, x_keres, y_keres, y_ober)
+    # SFRMH2(sdssData)
+    # SFRMSTAR(sdssData, FullData)
+    PlotBaldry(L, yBaldry, yred, yblue)
     PlotMSFR(blues[:,4], reds[:,4], blues[:,5], reds[:,5], data)
     # PlotHist(blues[:,4], reds[:,4])
     # PlotSimMH2(blues, reds)
-    # PlotRhoH2(totSch, x_scal, rhoscal)
-    sfrbest(FullData, SFRBL)
-    PlotSchechter(totSch, redSch, blueSch, x3, y_scalfit, x_scal, y_keres)
-    PlotSchechterMass(MassSchB, MassSchR, L, yred, yblue)
-    PlotSchechSDSSv2(GASS_Schech, FullSchech, FullSchech_Best_D, totSch_data, totSch, totSch2,  LSch, HSch, NDSch, NDSch2, sigma, x_keres, y_keres, y_ober, FullDetSchech, FullSchech_m)
-    SFRHist(sdssData, datagio, FullData, total)
-    return FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2, FullData
+    # PlotRhoH2(PengAmelie,x_scal, rhoscal)
+    # sfrbest(FullData, SFRBL)
+    # PlotSchechter(PengAmelie,redSch, blueSch, x3, y_scalfit, x_scal, y_keres)
+    # PlotSchechterMass(MassSchB, MassSchR, L, yred, yblue)
+    PlotSchechSDSSv2(GASS_Schech, FullSchech, FullSchech_Best_D, totSch_data, PengAmelie,PengGio,  LSch, HSch, NDSch, NDSch2, sigma, x_keres, y_keres, y_ober, FullDetSchech, FullSchech_m)
+    # SFRHist(sdssData, datagio, FullData, total)
+    return FullSchech, sdssSchech, sdssSchechAm, PengAmelie,PengGio, FullData
 
-# FullSchech, sdssSchech, sdssSchechAm, totSch, totSch2 = main()
+# FullSchech, sdssSchech, sdssSchechAm, PengAmelie,PengGio = main()
 # bins = np.linspace(7.5,11.5,25)
 # fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
 # ax[0,0].hist(bluepop, bins, normed = 1, facecolor='blue', alpha = 0.1)

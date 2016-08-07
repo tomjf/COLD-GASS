@@ -46,11 +46,10 @@ def sfrbest13k():
     np.savetxt('sfrC.txt', SFRBL)
     return SFRBL
 
-def plotsfrs(sfr_sdss, sfr_best, solns, data, y):
-    x = np.linspace(-3,2,500)
+def plotsfrs(data, newdata, y):
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
-    ax[0,0].scatter(data[:,6], np.log10(data[:,1]), color = 'm', label = 'Sim', s=10)
-    ax[0,0].scatter(data[:,6], y, color = 'g', label = 'Sim2', s=10)
+    ax[0,0].scatter(data[:,6], np.log10(data[:,1]), color = 'm', label = 'data', s=10)
+    ax[0,0].scatter(newdata, y, color = 'g', label = 'Sim', s=10)
     # for i in range(0,len(solns)-1):
     #     ax[0,0].plot(solns[-1], solns[i], label = str(i+1))
     # ax[0,0].plot(x,x, color='k')
@@ -112,8 +111,9 @@ def convertsdss(newdata):
     y = second(newdata, *fit[0])
     # for i in range(0,len(y)):
     #     y[i] += random.gauss(0,0.4)
+    plotsfrs(data, newdata, y)
     return y
 
 # SFRBL = sfrbest13k()
 # solns = besstfit(sfr_sdss, sfr_best)
-# plotsfrs(sfr_sdss, sfr_best, solns, data, y)
+# plotsfrs(data, y)

@@ -31,11 +31,17 @@ def polyfit(data, order):
         fit = curve_fit(fourth, data[:,1], data[:,0])
     return fit
 
+def residuals(data, fromfit):
+    res = data[:,0] - fromfit
+    return np.std(res)
+
 def fitdata():
     df = pd.read_csv('data/cold_gass_data_gio.csv')
     data = df[['Log_Mh2', 'Log_SFR', 'Log_M', 'Log_LCO']].values
     fit = polyfit(data, 3)
-    return data, fit
+    fromfit = third(data[:,1], *fit[0])
+    sig = residuals(data, fromfit)
+    return data, fit, sig
 
 def fitdata2():
     df = pd.read_csv('data/cold_gass_data_gio.csv')
@@ -43,10 +49,13 @@ def fitdata2():
     fit = curve_fit(second2var, (data[:,2], data[:,1]), data[:,0])
     return data, fit
 
-def plotgioscal(data, fit):
+def plotgioscal(data, fit, res):
     x = np.linspace(-1.5,2,500)
     y = third(x, *fit[0])
-    print fit[0]
+    yu = y+res
+    yl = y-res
+    yu2 = y+(3*res)
+    yl2 = y-(3*res)
     xmajorLocator   = MultipleLocator(0.5)
     xminorLocator   = MultipleLocator(0.1)
     ymajorLocator   = MultipleLocator(0.5)
@@ -60,27 +69,30 @@ def plotgioscal(data, fit):
     ax[0,0].set_ylim(7.5,11)
     s = ax[0,0].scatter(data[:,1], data[:,0], c=data[:,2])
     ax[0,0].plot(x,y, color='k')
+    ax[0,0].fill_between(x, yl, yu, alpha = 0.3, color = 'k', label = r'$1 \sigma$')
+    ax[0,0].fill_between(x, yl2, yu2, alpha = 0.1, color = 'k', label = r'$3 \sigma$')
     cbar = fig.colorbar(s)
     cbar.set_label(r'$\mathrm{log\, M_*\, [M_{\odot}]}$', rotation=270, labelpad=40, fontsize = 18)
     # ax[0,0].plot(x,y, linewidth = 1)
     # ax[0,0].set_xticklabels(xticklabels, fontsize = 18)
     ax[0,0].set_xlabel(r'$\mathrm{log\, SFR\, [M_{\odot} \, yr^{-1}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
+    plt.legend(loc=4)
     plt.savefig('img/scal/scalrelns.pdf', format='pdf', dpi=250, transparent = False)
 
-data, fit = fitdata()
+data, fit, res = fitdata()
 
 fit2var = curve_fit(second2var, (data[:,2], data[:,1]), data[:,0])
 #print fit2var[0]
 MH2 = second2var((data[:,2], data[:,1]), *fit2var[0])
 #print MH2
 
-res = np.zeros((len(data[:,0]),1))
-for i in range(0, len(data[:,0])):
-    res[i,0] = data[i,0] - third(data[i,1], *fit[0])
+# res = np.zeros((len(data[:,0]),1))
+# for i in range(0, len(data[:,0])):
+#     res[i,0] = data[i,0] - third(data[i,1], *fit[0])
 
 # plt.scatter(data[:,1], MH2)
 # plt.scatter(data[:,1], data[:,0], color = 'r')
 # plt.show()
 
-plotgioscal(data, fit)
+plotgioscal(data, fit, res)
