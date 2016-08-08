@@ -60,7 +60,7 @@ def PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch):
     # ax[0,0].scatter(uperr2[:,0], uperr2[:,1], label = 'uperr', color = 'g')
     ax[0,0].errorbar(keres[:,0], keres[:,1], yerr=[keres[:,3], keres[:,2]], fmt='bo', markersize = 12, linewidth=2, mew=2, capthick=3, mfc='b', mec='navy' , label='Keres+03')
     ax[0,0].errorbar(LCOSch[2], LCOSch[1], fmt='h', markersize = 12, linewidth=2, mew=2, capthick=3, mfc='limegreen', mec='g' , label='COLD GASS')
-    ax[0,0].set_xlabel(r'$\mathrm{log\, L_{CO}\, [K \, km \,s^{-1}\, pc^{2}]}$', fontsize=18)
+    ax[0,0].set_xlabel(r'$\mathrm{log\, L\'_{CO}\, [K \, km \,s^{-1}\, pc^{2}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, \phi\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
     ax[0,0].set_xlim(5.5, 12)
     ax[0,0].set_ylim(-7, -1)

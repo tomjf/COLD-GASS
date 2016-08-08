@@ -45,9 +45,7 @@ def residuals(data):
 def nosillypts(x, y):
     data = np.vstack((x,y))
     data = data[abs(data[:,1])<100]
-    print data
     x,y = list(data[:,0]), list(data[:,1])
-    print type(x)
     return x,y
 
 def boundary(data, MH2axis, Vmaxis, bins, sig, u,c,l):
@@ -89,21 +87,31 @@ def Plotrho(x, PGy, BGy, PAy, BAy, rhos):
     plt.legend(loc=3)
     plt.savefig('img/scal/'+ 'rhoh2' + '.pdf', format='pdf', dpi=250, transparent = False)
 
-def MH2varSFR(total, bins, x_keres, y_keres, res, FullSchech):
+def MH2varSFR(total, bins, x_keres, y_keres, res, FullSchech, FullDetSchech):
     a = 0.1
     # 0: M*group | 1: dM* | 2: phi | 3: N | 4: M* | 5:SFR_SDSS | 6: SFR_Best
     #|7: MH2_SDSS_G |8: MH2_Best_G | 9: Vm | 10: MH2_SDSS_A |11: MH2_Best_A
     bl = len(bins)
     PG = boundary(total, 7, 9, bins, res, bl-1, bl, bl-3)
     PGOmega, PGy, PGrho = CalcOmega(PG[0], PG[1])
+    PGOmegau, PGyu, PGrhou = CalcOmega(PG[0], PG[2])
+    PGOmegal, PGyl, PGrhol = CalcOmega(PG[0], PG[3])
+    dPGOmega = max([PGOmega- PGOmegau, PGOmega - PGOmegal ])
     BG = boundary(total, 8, 9, bins, res, bl-1, bl-2, bl-3)
     BGOmega, BGy, BGrho = CalcOmega(BG[0], BG[1])
+    BGOmegau, BGyu, BGrhou = CalcOmega(BG[0], BG[2])
+    BGOmegal, BGyl, BGrhol = CalcOmega(BG[0], BG[3])
+    dBGOmega = max([BGOmega- BGOmegau, BGOmega - BGOmegal ])
     PA = boundary(total, 10, 9, bins, res, bl-1, bl-2, bl-3)
     PAOmega, PAy, PArho = CalcOmega(PA[0], PA[1])
+    PAOmegau, PAyu, PArhou = CalcOmega(PA[0], PA[2])
+    PAOmegal, PAyl, PArhol = CalcOmega(PA[0], PA[3])
+    dPAOmega = max([PAOmega- PAOmegau, PAOmega - PAOmegal ])
     BA = boundary(total, 11, 9, bins, res, bl-1, bl-2, bl-3)
     BAOmega, BAy, BArho = CalcOmega(BA[0], BA[1])
-    print PGOmega, BGOmega, PAOmega, BAOmega
-    print PGrho, BGrho, PArho, BArho
+    BAOmegau, BAyu, BArhou = CalcOmega(BA[0], BA[2])
+    BAOmegal, BAyl, BArhol = CalcOmega(BA[0], BA[3])
+    dBAOmega = max([BAOmega- BAOmegau, BAOmega - BAOmegal ])
     Plotrho(PG[0], PGy, BGy, PAy, BAy, [PGrho, BGrho, PArho, BArho])
     # print y2
     # data = np.loadtxt('gama.txt')
@@ -120,22 +128,24 @@ def MH2varSFR(total, bins, x_keres, y_keres, res, FullSchech):
     # ax[0,0].errorbar(PengAmelie[2], PengAmelie[1], fmt = 's', markersize = 8, color = 'k', label = 'PengAmelie')
     # ax[0,0].errorbar(BestAmelie[2], BestAmelie[1], fmt = 's', markersize = 8, color = 'm', label = 'BestAmelie')
     # ax[0,0].scatter(PengGio[2], PengGio[1], label = 'PengGio', color='r')
-    ax[0,0].scatter(FullSchech[2]. FullSchech[1])
-    ax[0,0].plot(PG[0], PG[1], label = 'SFR_Peng + MH2-SFR,  '  + r'$\Omega_{H_2}=$' +str(round(PGOmega,2)), color='r', linewidth = 3)
-    ax[0,0].plot(PG[0], PG[2], color='none')
-    ax[0,0].plot(PG[0], PG[3], color='none')
+    N, rho, xbin, sigma, rhoH2 = FullSchech
+    ax[0,0].errorbar(xbin, rho, fmt='h', markersize = 12, linewidth=2, mew=2, capthick=3, mfc='limegreen', mec='g' , label='COLD GASS det +non-det')
+    ax[0,0].errorbar(FullDetSchech[2], FullDetSchech[1], alpha = 0.2, fmt='h', markersize = 12, linewidth=2, mew=2, capthick=3, mfc='blue', mec='navy' , label='COLD GASS det only')
+    ax[0,0].plot(PG[0], PG[1], label = 'SFR_Peng + MH2-SFR,  '  + r'$\Omega_{H_2}=$' +str(round(PGOmega,2)) + r'$\pm$' + str(round(dPGOmega, 2)), color='r', linewidth = 2)
+    # ax[0,0].plot(PG[0], PG[2], color='none')
+    # ax[0,0].plot(PG[0], PG[3], color='none')
     ax[0,0].fill_between(PG[0], PG[2], PG[3], color ='r', alpha = a)
-    ax[0,0].plot(BG[0], BG[1], label = 'SFR_Best + MH2-SFR,  '  + r'$\Omega_{H_2}=$' +str(round(BGOmega,2)), color='b', linewidth = 3)
-    ax[0,0].plot(BG[0], BG[2], color='none')
-    ax[0,0].plot(BG[0], BG[3], color='none')
+    ax[0,0].plot(BG[0], BG[1], label = 'SFR_Best + MH2-SFR,  '  + r'$\Omega_{H_2}=$' +str(round(BGOmega,2))+ r'$\pm$' + str(round(dBGOmega, 2)), color='b', linewidth = 2)
+    # ax[0,0].plot(BG[0], BG[2], color='none')
+    # ax[0,0].plot(BG[0], BG[3], color='none')
     ax[0,0].fill_between(BG[0], BG[2], BG[3], color ='b', alpha = a)
-    ax[0,0].plot(PA[0], PA[1], label = 'SFR_Peng + fH2,  '  + r'$\Omega_{H_2}=$' +str(round(PAOmega,2)), color='g', linewidth = 3)
-    ax[0,0].plot(PA[0], PA[2], color='none')
-    ax[0,0].plot(PA[0], PA[3], color='none')
+    ax[0,0].plot(PA[0], PA[1], label = 'SFR_Peng + fH2,  '  + r'$\Omega_{H_2}=$' +str(round(PAOmega,2)), color='g', linewidth = 2)
+    # ax[0,0].plot(PA[0], PA[2], color='none')
+    # ax[0,0].plot(PA[0], PA[3], color='none')
     # ax[0,0].fill_between(PA[0], PA[2], PA[3], color ='g', alpha = a)
-    ax[0,0].plot(BA[0], BA[1], label = 'SFR_Best + fH2,  ' + r'$\Omega_{H_2}=$' +str(round(BAOmega,2)), color='k', linewidth = 3)
-    ax[0,0].plot(BA[0], BA[2], color='none')
-    ax[0,0].plot(BA[0], BA[3], color='none')
+    ax[0,0].plot(BA[0], BA[1], label = 'SFR_Best + fH2,  ' + r'$\Omega_{H_2}=$' +str(round(BAOmega,2)), color='k', linewidth = 2)
+    # ax[0,0].plot(BA[0], BA[2], color='none')
+    # ax[0,0].plot(BA[0], BA[3], color='none')
     # ax[0,0].fill_between(BA[0], BA[2], BA[3], color ='k', alpha = a)
 
     # ax[0,0].plot(BestGio[2], BestGio[1], label = 'BestGio')
@@ -144,13 +154,13 @@ def MH2varSFR(total, bins, x_keres, y_keres, res, FullSchech):
     # ax[0,0].plot(FullSchech_Best_D_S_G[2], FullSchech_Best_D_S_G[1], label = 'Det S G')
     # ax[0,0].plot(FullSchech_Best_D_S_A[2], FullSchech_Best_D_S_A[1], label = 'Det S A')
     # ax[0,0].scatter(FullDetSchech[2], FullDetSchech[1], label = 'Fulldet')
-    ax[0,0].plot(np.log10(x_keres), y_keres, 'k--', label = 'Keres+03, ' + r'$\Omega_{H_2}= 1.45$', linewidth = 3)
+    ax[0,0].plot(np.log10(x_keres), y_keres, 'k--', label = 'Keres+03, ' + r'$\Omega_{H_2}= 1.45 \pm 0.56$', linewidth = 2)
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
     ax[0,0].set_ylim(-5, -1)
     ax[0,0].set_xlim(7.5, 10.5)
     plt.legend(fontsize = 13, loc=3)
-    plt.savefig('img/scal/'+ 'StarMass' + '.pdf', format='pdf', dpi=250, transparent = False)
+    plt.savefig('img/scal/StarMass.pdf', format='pdf', dpi=250)
 
 def PlotdMH2(FullDet, Fulldetmains):
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
