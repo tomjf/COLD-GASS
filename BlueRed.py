@@ -660,7 +660,7 @@ def main(bins, totSch_data, PengGio, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     GASS_Schech = Schechter(SFRBL, 6, 9, bins)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #SFR COMPARISON
-    MH2varSFR(total, bins, x_keres, y_keres, res)
+    MH2varSFR(total, bins, x_keres, y_keres, res, FullSchech_m)
     PlotdMH2(FullDet, Fulldetmain)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # PlotSchechSDSS(FullSchech, sdssSchech, sdssSchechAm, PengAmelie,PengGio, x_keres, y_keres, y_ober)

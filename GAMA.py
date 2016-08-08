@@ -70,11 +70,9 @@ def boundary(data, MH2axis, Vmaxis, bins, sig, u,c,l):
 
 def Plotrho(x, PGy, BGy, PAy, BAy, rhos):
     PGrho, BGrho, PArho, BArho = rhos
-    mst=np.log10((2.81*(10**9))/(0.7**2))
     alpha=-1.18
-    phist=np.log10(0.0089*(0.7**3))
-    mst1 = 10**mst
-    phist1 = 10**phist
+    mst1 = (2.81*(10**9))/(0.7**2)
+    phist1 = 0.0089*(0.7**3)
     x_keres = 10**np.linspace(7, 11, 500)
     y_keres = np.log10((phist1)*((x_keres/(mst1))**(alpha+1))*np.exp(-x_keres/mst1)*np.log(10))
     x_keres = np.log10(x_keres)
@@ -91,7 +89,7 @@ def Plotrho(x, PGy, BGy, PAy, BAy, rhos):
     plt.legend(loc=3)
     plt.savefig('img/scal/'+ 'rhoh2' + '.pdf', format='pdf', dpi=250, transparent = False)
 
-def MH2varSFR(total, bins, x_keres, y_keres, res):
+def MH2varSFR(total, bins, x_keres, y_keres, res, FullSchech):
     a = 0.1
     # 0: M*group | 1: dM* | 2: phi | 3: N | 4: M* | 5:SFR_SDSS | 6: SFR_Best
     #|7: MH2_SDSS_G |8: MH2_Best_G | 9: Vm | 10: MH2_SDSS_A |11: MH2_Best_A
@@ -122,19 +120,20 @@ def MH2varSFR(total, bins, x_keres, y_keres, res):
     # ax[0,0].errorbar(PengAmelie[2], PengAmelie[1], fmt = 's', markersize = 8, color = 'k', label = 'PengAmelie')
     # ax[0,0].errorbar(BestAmelie[2], BestAmelie[1], fmt = 's', markersize = 8, color = 'm', label = 'BestAmelie')
     # ax[0,0].scatter(PengGio[2], PengGio[1], label = 'PengGio', color='r')
-    ax[0,0].plot(PG[0], PG[1], label = 'SFR_Peng + MH2-SFR', color='r', linewidth = 3)
+    ax[0,0].scatter(FullSchech[2]. FullSchech[1])
+    ax[0,0].plot(PG[0], PG[1], label = 'SFR_Peng + MH2-SFR,  '  + r'$\Omega_{H_2}=$' +str(round(PGOmega,2)), color='r', linewidth = 3)
     ax[0,0].plot(PG[0], PG[2], color='none')
     ax[0,0].plot(PG[0], PG[3], color='none')
     ax[0,0].fill_between(PG[0], PG[2], PG[3], color ='r', alpha = a)
-    ax[0,0].plot(BG[0], BG[1], label = 'SFR_Best + MH2-SFR', color='b', linewidth = 3)
+    ax[0,0].plot(BG[0], BG[1], label = 'SFR_Best + MH2-SFR,  '  + r'$\Omega_{H_2}=$' +str(round(BGOmega,2)), color='b', linewidth = 3)
     ax[0,0].plot(BG[0], BG[2], color='none')
     ax[0,0].plot(BG[0], BG[3], color='none')
     ax[0,0].fill_between(BG[0], BG[2], BG[3], color ='b', alpha = a)
-    ax[0,0].plot(PA[0], PA[1], label = 'SFR_Peng + fH2', color='g', linewidth = 3)
+    ax[0,0].plot(PA[0], PA[1], label = 'SFR_Peng + fH2,  '  + r'$\Omega_{H_2}=$' +str(round(PAOmega,2)), color='g', linewidth = 3)
     ax[0,0].plot(PA[0], PA[2], color='none')
     ax[0,0].plot(PA[0], PA[3], color='none')
     # ax[0,0].fill_between(PA[0], PA[2], PA[3], color ='g', alpha = a)
-    ax[0,0].plot(BA[0], BA[1], label = 'SFR_Best + fH2', color='k', linewidth = 3)
+    ax[0,0].plot(BA[0], BA[1], label = 'SFR_Best + fH2,  ' + r'$\Omega_{H_2}=$' +str(round(BAOmega,2)), color='k', linewidth = 3)
     ax[0,0].plot(BA[0], BA[2], color='none')
     ax[0,0].plot(BA[0], BA[3], color='none')
     # ax[0,0].fill_between(BA[0], BA[2], BA[3], color ='k', alpha = a)
@@ -145,7 +144,7 @@ def MH2varSFR(total, bins, x_keres, y_keres, res):
     # ax[0,0].plot(FullSchech_Best_D_S_G[2], FullSchech_Best_D_S_G[1], label = 'Det S G')
     # ax[0,0].plot(FullSchech_Best_D_S_A[2], FullSchech_Best_D_S_A[1], label = 'Det S A')
     # ax[0,0].scatter(FullDetSchech[2], FullDetSchech[1], label = 'Fulldet')
-    ax[0,0].plot(np.log10(x_keres), y_keres, 'k--', label = 'Keres+03', linewidth = 3)
+    ax[0,0].plot(np.log10(x_keres), y_keres, 'k--', label = 'Keres+03, ' + r'$\Omega_{H_2}= 1.45$', linewidth = 3)
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
     ax[0,0].set_ylim(-5, -1)
