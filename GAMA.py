@@ -8,6 +8,17 @@ import pandas as pd
 from matplotlib.colors import LogNorm
 import schechter
 
+def CalcOmega(massfitx, massfity):
+    yrho = []
+    dMH2 = massfitx[1] - massfitx[0]
+    for i in range(0,len(massfity)):
+        yrho.append(massfity[i]+massfitx[i])
+    yrho = np.array(yrho)
+    rhocrit = 9.2*(10**(-27))
+    rhoH2 = (np.sum((10**yrho)*dMH2)*(2*(10**30)))/((3.086*(10**22))**3)
+    OmegaH2 = (rhoH2/rhocrit)*(10000)
+    return OmegaH2, yrho, np.sum((10**yrho)*dMH2)/(10**7)
+
 def Schechter(data, LCOaxis, Vmaxis, bins):
     l = data[:,LCOaxis]
     # l = np.log10(l)
@@ -57,16 +68,45 @@ def boundary(data, MH2axis, Vmaxis, bins, sig, u,c,l):
     upperline = schechter.log_schechter(x, *para)
     return [x, centreline, upperline, lowerline, centre, lower, upper]
 
+def Plotrho(x, PGy, BGy, PAy, BAy, rhos):
+    PGrho, BGrho, PArho, BArho = rhos
+    mst=np.log10((2.81*(10**9))/(0.7**2))
+    alpha=-1.18
+    phist=np.log10(0.0089*(0.7**3))
+    mst1 = 10**mst
+    phist1 = 10**phist
+    x_keres = 10**np.linspace(7, 11, 500)
+    y_keres = np.log10((phist1)*((x_keres/(mst1))**(alpha+1))*np.exp(-x_keres/mst1)*np.log(10))
+    x_keres = np.log10(x_keres)
+    yrhokeres = y_keres + x_keres
+    omegakeres =  CalcOmega(x_keres, y_keres)[2]
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].plot(x,PGy, label = 'SFR_Peng + MH2-SFR ' + str(round(rhos[0],2)), color='r')
+    ax[0,0].plot(x,BGy, label = 'SFR_Best + MH2-SFR '+ str(round(rhos[1],2)), color='b')
+    ax[0,0].plot(x,PAy, label = 'SFR_Peng + fH2 '+ str(round(rhos[2],2)), color='g')
+    ax[0,0].plot(x,BAy, label = 'SFR_Best + fH2 '+ str(round(rhos[3],2)), color='k')
+    ax[0,0].plot(x_keres,yrhokeres, 'k--', label = 'keres ' + str(round(omegakeres,2)))
+    ax[0,0].set_xlim(6.8,11.2)
+    ax[0,0].set_ylim(4.5,7.2)
+    plt.legend(loc=3)
+    plt.savefig('img/scal/'+ 'rhoh2' + '.pdf', format='pdf', dpi=250, transparent = False)
+
 def MH2varSFR(total, bins, x_keres, y_keres, res):
     a = 0.1
     # 0: M*group | 1: dM* | 2: phi | 3: N | 4: M* | 5:SFR_SDSS | 6: SFR_Best
     #|7: MH2_SDSS_G |8: MH2_Best_G | 9: Vm | 10: MH2_SDSS_A |11: MH2_Best_A
     bl = len(bins)
     PG = boundary(total, 7, 9, bins, res, bl-1, bl, bl-3)
+    PGOmega, PGy, PGrho = CalcOmega(PG[0], PG[1])
     BG = boundary(total, 8, 9, bins, res, bl-1, bl-2, bl-3)
+    BGOmega, BGy, BGrho = CalcOmega(BG[0], BG[1])
     PA = boundary(total, 10, 9, bins, res, bl-1, bl-2, bl-3)
+    PAOmega, PAy, PArho = CalcOmega(PA[0], PA[1])
     BA = boundary(total, 11, 9, bins, res, bl-1, bl-2, bl-3)
-    print total[:,8]
+    BAOmega, BAy, BArho = CalcOmega(BA[0], BA[1])
+    print PGOmega, BGOmega, PAOmega, BAOmega
+    print PGrho, BGrho, PArho, BArho
+    Plotrho(PG[0], PGy, BGy, PAy, BAy, [PGrho, BGrho, PArho, BArho])
     # print y2
     # data = np.loadtxt('gama.txt')
     # data = data[data[:,5]!= float('nan')]
