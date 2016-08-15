@@ -13,6 +13,7 @@ from matplotlib import cm
 from sfrBestSDSS import convertsdss
 from GAMA import MH2varSFR
 from GAMA import PlotdMH2
+from setlim import testMassLimits
 
 # Omega H2 ################################################################
 def CalcOmega(massfitx, massfity):
@@ -591,6 +592,7 @@ def main(bins, totSch_data, PengGio, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     total = np.vstack((blues, reds))
     total = AmGasFrac(total, 4, 5)
     total = AmGasFrac(total, 4, 6)
+    testMassLimits(total)
     # bins  = np.linspace(6, 10.5, 30)
     # bins  = np.linspace(min(total[:,6]), max(total[:,6]), 16)
     massbins = np.linspace(8,11.5,25)

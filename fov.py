@@ -186,6 +186,7 @@ areaF = calcArea(0, 2*np.pi, 0, np.pi)
 print areaA, areaB, areaC, areaD, areaD-(areaB+areaC)
 print areaE, areaF/np.pi
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#smaller one
 x7 = np.array([-np.pi/3.25,-np.pi/3.25,np.pi/4.75,np.pi/4.75,-np.pi/3.25])
 y7 = np.array([0,np.pi/5,np.pi/5,0,0])
 H = stack(x7,y7)
@@ -205,23 +206,33 @@ topcoords = [[-np.pi/2.7, -np.pi/2.86, -np.pi/3.25], [np.pi/6, np.pi/5, np.pi/5]
 bottomcoords = [[-np.pi/2.7, -np.pi/2.8, -np.pi/3.25], [np.pi/6, np.pi/10, 0]]
 phis2, top2, bottom2 = interpolateEdge2(topcoords, bottomcoords, 500)
 print '@@@@', calcArea2(phis2, top2, bottom2)
-print '1@@@@', np.sum(areas2) - areas2[-1]
+print '1@@@@', np.sum(areas2) - areas2[6] - areas2[2]
 print np.sum(areas2) - areas2[0]
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 fig = plt.figure(figsize=(8,6))
 ax = fig.add_subplot(111, projection="mollweide")
 # ax.scatter(((coords[:,1]-180)*(math.pi/180.0)), (coords[:,2]*(math.pi/180.0)), s=0.1, alpha = 0.5, label = 'SDSS')
-ax.scatter(((coords_L[:,1]-180)*(math.pi/180.0)), (coords_L[:,2]*(math.pi/180.0)), s=0.1, color='red', label = 'COLD GASS')
+# ax.scatter(((coords_L[:,1]-180)*(math.pi/180.0)), (coords_L[:,2]*(math.pi/180.0)), s=0.1, color='m', label = 'GASSL')
+ax.scatter(((GASS[:,1]-180)*(math.pi/180.0)), (GASS[:,2]*(math.pi/180.0)), s=0.1, color='k', alpha=0.2, label = 'GASS')
+ax.scatter(((LMass[:,1]-180)*(math.pi/180.0)), (LMass[:,2]*(math.pi/180.0)), s=6, color='b', alpha=1, label = 'Low Mass', marker = '^')
+ax.scatter(((COLD_GASS_H[:,1]-180)*(math.pi/180.0)), (COLD_GASS_H[:,2]*(math.pi/180.0)), s=6, color='r', alpha=1, label = 'High Mass')
+
+
 # ax.scatter(((LMass[:,1]-180)*(math.pi/180.0)), (LMass[:,2]*(math.pi/180.0)), s=10, alpha = 1, color='blue', label = 'LMASS')
 # ax.scatter(((COLD_GASS_H[:,1]-180)*(math.pi/180.0)), (COLD_GASS_H[:,2]*(math.pi/180.0)), s=10, alpha = 1, color='green', label = 'HMASS')
 for i in range(0,len(areas)):
-    ax.plot(areas[i][0][:,0],areas[i][0][:,1], linewidth=1)
-    ax.text(areas[i][1][:,0], areas[i][1][:,1], str(round(areas[i][2],4)), color = 'r', fontsize=12)
-ax.plot(x6,y6, linewidth=1)
-ax.scatter(phis2, top2, s=1)
-ax.scatter(phis2, bottom2, s=1)
+    print i, areas2[i]
+    if i == 2:
+        ax.plot(areas[i][0][:,0],areas[i][0][:,1], linewidth=1, color='b')
+    elif i ==6:
+        ax.plot(areas[i][0][:,0],areas[i][0][:,1], linewidth=1, color='b')
+    else:
+        ax.plot(areas[i][0][:,0],areas[i][0][:,1], linewidth=1, color='r')
+# ax.plot(x6,y6, linewidth=1)
+# ax.scatter(phis2, top2, s=1)
+# ax.scatter(phis2, bottom2, s=1)
 ax.grid(True)
-ax.legend(bbox_to_anchor=(0.5,1.2), loc='upper center', ncol=2, fontsize = 13)
+ax.legend(bbox_to_anchor=(0.5,1.2), loc='upper center', ncol=3, fontsize = 13)
 #ax.xaxis.set_major_formatter(plt.NullFormatter())
 fig.set_size_inches(10,6)
 plt.savefig('img/footprint.png', dpi=250, transparent = False)

@@ -11,6 +11,7 @@ import csv
 import pandas as pd
 import random
 import BlueRed
+from gasfrac import testMassLimits
 
 # Function to calculate the luminosity distance from z #########################
 def lumdistance(data, zaxis):
@@ -444,14 +445,14 @@ def compareIDforID(Full, total, output, compareoutput):
     plt.savefig('img/schechter/COMPAREID.pdf', format='pdf', dpi=250, transparent = False)
 ################################################################################
 def GetFull(Full, output):
-    FullData = np.zeros((len(Full),15))
+    FullData = np.zeros((len(Full),17))
     lorh = []
     for j,rows1 in enumerate(Full):
         lorh.append(rows1[1])
     for i,rows in enumerate(Full):
         #z|flag|MH2|limMH2|MH2_both|Lumdist|M*|
         FullData[i,output['ID']] = rows[0]
-        FullData[i,output['S_CO']] = 0
+        FullData[i,output['S_CO']] = rows[47]
         FullData[i,output['z']] = rows[9]
         FullData[i,output['flag']] = rows[37]
         FullData[i,output['M*']] = rows[20]
@@ -464,12 +465,14 @@ def GetFull(Full, output):
         FullData[i,11] = rows[52] # lim log MH2 3 sig
         FullData[i,12] = rows[52] + rows[51]
         FullData[i,13] = rows[64] #weighting
-        FullData[i,14] = rows[44] #weighting
+        FullData[i,14] = rows[44] # LCO
+        FullData[i,15] = rows[46] # rms_CO
+        FullData[i,16] = rows[48] # W_CO
     data = pd.DataFrame({   'group':lorh, 'ID': FullData[:,output['ID']], 'S_CO': FullData[:,output['S_CO']], 'z': FullData[:,output['z']],
                             'flag': FullData[:,output['flag']], 'M*': FullData[:,output['M*']], 'Zo': FullData[:,output['Zo']], 'SFR': FullData[:,output['SFR']],
                             'sSFR': FullData[:,output['sSFR']],'NUV-r': FullData[:,output['NUV-r']],'D_L': FullData[:,output['D_L']],
                             'MH2': FullData[:,10], 'limMH2': FullData[:,11], 'MH2both': FullData[:,12], 'Weight':FullData[:,13],
-                            'LCO':FullData[:,14]})
+                            'LCO':FullData[:,14], 'rms':FullData[:,15], 'WCO':FullData[:,16]})
     LMass = (data.loc[data['group'] == 'L'])
     HMass = (data.loc[data['group'] == 'H'])
     Lz, Hz = LMass[['z']].values, HMass[['z']].values
@@ -489,19 +492,34 @@ def GetFull(Full, output):
     LMassFull = LMass[['z', 'flag', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm', 'Weight']].values
     HMassFull = HMass[['z', 'flag', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm', 'Weight']].values
     Fulldata = np.vstack((LMassFull, HMassFull))
-    '0 z, 1 flag, 2 MH2, 3 limMH2, 4 MH2both, 5 D_L, 6 M*, 7 V/Vm, 8 Vm, 9 Weight, 10 newVm'
+    # '0 z, 1 flag, 2 MH2, 3 limMH2, 4 MH2both, 5 D_L, 6 M*, 7 V/Vm, 8 Vm, 9 Weight, 10 newVm'
     a = np.zeros((len(Fulldata),1))
     a[:,0] = Fulldata[:,8]/Fulldata[:,9]
     Fulldata = np.hstack((Fulldata, a))
     LMassNDarr = LMassND[['ID', 'S_CO', 'z', 'flag', 'M*', 'Zo', 'SFR', 'sSFR', 'NUV-r', 'D_L', 'V/Vm', 'Vm', 'L_CO', 'AlphaCO', 'limMH2', 'dalpha']].values
     HMassNDarr = HMassND[['ID', 'S_CO', 'z', 'flag', 'M*', 'Zo', 'SFR', 'sSFR', 'NUV-r', 'D_L', 'V/Vm', 'Vm', 'L_CO', 'AlphaCO', 'limMH2', 'dalpha']].values
     ############
-    LMassFull2 = LMass[['z', 'flag', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm', 'Weight', 'LCO']].values
-    HMassFull2 = HMass[['z', 'flag', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm', 'Weight', 'LCO']].values
+    LMassFull2 = LMass[['z', 'flag', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm', 'Weight', 'LCO', 'rms', 'WCO', 'S_CO', 'sSFR']].values
+    HMassFull2 = HMass[['z', 'flag', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm', 'Weight', 'LCO', 'rms', 'WCO', 'S_CO', 'sSFR']].values
+    # LCO
     LCO = np.vstack((LMassFull2, HMassFull2))
+    a = np.zeros((len(Fulldata),1))
+    a[:,0] = (LCO[:,11]*LCO[:,12])/np.sqrt(LCO[:,12]/21.57) # calculating the error
+    LCO = np.hstack((LCO, a))
+    LCO = lCalc(LCO, 14, 0, 5, True)# calculate the error in lum from err sco
+    LCOdet = LCO[LCO[:,1]==1] #det only
+    a = np.zeros((len(LCOdet),4))
+    a[:,0] = LCOdet[:,15]/LCOdet[:,10] #fractional error in lum from sco
+    for i in range (0,len(a)):
+        x = np.sqrt((a[i,0]**2) + (0.1**2) + (0.15**2) + (0.021**2)) # add this err and others in quadrature to get total error ~20%
+        a[i,1] = x
+    # a[:,1] = np.sqrt((a[:,0]**2) + (0,1**2) + (0.15**2) + (0.021**2))
+    a[:,2] = LCOdet[:,10] - LCOdet[:,10]*a[:,1] # min max values for each det based on errors
+    a[:,3] = LCOdet[:,10] + LCOdet[:,10]*a[:,1]
+    LCOdet = np.hstack((LCOdet, a))
     bins = np.linspace(5.5,11,18)
     LCO = Schechter(LCO, 10, 8, bins)
-    return LMassNDarr, HMassNDarr, Fulldata, FullData, LCO
+    return LMassNDarr, HMassNDarr, Fulldata, FullData, LCO, LCOdet
 ## Read data from tables #######################################################
 highM = atpy.Table('COLDGASS_DR3_with_Z.fits')
 lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
@@ -547,7 +565,8 @@ LMass[:,output['sSFR']] = sSFRlist                                      # sSFR
 LMass[:,output['NUV-r']] = list(lowM[l['NUV-r']])      # NUV-r
 #ID:0|S_CO:1|z:2|flag:3|M*:4|Zo:5|SFR:6|sSFR:7|NUV-r:8|D_L:9|V/Vm:10|Vm:11|L_CO:12|ACO:13|MH2:14|dACO:15|
 ################################################################################
-LND, HND, FullData, weights, LCO = GetFull(Full, output)
+LND, HND, FullData, weights, LCO, LCOdet = GetFull(Full, output)
+testMassLimits(LCOdet)
 LND[:,output['MH2']] = 10**LND[:,output['MH2']]
 HND[:,output['MH2']] = 10**HND[:,output['MH2']]
 # FullData = Vm(FullData, 5, min(FullData[:,0]), max(FullData[:,0]), 3)
