@@ -5,6 +5,7 @@ import pandas as pd
 from main import GetFull
 import atpy
 import math
+import random
 
 def Schechter(data, LCOaxis, Vmaxis, bins):
     l = data[:,LCOaxis]
@@ -52,7 +53,6 @@ def extrapolate(data, up, down, n):
                 newdata[j,1] = ans
                 newdata[j,0] = x[j]
             elif x[j]>data[-1,0]:
-                print x[j], data[-1,0]
                 dx = data[-1,0] - data[-2,0]
                 dy = data[-1,1] - data[-2,1]
                 DX = x[j] - data[-1,0]
@@ -62,14 +62,59 @@ def extrapolate(data, up, down, n):
                 newdata[j,0] = x[j]
     return newdata
 
+def errors(data, x, y):
+    output = {'Vm':8, 'LCO':10}
+    frac = 0.5
+    eridx = int(len(data)*frac)
+    idx = np.linspace(0,len(data)-1,len(data))
+    spread = np.zeros((eridx, len(x)-1))
+    for i in range(0, eridx):
+        random.shuffle(idx)
+        idx1 = idx[:eridx]
+        newdata = np.zeros((eridx, np.shape(data)[1]))
+        for j in range(0,len(newdata)):
+            newdata[j,:] = data[int(idx[j]),:]
+        newdata[:,output['Vm']] = newdata[:,output['Vm']]*frac
+        totSch = Schechter(newdata, output['LCO'], output['Vm'], x)
+        drho = totSch[1] - y
+        spread[i,:] = drho
+    er = spread
+    sigma = []
+    for i in range(0, np.shape(er)[1]):
+        eri = er[:,i]
+        eri = eri[abs(eri)<10]
+        if np.std(eri)>0.00000001:
+            sigma.append(np.std(eri))
+        else:
+            sigma.append(0)
+    return sigma
 
-def PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet):
+
+def PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet, LCO, LCOtot):
     bins = np.linspace(5.5,11,18)
+    LCOSch = Schechter(LCOtot, 10, 8, bins)
+    LCONDl = Schechter(LCOtot, 19, 8, bins)
+    LCONDu = Schechter(LCOtot, 20, 8, bins)
+    a = np.zeros((len(LCOSch[1]),3))
+    a[:,0] = LCOSch[1]
+    a[:,1] = LCONDl[1]
+    a[:,2] = LCONDu[1]
+    np.savetxt('fullerrs.txt',a)
     LCOdetschech = Schechter(LCOdet, 10, 8, bins)
     LCOdetschechl = Schechter(LCOdet, 19, 8, bins)
     LCOdetschechu = Schechter(LCOdet, 20, 8, bins)
+    sampling = errors(LCOdet, bins, LCOdetschech[1])
+    samplingF = errors(LCO, bins, LCOSch[1])
+    print '@@@@', samplingF
     l = [0,0,0,0,0.1760912591,0.2041199827,0.1375917444,0.0137869414,0.0934900541,0,0.1259633184,0.2688453123,0.1461280357,0,0,0,0]
     u = [0,0,0,0,0.3010299957,0.3979400087,0,0.044056824,0,0.0626094827,0.1443927751,0.1035405919,0,0.4771212547,0,0,0]
+    l2 =[0,0,0,0,0.3010299957,0.1918855262,0.1365819998,0.0390612296,0.2402860609,0,0.1259633184,0.2108533653,0.1461280357,0,0,0,0]
+    u2 =[0,0,0,0.4771212547,0.8293037728,0.1759744873,0.0193671767,0.0026500336,0.00662909,0.0763901687,0.1345726324,0.0901766303,0,0.4771212547,0,0,0]
+    for i in range(0,len(l)):
+        l[i] = np.sqrt((l[i]**2)+(sampling[i]**2))
+        u[i] = np.sqrt((u[i]**2)+(sampling[i]**2))
+        l2[i] = np.sqrt((l2[i]**2)+(samplingF[i]**2))
+        u2[i] = np.sqrt((u2[i]**2)+(samplingF[i]**2))
     # err = np.zeros((len(LCOdetschech[1]),5))
     # err[:,0] = LCOdetschech[1]
     # err[:,1] = LCOdetschechl[1]
@@ -113,9 +158,9 @@ def PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet):
     ax[0,0].fill_between(lowerr2[:,0], lowerr2[:,1], uperr2[:,1], label = 'Vallini+16 error', color = 'r', alpha = 0.2)
     # ax[0,0].scatter(lowerr2[:,0], lowerr2[:,1], label = 'uperr', color = 'g')
     # ax[0,0].scatter(uperr2[:,0], uperr2[:,1], label = 'uperr', color = 'g')
-    ax[0,0].errorbar(keres[:,0], keres[:,1], yerr=[keres[:,3], keres[:,2]], fmt='bo', markersize = 12, linewidth=2, mew=2, capthick=3, mfc='b', mec='navy' , label='Keres+03')
-    ax[0,0].errorbar(LCOSch[2], LCOSch[1], fmt='^', markersize = 12, linewidth=2, mew=2, capthick=3, mfc='deeppink', mec='m' , label='COLD GASS det+non-det')
-    ax[0,0].errorbar(LCOdetschech[2], LCOdetschech[1], yerr=[l,u], fmt='h', markersize = 12, linewidth=2, mew=2, capthick=3, mfc='limegreen', mec='g', ecolor='g', label='COLD GASS det only')
+    ax[0,0].errorbar(keres[:,0], keres[:,1], yerr=[keres[:,3], keres[:,2]], fmt='bo', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='b', mec='navy' , label='Keres+03')
+    ax[0,0].errorbar(LCOSch[2], LCOSch[1], yerr=[l2,u2], fmt='^', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='deeppink', mec='m', ecolor = 'm', label='COLD GASS det+non-det')
+    ax[0,0].errorbar(LCOdetschech[2], LCOdetschech[1], yerr=[l,u], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='limegreen', mec='g', ecolor='g', label='COLD GASS det only')
     ax[0,0].set_xlabel(r'$\mathrm{log\, L_{CO}\, [K \, km \,s^{-1}\, pc^{2}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, \phi\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
     ax[0,0].set_xlim(5.5, 12)
@@ -148,7 +193,7 @@ uperr2 = extrapolate(uperr, 5.5, 11, 200)
 
 Full = atpy.Table('data/COLDGASS_full.fits')
 #0'z', 1'flag', 2'MH2', 3'limMH2', 4'MH2both', 5'D_L', 6'M*', 7'V/Vm', 8'Vm', 9'Weight', 10'LCO'
-LND, HND, FullData, weights, LCOSch, LCOdet = GetFull(Full, output)
+LND, HND, FullData, weights, LCO, LCOdet, gdata, LCOSch, LCOtot = GetFull(Full, output)
 # SFRBL = df[['GASS', 'SFR_best', 'SFRerr_best', 'SFRcase_best']].values
 # data = np.loadtxt('data/lum/test33a.csv')
 # uperr = np.loadtxt('data/lum/valiniErr.csv')
@@ -179,4 +224,4 @@ for idx, element in enumerate(keres):
 # np.savetxt('data/lum/upasaerr.csv', uperr)
 # np.savetxt('data/lum/lowerrjk.csv', lowerr)
 # print data
-PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet)
+PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet, LCO, LCOtot)

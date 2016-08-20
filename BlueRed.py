@@ -150,11 +150,13 @@ def PlotMSFR(bluepop, redpop, x, z, data):
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
     ax[0,0].set_xlim(8,11.5)
     ax[0,0].set_ylim(-2.5,1)
-    ax[0,0].scatter(bluepop, x, color = 'b', s = 5)
-    ax[0,0].scatter(redpop, z, color = 'r', s = 5)
-    ax[0,0].plot(data[:,0], data[:,1], '-', color = 'limegreen', linewidth = 5)
-    ax[0,0].set_xlabel(r'$\mathrm{log \, M_{*}\, [M_{sun}]}$', fontsize = 20)
+    ax[0,0].scatter(bluepop, x, color = 'b', s = 5, label = 'Peng+10 MS SF')
+    ax[0,0].scatter(redpop, z, color = 'r', s = 5, label = 'Peng+10 Red')
+    ax[0,0].plot(data[:,0], data[:,2], '-', color = 'k', linewidth = 5, label = 'Saintonge+16')
+    ax[0,0].plot(data[:,0], data[:,1], '-', color = 'limegreen', linewidth = 5, label = 'Peng+10')
+    ax[0,0].set_xlabel(r'$\mathrm{log \, M_{*}\, [M_{\odot}]}$', fontsize = 20)
     ax[0,0].set_ylabel(r'$\mathrm{log \, SFR\, [M_{\odot}\,yr^{-1}]}$', fontsize = 20)
+    plt.legend(fontsize =14, loc=2)
     plt.savefig('img/scal/MSFR.pdf', format='pdf', dpi=250, transparent = False)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def PlotHist(bluepop, redpop):
@@ -379,14 +381,15 @@ def SFRMSTAR(data, FullData):
     xi, yi = np.mgrid[x.min():x.max():nbins*1j, y.min():y.max():nbins*1j]
     zi = k(np.vstack([xi.flatten(), yi.flatten()]))
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
-    ax[0,0].contourf(xi, yi, zi.reshape(xi.shape), 15, cmap = cm.gray_r)
-    ax[0,0].scatter(data[:,1], data[:,2], s = .1, alpha=0.5, color = 'b', label = 'COLD GASS')
+    # ax[0,0].contourf(xi, yi, zi.reshape(xi.shape), 15, cmap = cm.gray_r)
+    ax[0,0].scatter(data[:,1], data[:,2], s = 1, alpha=0.5, color = 'k', label = 'COLD GASS')
     # ax[0,0].scatter(FullData[:,3], FullData[:,2], s = 10, color = 'r', label = 'COLD GASS')
     ax[0,0].set_xlim(8, 11.5)
     ax[0,0].set_ylim(-2.5, 1)
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{*}\,[M_{sun}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, SFR\,[M_{sun}\,yr^{-1}]}$', fontsize=18)
     plt.savefig('img/scal/sfrmstar.pdf', format='pdf', dpi=250, transparent = False)
+    plt.savefig('img/scal/sfrmstar.png', dpi=250, transparent = False)
 ################################################################################
 def SFRHist(sdssData, gioData, FullData, total):
     bins = np.linspace(-3.0, 2.0, 25)
@@ -571,9 +574,11 @@ def main(bins, totSch_data, PengGio, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     reds[:,6] = convertsdss(reds[:,5])
     blues[:,6] = convertsdss(blues[:,5])
     trend = mainSequence(Baldry, False, 0, False)
-    data = np.zeros((len(L),2))
+    trend2 = mainSequence(Baldry, False, 0, True)
+    data = np.zeros((len(L),3))
     data[:,0] = L
     data[:,1] = trend[:,5]
+    data[:,2] = trend2[:,5]
 
     datagio, fit, res = scal_relns.fitdata()
     # blues[:,6] = scal_relns.second2var((blues[:,4], blues[:,5]), *fit[0])
@@ -667,7 +672,7 @@ def main(bins, totSch_data, PengGio, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # PlotSchechSDSS(FullSchech, sdssSchech, sdssSchechAm, PengAmelie,PengGio, x_keres, y_keres, y_ober)
     # SFRMH2(sdssData)
-    # SFRMSTAR(sdssData, FullData)
+    SFRMSTAR(sdssData, FullData)
     PlotBaldry(L, yBaldry, yred, yblue)
     PlotMSFR(blues[:,4], reds[:,4], blues[:,5], reds[:,5], data)
     # PlotHist(blues[:,4], reds[:,4])

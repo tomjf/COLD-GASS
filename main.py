@@ -48,6 +48,56 @@ def lCalc(data, SCOaxis, zaxis, Dlaxis, correction):
     data = np.hstack((data, lums))
     return data
 
+# gio's conv factor#############################################################
+
+def conversion_factor_equation(met, log_sfr, log_m, redshift):
+    delta_ms_whitaker_2012 = log_sfr - log_m + 10.12 - 1.14*redshift + 0.19*redshift*redshift + (0.3 + 0.13*redshift)*(log_m - 10.5)
+    if met > 8.8:
+        if delta_ms_whitaker_2012 < -0.8:
+            alpha_co_redshift_dependent = 10**(15.623 - 1.732*8.8 + 0.051*(-0.8))
+        if delta_ms_whitaker_2012 > np.log10(20.0):
+            alpha_co_redshift_dependent = 'nan'
+        else:
+            alpha_co_redshift_dependent = 10**(15.623 - 1.732*8.8 + 0.051*delta_ms_whitaker_2012)
+    if met < 7.9:
+        alpha_co_redshift_dependent = 'nan'
+    else:
+        if delta_ms_whitaker_2012 < -0.8:
+            alpha_co_redshift_dependent = 10**(15.623 - 1.732*met + 0.051*(-0.8))
+        if delta_ms_whitaker_2012 > np.log10(20.0):
+            alpha_co_redshift_dependent = 'nan'
+        else:
+            alpha_co_redshift_dependent = 10**(15.623 - 1.732*met + 0.051*delta_ms_whitaker_2012)
+    return alpha_co_redshift_dependent
+
+def conversion_factor_equation2(met, log_sfr, log_m, redshift):
+    delta_ms_whitaker_2012 = log_sfr - log_m + 10.12 - 1.14*redshift + 0.19*redshift*redshift + (0.3 + 0.13*redshift)*(log_m - 10.5)
+    if met > 8.8:
+        if delta_ms_whitaker_2012 < -0.8:
+            alpha_co_redshift_dependent = 10**(15.623 - 1.732*8.8 + 0.051*(-0.8))
+        elif delta_ms_whitaker_2012 > np.log10(20.0):
+            alpha_co_redshift_dependent = 'nan'
+        else:
+            alpha_co_redshift_dependent = 10**(15.623 - 1.732*8.8 + 0.051*delta_ms_whitaker_2012)
+    elif met < 7.9:
+        alpha_co_redshift_dependent = 'nan'
+    else:
+        if delta_ms_whitaker_2012 < -0.8:
+            alpha_co_redshift_dependent = 10**(15.623 - 1.732*met + 0.051*(-0.8))
+        elif delta_ms_whitaker_2012 > np.log10(20.0):
+            alpha_co_redshift_dependent = 'nan'
+        else:
+            alpha_co_redshift_dependent = 10**(15.623 - 1.732*met + 0.051*delta_ms_whitaker_2012)
+    return alpha_co_redshift_dependent
+
+def genzel(met):
+    aco = 12.0 - (1.3*met)
+    return 10**aco
+def schruba(met):
+    aco =  np.log10(8) + (-2*(met - 8.7))
+    return 10**aco
+
+
 # Remove non-detections ########################################################
 def NonDetect(data, flagrow, detections):
     init = True
@@ -226,7 +276,29 @@ def CalcOmega(massfitx, massfity):
     return OmegaH2
 
 # schechter only ###############################################################
-def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpts, y_keres, x_keres, FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2, y_ober):
+def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, y_ober, newdat, bins):
+    LMassD, HMassD, ND = newdat
+    tot = np.vstack((LMassD, HMassD))
+    tot = np.vstack((tot,ND))
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #genzel
+    # LGen
+    # HGen
+    # NDGen
+    totGen = Schechter(tot, 17, 10, bins)
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #schruba
+    # LSr
+    # HSr
+    # NDSr
+    totSr = Schechter(tot, 18, 10, bins)
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #gio
+    # LGio
+    # HGio
+    # NDGio
+    totGio = Schechter(tot, 19, 10, bins)
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     xmajorLocator   = MultipleLocator(0.5)
     xminorLocator   = MultipleLocator(0.1)
     ymajorLocator   = MultipleLocator(0.5)
@@ -237,25 +309,24 @@ def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpt
     ax[0,0].yaxis.set_major_locator(ymajorLocator)
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ax[0,0].errorbar(sdssSchech[2], sdssSchech[1], fmt = 'o', markersize = 8, color = 'm', label = 'SDSS-G')
-    ax[0,0].errorbar(totSch1[2], totSch1[1], fmt = 's', markersize = 8, color = 'm', label = 'Sim-G')
-    ax[0,0].errorbar(totSch2[2], totSch2[1], fmt = 's', markersize = 8, color = 'c', label = 'Sim-A')
-    ax[0,0].errorbar(FullSchech[2], FullSchech[1], fmt = 's', markersize = 8, color = 'r', label = 'COLD GASS SFRs')
-    ax[0,0].errorbar(sdssSchechAm[2], sdssSchechAm[1], fmt = 'o', markersize = 8, color = 'c', label = 'SDSS-A')
-    ax[0,0].plot(x_keres, y_ober, 'k-.', label = 'Obreschkow+09')
+    # ax[0,0].scatter(LSch[2], LSch[1], marker = 's', s = 100, edgecolor='blue', linewidth='3', facecolor='none', label = 'Low Mass')
+    # ax[0,0].scatter(HSch[2], HSch[1], marker = 's', s = 100, edgecolor='g', linewidth='3', facecolor='none', label = 'High Mass')
+    # ax[0,0].scatter(NDSch[2], NDSch[1], marker = 's', s = 100, edgecolor='orange', linewidth='3', facecolor='none', label = 'Non Detection')
+    # ax[0,0].errorbar(totSch[2], totSch[1], yerr=sigma, fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='red', mec='crimson', ecolor='crimson', label = 'Total')
+    ax[0,0].errorbar(totGen[2], totGen[1], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='r', mec='crimson', ecolor='crimson', alpha=0.5,  label = 'Genzel+12')
+    ax[0,0].errorbar(totSr[2], totSr[1], fmt='o', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='limegreen', mec='g', ecolor='g', alpha=0.5, label = 'Schruba+12')
+    ax[0,0].errorbar(totGio[2], totGio[1], fmt='s', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='b', mec='navy', ecolor='navy', alpha=0.5, label = 'Accurso+16')
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ax[0,0].scatter(LSch[2], LSch[1], marker = 's', s = 100, edgecolor='blue', linewidth='2', facecolor='none', label = 'Low Mass')
-    ax[0,0].scatter(HSch[2], HSch[1], marker = 's', s = 100, edgecolor='green', linewidth='2', facecolor='none', label = 'High Mass')
-    ax[0,0].scatter(NDSch[2], NDSch[1], marker = 's', s = 100, edgecolor='orange', linewidth='2', facecolor='none', label = 'Non Detection')
-    ax[0,0].errorbar(totSch[2], totSch[1], yerr=sigma, fmt = 'o', markersize = 10, color = 'red', label = 'Total')
-    ax[0,0].plot(xkeres, ykeres2, 'k--', label = 'Keres+03')
-    ax[0,0].plot(xkeres, y_CG, 'k-', label = 'COLD GASS fit')
-    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{sun}]}$', fontsize=18)
+    ax[0,0].plot(x_keres, y_ober, 'k--', label = 'Obreschkow+09')
+    ax[0,0].plot(xkeres, ykeres2, 'k-', label = 'Keres+03')
+    # ax[0,0].plot(xkeres, y_CG, linestyle = '-', color = 'crimson', label = 'COLD GASS fit')
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
     ax[0,0].set_ylim(-5, -1)
     ax[0,0].set_xlim(7.5, 10.5)
     ax[0,0].tick_params(axis='x',which='minor',bottom='on')
-    plt.legend(fontsize = 8)
+    plt.legend(fontsize = 13, loc=3)
     plt.savefig('img/schechter/MH2.pdf', format='pdf', dpi=250, transparent = False)
 ################################################################################
 def PlotSchechter2(totSch, sigmatot, y_CG, detSch, sigmadet, y_det, xkeres, ykeres2):
@@ -367,25 +438,28 @@ def errors(data, x, y, output):
         newdata = np.zeros((eridx, np.shape(data)[1]))
         for j in range(0,len(newdata)):
             newdata[j,:] = data[int(idx[j]),:]
-        newdata[:,output['Vm']] = newdata[:,output['Vm']]*0.8
+        newdata[:,output['Vm']] = newdata[:,output['Vm']]*frac
         totSch = Schechter(newdata, output['MH2'], output['Vm'], x)
         drho = totSch[1] - y
         spread[i,:] = drho
     return spread
 ################################################################################
 def PlotMstarMH2(total, FullData, ND, FullND, output, FullDatasim):
+    det = FullDatasim[FullDatasim[:,1]==1]
+    nondet = FullDatasim[FullDatasim[:,1]==2]
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
-    ax[0,0].scatter(total[:,output['M*']], np.log10(total[:,output['MH2']]), color = 'r', label = 'Mine', s=10)
-    ax[0,0].scatter(FullData[:,6], np.log10(FullData[:,4]), color = 'k', label = 'Amelie', s=10)
-    ax[0,0].scatter(FullND[:,6], np.log10(FullND[:,4]), color = 'c', label = 'Amelie ND', s=10)
-    ax[0,0].scatter(ND[:,output['M*']], np.log10(ND[:,output['MH2']]), color = 'g', label = 'My ND', s=10)
-    ax[0,0].scatter(FullDatasim[:,4], FullDatasim[:,9], color = 'm', label = 'Sim', s=10)
+    # ax[0,0].scatter(total[:,output['M*']], np.log10(total[:,output['MH2']]), color = 'r', label = 'Mine', s=10)
+    ax[0,0].scatter(FullData[:,6], np.log10(FullData[:,4]), color = 'g', label = 'COLD GASS D', s=10)
+    ax[0,0].scatter(FullND[:,6], np.log10(FullND[:,4]), color = 'crimson', label = 'COLD GASS ND', s=10)
+    # ax[0,0].scatter(ND[:,output['M*']], np.log10(ND[:,output['MH2']]), color = 'g', label = 'My ND', s=10)
+    ax[0,0].scatter(det[:,4], det[:,9], color = 'k', label = 'Sim D', s=10)
+    ax[0,0].scatter(nondet[:,4], nondet[:,9], color = 'b', label = 'Sim ND', s=10)
     ax[0,0].vlines(10,7.5,10.5, color='k')
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{*}\,[M_{\odot}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
     ax[0,0].set_ylim(7.5, 10.5)
-    ax[0,0].set_xlim(8.5, 12.0)
-    plt.legend(fontsize = 12)
+    ax[0,0].set_xlim(9, 11.5)
+    plt.legend(fontsize = 12, loc=2)
     plt.savefig('img/schechter/MstarvsMH2.pdf', dpi=250, transparent = False)
 # Plot Schechter from Full dataset #############################################
 def PlotSchechterFull(FullDetSchech, FullNDSchech, FullSchech, x_keres, y_keres, y_ober):
@@ -445,7 +519,7 @@ def compareIDforID(Full, total, output, compareoutput):
     plt.savefig('img/schechter/COMPAREID.pdf', format='pdf', dpi=250, transparent = False)
 ################################################################################
 def GetFull(Full, output):
-    FullData = np.zeros((len(Full),17))
+    FullData = np.zeros((len(Full),19))
     lorh = []
     for j,rows1 in enumerate(Full):
         lorh.append(rows1[1])
@@ -468,11 +542,14 @@ def GetFull(Full, output):
         FullData[i,14] = rows[44] # LCO
         FullData[i,15] = rows[46] # rms_CO
         FullData[i,16] = rows[48] # W_CO
+        FullData[i,17] = rows[35] # Metallicity
+        FullData[i,18] = rows[39] # Metallicity
     data = pd.DataFrame({   'group':lorh, 'ID': FullData[:,output['ID']], 'S_CO': FullData[:,output['S_CO']], 'z': FullData[:,output['z']],
                             'flag': FullData[:,output['flag']], 'M*': FullData[:,output['M*']], 'Zo': FullData[:,output['Zo']], 'SFR': FullData[:,output['SFR']],
                             'sSFR': FullData[:,output['sSFR']],'NUV-r': FullData[:,output['NUV-r']],'D_L': FullData[:,output['D_L']],
                             'MH2': FullData[:,10], 'limMH2': FullData[:,11], 'MH2both': FullData[:,12], 'Weight':FullData[:,13],
-                            'LCO':FullData[:,14], 'rms':FullData[:,15], 'WCO':FullData[:,16]})
+                            'LCO':FullData[:,14], 'rms':FullData[:,15], 'WCO':FullData[:,16], 'Met':FullData[:,17],
+                            'aCO':FullData[:,18]})
     LMass = (data.loc[data['group'] == 'L'])
     HMass = (data.loc[data['group'] == 'H'])
     Lz, Hz = LMass[['z']].values, HMass[['z']].values
@@ -508,6 +585,12 @@ def GetFull(Full, output):
     LCO = np.hstack((LCO, a))
     LCO = lCalc(LCO, 14, 0, 5, True)# calculate the error in lum from err sco
     LCOdet = LCO[LCO[:,1]==1] #det only
+    LCOND = LCO[LCO[:,1]==2] # ndonly
+    a = np.zeros((len(LCOND),4))
+    for i in range (0,len(a)):
+        a[:,2] = LCOND[:,10] - LCOND[:,10]*(0.6) # min max values for each det based on errors
+        a[:,3] = LCOND[:,10] + LCOND[:,10]*(0.2)
+    LCOND = np.hstack((LCOND, a))
     a = np.zeros((len(LCOdet),4))
     a[:,0] = LCOdet[:,15]/LCOdet[:,10] #fractional error in lum from sco
     for i in range (0,len(a)):
@@ -518,8 +601,44 @@ def GetFull(Full, output):
     a[:,3] = LCOdet[:,10] + LCOdet[:,10]*a[:,1]
     LCOdet = np.hstack((LCOdet, a))
     bins = np.linspace(5.5,11,18)
-    LCO = Schechter(LCO, 10, 8, bins)
-    return LMassNDarr, HMassNDarr, Fulldata, FullData, LCO, LCOdet
+    conversionL = LMass[['Met', 'SFR', 'M*', 'z', 'LCO', 'Vm', 'MH2both']].values
+    conversionH = HMass[['Met', 'SFR', 'M*', 'z', 'LCO', 'Vm', 'MH2both']].values
+    con = np.vstack((conversionL, conversionH))
+    a = np.zeros((len(con),2))
+    for i in range(0, len(con)):
+        a[i,0] = conversion_factor_equation(con[i,0], con[i,1], con[i,2], con[i,3])
+        a[i,1] = conversion_factor_equation2(con[i,0], con[i,1], con[i,2], con[i,3])
+    con = np.hstack((con,a))
+    np.savetxt('giometallicity.txt', con)
+    LMassFull = LMass[['z', 'flag', 'SFR', 'LCO', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm', 'Weight', 'Met', 'aCO']].values
+    HMassFull = HMass[['z', 'flag', 'SFR', 'LCO', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm', 'Weight', 'Met', 'aCO']].values
+    LCOSch = Schechter(LCO, 10, 8, bins)
+    LCOtot = np.vstack((LCOdet, LCOND))
+    return LMassNDarr, HMassNDarr, Fulldata, FullData, LCO, LCOdet, [LMassFull, HMassFull], LCOSch, LCOtot
+# fulldata Mh2 analysis  #######################################################
+def mh2calculator(data):
+    #0z|1flag|2SFR|3LCO|4MH2|5limMH2|6MH2both|7D_L|8M*|9V/Vm|10Vm|11Weight|12Zo|13agen|14asch|15agio
+    LMass, HMass = data
+    LMassND = LMass[LMass[:,1]==2]
+    LMassD = LMass[LMass[:,1]==1]
+    HMassND = HMass[HMass[:,1]==2]
+    HMassD = HMass[HMass[:,1]==1]
+    ND = np.vstack((LMassND, HMassND))
+    alldat = [LMassD, HMassD, ND]
+    newdat = []
+    for i in range(0, len(alldat)):
+        #met, log_sfr, log_m, redshift
+        a = np.zeros((len(alldat[i]),6))
+        for j in range(0,len(a)):
+            a[j,0] = genzel(alldat[i][j,12])
+            a[j,1] = schruba(alldat[i][j,12])
+            a[j,2] = conversion_factor_equation2(alldat[i][j,12], alldat[i][j,2], alldat[i][j,8], alldat[i][j,0])
+            a[j,3] = a[j,0]*alldat[i][j,3]
+            a[j,4] = a[j,1]*alldat[i][j,3]
+            a[j,5] = a[j,2]*alldat[i][j,3]
+        newdat.append(np.hstack((alldat[i],a)))
+    return newdat
+
 ## Read data from tables #######################################################
 highM = atpy.Table('COLDGASS_DR3_with_Z.fits')
 lowM = asciidata.open('COLDGASS_LOW_29Sep15.ascii')
@@ -565,7 +684,8 @@ LMass[:,output['sSFR']] = sSFRlist                                      # sSFR
 LMass[:,output['NUV-r']] = list(lowM[l['NUV-r']])      # NUV-r
 #ID:0|S_CO:1|z:2|flag:3|M*:4|Zo:5|SFR:6|sSFR:7|NUV-r:8|D_L:9|V/Vm:10|Vm:11|L_CO:12|ACO:13|MH2:14|dACO:15|
 ################################################################################
-LND, HND, FullData, weights, LCO, LCOdet = GetFull(Full, output)
+LND, HND, FullData, weights, LCO, LCOdet, gdata, LCOSch, LCOtot = GetFull(Full, output)
+plotdata = mh2calculator(gdata)
 testMassLimits(LCOdet)
 LND[:,output['MH2']] = 10**LND[:,output['MH2']]
 HND[:,output['MH2']] = 10**HND[:,output['MH2']]
@@ -763,7 +883,7 @@ FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2, FullDatasim = BlueRed.ma
 ################################################################################
 Plotweights(weights)
 fullcomparedata = comparefull(Full, compare)
-PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, yCGpts, y_keres, x_keres, FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2, y_ober)
+PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, y_ober, plotdata, bins)
 PlotSchechter2(totSch, sigma, y_CG, detSch, sigmadet, y_det, xkeres, ykeres2, )
 PlotRhoH2(LSch, HSch, NDSch, totSch, xkeres, np.log10(x1), yrho, yrhoCG, yrhoCGpts, yrhoCG2, yrhokeres, x_keres)
 PlotAlphaCO(total, output)

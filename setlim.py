@@ -35,8 +35,6 @@ def testMassLimits(data):
     massbins = np.linspace(7.5,11.0,25)
     for idx, element in enumerate(limits):
         newdata = data[data[:,4] >= element]
-        print len(newdata)
-        print min(newdata[:,8]), max(newdata[:,8])
         sch = Schechter(newdata, 8, 9, massbins)
         # print sch[1]
         ax[0,0].plot(sch[2], sch[1], label = str(round(element,1)))
