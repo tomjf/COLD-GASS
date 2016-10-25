@@ -6,6 +6,7 @@ from main import GetFull
 import atpy
 import math
 import random
+import schechter
 
 def Schechter(data, LCOaxis, Vmaxis, bins):
     l = data[:,LCOaxis]
@@ -92,7 +93,10 @@ def errors(data, x, y):
 
 def PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet, LCO, LCOtot):
     bins = np.linspace(5.5,11,18)
+    bins2 = np.linspace(5.5,11,300)
     LCOSch = Schechter(LCOtot, 10, 8, bins)
+    CG_para2 = schechter.log_schechter_fit(LCOSch[2][5:14], LCOSch[1][5:14])
+    y_CG2 = schechter.log_schechter(bins2, *CG_para2)
     LCONDl = Schechter(LCOtot, 19, 8, bins)
     LCONDu = Schechter(LCOtot, 20, 8, bins)
     a = np.zeros((len(LCOSch[1]),3))
@@ -105,7 +109,6 @@ def PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet, LCO, LC
     LCOdetschechu = Schechter(LCOdet, 20, 8, bins)
     sampling = errors(LCOdet, bins, LCOdetschech[1])
     samplingF = errors(LCO, bins, LCOSch[1])
-    print '@@@@', samplingF
     l = [0,0,0,0,0.1760912591,0.2041199827,0.1375917444,0.0137869414,0.0934900541,0,0.1259633184,0.2688453123,0.1461280357,0,0,0,0]
     u = [0,0,0,0,0.3010299957,0.3979400087,0,0.044056824,0,0.0626094827,0.1443927751,0.1035405919,0,0.4771212547,0,0,0]
     l2 =[0,0,0,0,0.3010299957,0.1918855262,0.1365819998,0.0390612296,0.2402860609,0,0.1259633184,0.2108533653,0.1461280357,0,0,0,0]
@@ -153,9 +156,10 @@ def PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet, LCO, LC
     # ax[0,0].errorbar(LCOdetschechu[2], LCOdetschechu[1], alpha = 0.1, fmt='s', markersize = 12, linewidth=2, mew=2, capthick=3, mfc='b', mec='navy' , label='det')
 
     ax[0,0].plot(data[:,0], data[:,1], label = 'Vallini+16', color = 'crimson', linewidth=3)
+    ax[0,0].plot(bins2, y_CG2, label = 'COLD GASS fit', color = 'k', linestyle='--', alpha = 0.5, linewidth=3)
     # ax[0,0].plot(uperr[:,0], uperr[:,1], label = 'upper limit', color = 'crimson')
     # ax[0,0].plot(lowerr[:,0], lowerr[:,1], label = 'lower limit', color = 'crimson')
-    ax[0,0].fill_between(lowerr2[:,0], lowerr2[:,1], uperr2[:,1], label = 'Vallini+16 error', color = 'r', alpha = 0.2)
+    ax[0,0].fill_between(lowerr2[:,0], lowerr2[:,1], uperr2[:,1], color = 'r', alpha = 0.2)
     # ax[0,0].scatter(lowerr2[:,0], lowerr2[:,1], label = 'uperr', color = 'g')
     # ax[0,0].scatter(uperr2[:,0], uperr2[:,1], label = 'uperr', color = 'g')
     ax[0,0].errorbar(keres[:,0], keres[:,1], yerr=[keres[:,3], keres[:,2]], fmt='bo', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='b', mec='navy' , label='Keres+03')
@@ -166,7 +170,8 @@ def PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet, LCO, LC
     ax[0,0].set_xlim(5.5, 12)
     ax[0,0].set_ylim(-7, -1)
     plt.legend(fontsize = 13, loc=3)
-    plt.savefig('img/schechter/luminosity.pdf', format='pdf', dpi=250, transparent = False)
+    plt.tight_layout()
+    plt.savefig('img/schechter/luminosity.pdf', format='pdf', dpi=250, transparent = True)
 
 output = {  'ID':0, 'S_CO':1, 'z':2, 'flag':3, 'M*':4, 'Zo':5, 'SFR':6, 'sSFR':7,
             'NUV-r':8,'D_L':9, 'V/Vm':10, 'Vm':11, 'L_CO':12, 'AlphaCO':13,

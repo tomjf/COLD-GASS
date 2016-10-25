@@ -131,7 +131,6 @@ def sortIntoBins(l,number):
 
 # Conversion to H2 mass ########################################################
 def H2Conversion(data, Zindex, LCOindex, *args):
-    #print args[:,0], '@@@@'
     alphaCOHMass = []
     for arg in args:
         alphaCOHMass = arg
@@ -274,30 +273,207 @@ def CalcOmega(massfitx, massfity):
     rhoH2 = (np.sum((10**yrho)*dMH2)*(2*(10**30)))/((3.086*(10**22))**3)
     OmegaH2 = (rhoH2/rhocrit)*(10000)
     return OmegaH2
+################################################################################
+def errors2(data, x, y):
+    output = {'Vm':8, 'LCO':10}
+    frac = 0.5
+    eridx = int(len(data)*frac)
+    idx = np.linspace(0,len(data)-1,len(data))
+    spread = np.zeros((eridx, len(x)-1))
+    for i in range(0, eridx):
+        random.shuffle(idx)
+        idx1 = idx[:eridx]
+        newdata = np.zeros((eridx, np.shape(data)[1]))
+        for j in range(0,len(newdata)):
+            newdata[j,:] = data[int(idx[j]),:]
+        newdata[:,output['Vm']] = newdata[:,output['Vm']]*frac
+        totSch = Schechter(newdata, output['LCO'], output['Vm'], x)
+        drho = totSch[1] - y
+        spread[i,:] = drho
+    er = spread
+    sigma = []
+    for i in range(0, np.shape(er)[1]):
+        eri = er[:,i]
+        eri = eri[abs(eri)<10]
+        if np.std(eri)>0.00000001:
+            sigma.append(np.std(eri))
+        else:
+            sigma.append(0)
+    return sigma
 
 # schechter only ###############################################################
-def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, y_ober, newdat, bins):
+def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, y_ober, newdat, bins, LCOtot):
+    xbins = np.linspace(7.5,10.5,300)
     LMassD, HMassD, ND = newdat
     tot = np.vstack((LMassD, HMassD))
     tot = np.vstack((tot,ND))
+    # galactic
+    a = np.zeros((len(LCOtot),1))
+    for i in range(0,len(LCOtot)):
+        a[i,0] = LCOtot[i,10]*LCOtot[i,16]
+    LCOtot = np.hstack((LCOtot,a))
+    totGal = Schechter(LCOtot, 24, 8,bins)
+    Para_Gal = schechter.log_schechter_fit(totGal[2][5:], totGal[1][5:])
+    y_Gal = schechter.log_schechter(xbins, *Para_Gal)
+    print 'galactic', OmegaH2(totGal[2], totGal[1]+totGal[2]), OmegaH2(xbins, y_Gal+xbins)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #genzel
-    # LGen
-    # HGen
-    # NDGen
     totGen = Schechter(tot, 17, 10, bins)
+    Para_Gen = schechter.log_schechter_fit(totGen[2][4:], totGen[1][4:])
+    y_Gen = schechter.log_schechter(xbins, *Para_Gen)
+    print 'genzel', OmegaH2(totGen[2], totGen[1]+totGen[2]), OmegaH2(xbins, y_Gen+xbins)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #schruba
-    # LSr
-    # HSr
-    # NDSr
     totSr = Schechter(tot, 18, 10, bins)
+    Para_Sr = schechter.log_schechter_fit(totSr[2][6:], totSr[1][6:])
+    y_Sr = schechter.log_schechter(xbins, *Para_Sr)
+    print 'Sr', OmegaH2(totSr[2], totSr[1]+totSr[2]), OmegaH2(xbins, y_Sr+xbins)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #gio
-    # LGio
-    # HGio
-    # NDGio
     totGio = Schechter(tot, 19, 10, bins)
+    Para_Gio = schechter.log_schechter_fit(totGio[2][4:-2], totGio[1][4:-2])
+    y_Gio = schechter.log_schechter(xbins, *Para_Gio)
+    print 'giio', OmegaH2(totGio[2], totGio[1]+totGio[2]), OmegaH2(xbins, y_Gio+xbins)
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    xmajorLocator   = MultipleLocator(0.5)
+    xminorLocator   = MultipleLocator(0.1)
+    ymajorLocator   = MultipleLocator(0.5)
+    yminorLocator   = MultipleLocator(0.1)
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].xaxis.set_major_locator(xmajorLocator)
+    ax[0,0].xaxis.set_minor_locator(xminorLocator)
+    ax[0,0].yaxis.set_major_locator(ymajorLocator)
+    ax[0,0].yaxis.set_minor_locator(yminorLocator)
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # ax[0,0].plot(xbins, y_Gen, 'r-')
+    # ax[0,0].plot(xbins, y_Sr, 'g-')
+    # ax[0,0].plot(xbins, y_Gio, 'b-')
+    # ax[0,0].plot(xbins, y_Gal, 'm-')
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # ax[0,0].scatter(LSch[2], LSch[1], marker = 's', s = 100, edgecolor='blue', linewidth='3', facecolor='none', label = 'Low Mass')
+    # ax[0,0].scatter(HSch[2], HSch[1], marker = 's', s = 100, edgecolor='g', linewidth='3', facecolor='none', label = 'High Mass')
+    # ax[0,0].scatter(NDSch[2], NDSch[1], marker = 's', s = 100, edgecolor='orange', linewidth='3', facecolor='none', label = 'Non Detection')
+    # ax[0,0].errorbar(totSch[2], totSch[1], yerr=sigma, fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='red', mec='crimson', ecolor='crimson', label = 'Total')
+    ax[0,0].errorbar(totGen[2], totGen[1], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='r', mec='crimson', ecolor='crimson', alpha=0.5,  label = 'Genzel+12')
+    ax[0,0].errorbar(totSr[2], totSr[1], fmt='o', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='limegreen', mec='g', ecolor='g', alpha=0.5, label = 'Schruba+12')
+    ax[0,0].errorbar(totGio[2], totGio[1], fmt='s', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='b', mec='navy', ecolor='navy', alpha=0.5, label = 'Accurso+16')
+    ax[0,0].errorbar(totGal[2], totGal[1], fmt='^', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='m', mec='m', ecolor='m', alpha=0.5, label = 'Galactic')
+    # #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ax[0,0].plot(x_keres, y_ober, 'k--', label = 'Obreschkow+09')
+    ax[0,0].plot(xkeres, ykeres2, 'k-', label = 'Keres+03')
+    # ax[0,0].plot(xkeres, y_CG, linestyle = '-', color = 'crimson', label = 'COLD GASS fit')
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
+    ax[0,0].set_ylim(-5, -1)
+    ax[0,0].set_xlim(7.5, 10.5)
+    ax[0,0].tick_params(axis='x',which='minor',bottom='on')
+    plt.legend(fontsize = 13, loc=3)
+    plt.savefig('img/schechter/MH2.pdf', format='pdf', dpi=250, transparent = False)
+
+def prepGraph(data, fracL, fracU, Vmaxis, aaxis, Laxis, mh2scatter):
+    a = np.zeros((len(data),6))
+    a[:,0] = mh2scatter/np.log10(data[:,aaxis]) # 28 frac from alpha
+    print 'average from measure...............', np.average(data[:,fracL])
+    print 'average from alpha.................', np.average(a[:,0])
+    # print a[:,0]
+    a[:,1] = np.sqrt((data[:,fracL]**2)+(a[:,0]**2))  #29 total frac error
+    a[:,2] = np.sqrt((data[:,fracU]**2)+(a[:,0]**2))  #30 total frac error
+    # print a[:,1]
+    print 'tot error..........................', np.average(a[:,1])
+    a[:,3] = data[:,Laxis]*data[:,aaxis]  #31     mean mass
+    a[:,4] = a[:,3] - (a[:,1]*a[:,3])  #32     low mass
+    a[:,5] = a[:,3] + (a[:,2]*a[:,3])  #33     highmass  mass
+    data = np.hstack((data,a))
+    return data
+################################################################################
+def PlotSchechter3(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_ober, bins, LCOtot, y_CG):
+    xbins = np.linspace(7.5,10.5,300)
+    ND = LCOtot[LCOtot[:,1]==2]
+    D = LCOtot[LCOtot[:,1]==1]
+    LMass = D[D[:,17]==0]
+    HMass = D[D[:,17]==1]
+    LCOD = prepGraph(D, 21, 22, 8, 25, 10, 0.23)
+    totGen2 = Schechter(LCOD, 31, 8, bins)
+    totGenl2 = Schechter(LCOD, 32, 8, bins)
+    totGenu2 = Schechter(LCOD, 33, 8, bins)
+    a = np.zeros((len(totGen2[1]),3))
+    a[:,0] = totGen2[1]
+    a[:,1] = totGenl2[1]
+    a[:,2] = totGenu2[1]
+    np.savetxt('confirmplot.txt',a)
+    LCOtot2 = prepGraph(LCOtot, 21, 22, 8, 25, 10, 0.23)
+    # a = np.zeros((len(LCOtot),12))
+    # #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # a[:,0] = LCOtot[:,10]*LCOtot[:,25]  #28     Gen
+    # a[:,1] = LCOtot[:,23]*LCOtot[:,25]  #29     genl
+    # a[:,2] = LCOtot[:,24]*LCOtot[:,25]  #30     genu
+    # #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # a[:,3] = LCOtot[:,10]*LCOtot[:,26]  #31     sr
+    # a[:,4] = LCOtot[:,23]*LCOtot[:,26]  #32     srl
+    # a[:,5] = LCOtot[:,24]*LCOtot[:,26]  #33     sru
+    # #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # a[:,6] = LCOtot[:,10]*LCOtot[:,27]  #34     gio
+    # a[:,7] = LCOtot[:,23]*LCOtot[:,27]  #35     giol
+    # a[:,8] = LCOtot[:,24]*LCOtot[:,27]  #36     giou
+    # #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # a[:,9] = LCOtot[:,10]*LCOtot[:,16]  #37     gal
+    # a[:,10] = LCOtot[:,23]*LCOtot[:,16] #38     gall
+    # a[:,11] = LCOtot[:,24]*LCOtot[:,16] #39     galu
+    # #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # LCOtot = np.hstack((LCOtot, a))
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # totGen = Schechter(LCOtot, 28, 8, bins)
+    # totGenl = Schechter(LCOtot, 29, 8, bins)
+    # totGenu = Schechter(LCOtot, 30, 8, bins)
+    totGen2 = Schechter(LCOtot2, 31, 8, bins)
+    totGenl2 = Schechter(LCOtot2, 32, 8, bins)
+    totGenu2 = Schechter(LCOtot2, 33, 8, bins)
+    df = pd.read_csv('data/genzelERRS.csv')
+    GenErr = df[['low', 'high']].values
+    GenErrS = errors2(LCOtot2, bins, totGen2[1])
+    for i in range(0,len(GenErr)):
+        GenErr[i,0] = np.sqrt((GenErr[i,0]**2) + (GenErrS[i]**2))
+        GenErr[i,1] = np.sqrt((GenErr[i,1]**2) + (GenErrS[i]**2))
+    Det = LCOtot2[LCOtot2[:,1]==1]
+    ND = LCOtot2[LCOtot2[:,1]==2]
+    L = Det[Det[:,17]==0]
+    H = Det[Det[:,17]==1]
+    LSch = Schechter(L, 31, 8, bins)
+    HSch = Schechter(H, 31, 8, bins)
+    NDSch = Schechter(ND, 31, 8, bins)
+    xbins = np.linspace(7.5,10.5,300)
+    CG_para = schechter.log_schechter_fit(totGen2[2][4:], totGen2[1][4:])
+    print '@@@@@@MMMMMgenzel para', CG_para
+    y_CG = schechter.log_schechter(xbins, *CG_para)
+    CG_parau = schechter.log_schechter_fit(totGen2[2][5:], totGen2[1][5:]+GenErr[:,1][5:])
+    y_CGu = schechter.log_schechter(xbins, *CG_parau)
+    CG_paral = schechter.log_schechter_fit(totGen2[2][4:-2], totGen2[1][4:-2]-GenErr[:,0][4:-2])
+    y_CGl = schechter.log_schechter(xbins, *CG_paral)
+    ans = OmegaH2(totGen2[2], totGen2[1]+totGen2[2])
+    low = OmegaH2(totGen2[2], totGen2[1]-GenErr[:,0]+totGen2[2])
+    high = OmegaH2(totGen2[2], totGen2[1]+GenErr[:,1]+totGen2[2])
+    ansfit = OmegaH2(xbins, y_CG+xbins)
+    ansfitL = OmegaH2(xbins, y_CGl+xbins)
+    ansfitH = OmegaH2(xbins, y_CGu+xbins)
+    print 'Omega H2 Genzel....................', round(ans,2)
+    print 'min Omega..........................', -round(ans-low,2)
+    print 'max Omega..........................', +round(high-ans,2)
+    print 'Omega H2 Genzel fit ...............', round(ansfit,2)
+    print 'min.................................', -round(ansfit-ansfitL,2)
+    print 'max.................................', round(ansfitH-ansfit,2)
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # totSr = Schechter(LCOtot, 31, 8, bins)
+    # totSrl = Schechter(LCOtot, 32, 8, bins)
+    # totSru = Schechter(LCOtot, 33, 8, bins)
+    # #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # totGio = Schechter(LCOtot, 34, 8, bins)
+    # totGiol = Schechter(LCOtot, 35, 8, bins)
+    # totGiou = Schechter(LCOtot, 36, 8, bins)
+    # #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # totGal = Schechter(LCOtot, 37, 8, bins)
+    # totGall = Schechter(LCOtot, 38, 8, bins)
+    # totGalu = Schechter(LCOtot, 39, 8, bins)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     xmajorLocator   = MultipleLocator(0.5)
     xminorLocator   = MultipleLocator(0.1)
@@ -313,21 +489,276 @@ def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, y_obe
     # ax[0,0].scatter(HSch[2], HSch[1], marker = 's', s = 100, edgecolor='g', linewidth='3', facecolor='none', label = 'High Mass')
     # ax[0,0].scatter(NDSch[2], NDSch[1], marker = 's', s = 100, edgecolor='orange', linewidth='3', facecolor='none', label = 'Non Detection')
     # ax[0,0].errorbar(totSch[2], totSch[1], yerr=sigma, fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='red', mec='crimson', ecolor='crimson', label = 'Total')
-    ax[0,0].errorbar(totGen[2], totGen[1], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='r', mec='crimson', ecolor='crimson', alpha=0.5,  label = 'Genzel+12')
-    ax[0,0].errorbar(totSr[2], totSr[1], fmt='o', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='limegreen', mec='g', ecolor='g', alpha=0.5, label = 'Schruba+12')
-    ax[0,0].errorbar(totGio[2], totGio[1], fmt='s', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='b', mec='navy', ecolor='navy', alpha=0.5, label = 'Accurso+16')
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    ax[0,0].plot(x_keres, y_ober, 'k--', label = 'Obreschkow+09')
-    ax[0,0].plot(xkeres, ykeres2, 'k-', label = 'Keres+03')
+    # ax[0,0].errorbar(totGen[2], totGen[1], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='b', mec='b', ecolor='crimson', alpha=0.5,  label = 'Genzel+12')
+    # ax[0,0].errorbar(totGenl[2], totGenl[1], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='r', mec='r', ecolor='crimson', alpha=0.5,  label = 'Genzell+12')
+    # ax[0,0].errorbar(totGenu[2], totGenu[1], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='g', mec='g', ecolor='crimson', alpha=0.5,  label = 'Genzelu+12')
+    #ax[0,0].errorbar(totGenl2[2], totGenl2[1], fmt='^', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='r', mec='r', ecolor='crimson', alpha=0.5,  label = 'Genzell+12')
+    # ax[0,0].errorbar(totGenu2[2], totGenu2[1], fmt='^', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='g', mec='g', ecolor='crimson', alpha=0.5,  label = 'Genzelu+12')
+    # ax[0,0].errorbar(totSr[2], totSr[1], fmt='o', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='limegreen', mec='g', ecolor='g', alpha=0.5, label = 'Schruba+12')
+    # ax[0,0].errorbar(totGio[2], totGio[1], fmt='s', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='b', mec='navy', ecolor='navy', alpha=0.5, label = 'Accurso+16')
+    # ax[0,0].errorbar(totGal[2], totGal[1], fmt='^', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='m', mec='m', ecolor='m', alpha=0.5, label = 'Galactic')
+    ax[0,0].plot(xbins, y_CG, linestyle = '-', color = 'crimson', label = 'COLD GASS Schechter fit', linewidth=1, zorder=3)
+    ax[0,0].plot(x_keres, y_ober, 'k--', label = 'Obreschkow+09', linewidth=1, zorder=1)
+    ax[0,0].plot(xkeres, ykeres2, 'k-', label = 'Keres+03', linewidth=1, zorder=2)
+    # ax[0,0].plot(xbins, y_CGl, linestyle = '-', color = 'crimson')
+    # ax[0,0].plot(xbins, y_CGu, linestyle = '-', color = 'crimson')
+    a = np.zeros((len(totGen2[1]),4))
+    a[:,0] = totGen2[2]
+    a[:,1] = totGen2[1]
+    a[:,2] = GenErr[:,0]
+    a[:,3] = GenErr[:,1]
+    np.savetxt('gzl.txt', a)
+    ax[0,0].fill_between(xbins, y_CGl, y_CGu, color = 'r', alpha =0.1)
+    ax[0,0].errorbar(totGen2[2], totGen2[1], yerr = [GenErr[:,0], GenErr[:,1]], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='r', mec='crimson', ecolor='crimson', zorder = 7, label = 'COLD GASS + Genzel+12')
+    ### ax[0,0].scatter(LSch[2], LSch[1], marker = 's', s = 100, edgecolor='blue', linewidth='3', facecolor='none', label = 'Low Mass Detections', zorder=6)
+    # ax[0,0].scatter(HSch[2], HSch[1], marker = 's', s = 100, edgecolor='g', linewidth='3', facecolor='none', label = 'High Mass Detections', zorder=5)
+    # ax[0,0].scatter(NDSch[2], NDSch[1], marker = 's', s = 100, edgecolor='orange', linewidth='3', facecolor='none', label = 'Non Detections', zorder=4)
     # ax[0,0].plot(xkeres, y_CG, linestyle = '-', color = 'crimson', label = 'COLD GASS fit')
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
     ax[0,0].set_ylim(-5, -1)
-    ax[0,0].set_xlim(7.5, 10.5)
+    ax[0,0].set_xlim(7.5, 10.75)
+    b = np.zeros((len(xbins),3))
+    b[:,0] = xbins
+    b[:,1] = y_CGl
+    b[:,2] = y_CGu
+    np.savetxt('pptgraph.txt', b)
     ax[0,0].tick_params(axis='x',which='minor',bottom='on')
     plt.legend(fontsize = 13, loc=3)
-    plt.savefig('img/schechter/MH2.pdf', format='pdf', dpi=250, transparent = False)
+    plt.tight_layout()
+    plt.savefig('img/schechter/MH2abc.pdf', format='pdf', dpi=250, transparent = True)
+################################################################################
+def PlotGalactic(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_ober, bins, LCOtot, y_CG):
+    genzel = np.loadtxt('pptgraph.txt')
+    xbins = np.linspace(7.5,10.5,300)
+    ND = LCOtot[LCOtot[:,1]==2]
+    D = LCOtot[LCOtot[:,1]==1]
+    LMass = D[D[:,17]==0]
+    HMass = D[D[:,17]==1]
+    LCOtot2 = prepGraph(LCOtot, 21, 22, 8, 16, 10, 0.9)
+    totGen2 = Schechter(LCOtot2, 31, 8, bins)
+    totGenl2 = Schechter(LCOtot2, 32, 8, bins)
+    totGenu2 = Schechter(LCOtot2, 33, 8, bins)
+    # a = np.zeros((len(totGen2[1]),3))
+    # a[:,0] = totGen2[1]
+    # a[:,1] = totGenl2[1]
+    # a[:,2] = totGenu2[1]
+    # np.savetxt('data/galacticERRS.txt',a)
+    df = pd.read_csv('data/galacticERRS.csv')
+    GenErr = df[['low', 'high']].values
+    GenErrS = errors2(LCOtot2, bins, totGen2[1])
+    for i in range(0,len(GenErr)):
+        GenErr[i,0] = np.sqrt((GenErr[i,0]**2) + (GenErrS[i]**2))
+        GenErr[i,1] = np.sqrt((GenErr[i,1]**2) + (GenErrS[i]**2))
+    xbins = np.linspace(7.5,10.5,300)
+    CG_para = schechter.log_schechter_fit(totGen2[2][2:], totGen2[1][2:])
+    print 'gal para', CG_para
+    y_CG = schechter.log_schechter(xbins, *CG_para)
+    CG_parau = schechter.log_schechter_fit(totGen2[2][2:], totGen2[1][2:]+GenErr[:,1][2:])
+    y_CGu = schechter.log_schechter(xbins, *CG_parau)
+    CG_paral = schechter.log_schechter_fit(totGen2[2][2:-1], totGen2[1][2:-1]-GenErr[:,0][2:-1])
+    y_CGl = schechter.log_schechter(xbins, *CG_paral)
+    ans = OmegaH2(totGen2[2], totGen2[1]+totGen2[2])
+    low = OmegaH2(totGen2[2], totGen2[1]-GenErr[:,0]+totGen2[2])
+    high = OmegaH2(totGen2[2], totGen2[1]+GenErr[:,1]+totGen2[2])
+    ansfit = OmegaH2(xbins, y_CG+xbins)
+    ansfitL = OmegaH2(xbins, y_CGl+xbins)
+    ansfitH = OmegaH2(xbins, y_CGu+xbins)
+    print 'Omega H2 Gal....................', round(ans,2)
+    print 'min Omega..........................', -round(ans-low,2)
+    print 'max Omega..........................', +round(high-ans,2)
+    print 'Omega H2 Gal fit ...............', round(ansfit,2)
+    print 'min.................................', -round(ansfit-ansfitL,2)
+    print 'max.................................', round(ansfitH-ansfit,2)
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    xmajorLocator   = MultipleLocator(0.5)
+    xminorLocator   = MultipleLocator(0.1)
+    ymajorLocator   = MultipleLocator(0.5)
+    yminorLocator   = MultipleLocator(0.1)
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].xaxis.set_major_locator(xmajorLocator)
+    ax[0,0].xaxis.set_minor_locator(xminorLocator)
+    ax[0,0].yaxis.set_major_locator(ymajorLocator)
+    ax[0,0].yaxis.set_minor_locator(yminorLocator)
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ax[0,0].plot(xbins, y_CG, linestyle = '-', color = 'g', label = 'COLD GASS Schechter fit', linewidth=1, zorder=3)
+    ax[0,0].plot(x_keres, y_ober, 'k--', label = 'Obreschkow+09', linewidth=1, zorder=1)
+    ax[0,0].plot(xkeres, ykeres2, 'k-', label = 'Keres+03', linewidth=1, zorder=2)
+    # ax[0,0].plot(xbins, y_CGl, linestyle = '-', color = 'crimson')
+    # ax[0,0].plot(xbins, y_CGu, linestyle = '-', color = 'crimson')
+    ax[0,0].fill_between(xbins, y_CGl, y_CGu, color = 'limegreen', alpha =0.4)
+    ax[0,0].fill_between(genzel[:,0], genzel[:,1], genzel[:,2], color = 'red', alpha =0.1)
+    ax[0,0].errorbar(totGen2[2], totGen2[1], yerr=[GenErr[:,0], GenErr[:,1]], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='limegreen', mec='g', ecolor='g', zorder=7,label = 'COLD GASS + Galactic')
+    # ax[0,0].errorbar(totGenl2[2], totGenl2[1], fmt='s', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='r', mec='crimson', ecolor='crimson', zorder=7,label = 'COLD GASS + Genzel+12')
+    # ax[0,0].errorbar(totGenu2[2], totGenu2[1], fmt='^', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='r', mec='crimson', ecolor='crimson', zorder=7,label = 'COLD GASS + Genzel+12')
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    b = np.zeros((len(xbins),3))
+    b[:,0] = xbins
+    b[:,1] = y_CGl
+    b[:,2] = y_CGu
+    np.savetxt('pptgraphGal.txt', b)
+    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
+    ax[0,0].set_ylim(-5, -1)
+    ax[0,0].set_xlim(7.5, 10.75)
+    ax[0,0].tick_params(axis='x',which='minor',bottom='on')
+    plt.legend(fontsize = 13, loc=3)
+    plt.tight_layout()
+    plt.savefig('img/schechter/MH2Gal.pdf', format='pdf', dpi=250, transparent = True)
+################################################################################
+def PlotSchruba(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_ober, bins, LCOtot, y_CG):
+    gal = np.loadtxt('pptgraphGal.txt')
+    genzel = np.loadtxt('pptgraph.txt')
+    xbins = np.linspace(7.5,10.5,300)
+    ND = LCOtot[LCOtot[:,1]==2]
+    D = LCOtot[LCOtot[:,1]==1]
+    LMass = D[D[:,17]==0]
+    HMass = D[D[:,17]==1]
+    LCOtot2 = prepGraph(LCOtot, 21, 22, 8, 26, 10, 0.12)
+    totGen2 = Schechter(LCOtot2, 31, 8, bins)
+    totGenl2 = Schechter(LCOtot2, 32, 8, bins)
+    totGenu2 = Schechter(LCOtot2, 33, 8, bins)
+    # a = np.zeros((len(totGen2[1]),3))
+    # a[:,0] = totGen2[1]
+    # a[:,1] = totGenl2[1]
+    # a[:,2] = totGenu2[1]
+    # np.savetxt('data/schrubaERRS.txt',a)
+    df = pd.read_csv('data/schrubaERRS.csv')
+    GenErr = df[['low', 'high']].values
+    GenErrS = errors2(LCOtot2, bins, totGen2[1])
+    for i in range(0,len(GenErr)):
+        GenErr[i,0] = np.sqrt((GenErr[i,0]**2) + (GenErrS[i]**2))
+        GenErr[i,1] = np.sqrt((GenErr[i,1]**2) + (GenErrS[i]**2))
+    xbins = np.linspace(7.5,11,300)
+    CG_para = schechter.log_schechter_fit(totGen2[2][7:], totGen2[1][7:])
+    print 'sr para', CG_para
+    y_CG = schechter.log_schechter(xbins, *CG_para)
+    CG_parau = schechter.log_schechter_fit(totGen2[2][7:], totGen2[1][7:]+GenErr[:,1][7:])
+    y_CGu = schechter.log_schechter(xbins, *CG_parau)
+    CG_paral = schechter.log_schechter_fit(totGen2[2][6:], totGen2[1][6:]-GenErr[:,0][6:])
+    y_CGl = schechter.log_schechter(xbins, *CG_paral)
+    ans = OmegaH2(totGen2[2], totGen2[1]+totGen2[2])
+    low = OmegaH2(totGen2[2], totGen2[1]-GenErr[:,0]+totGen2[2])
+    high = OmegaH2(totGen2[2], totGen2[1]+GenErr[:,1]+totGen2[2])
+    ansfit = OmegaH2(xbins, y_CG+xbins)
+    ansfitL = OmegaH2(xbins, y_CGl+xbins)
+    ansfitH = OmegaH2(xbins, y_CGu+xbins)
+    print 'Omega H2 sr....................', round(ans,2)
+    print 'min Omega..........................', -round(ans-low,2)
+    print 'max Omega..........................', +round(high-ans,2)
+    print 'Omega H2 sr fit ...............', round(ansfit,2)
+    print 'min.................................', -round(ansfit-ansfitL,2)
+    print 'max.................................', round(ansfitH-ansfit,2)
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    xmajorLocator   = MultipleLocator(0.5)
+    xminorLocator   = MultipleLocator(0.1)
+    ymajorLocator   = MultipleLocator(0.5)
+    yminorLocator   = MultipleLocator(0.1)
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].xaxis.set_major_locator(xmajorLocator)
+    ax[0,0].xaxis.set_minor_locator(xminorLocator)
+    ax[0,0].yaxis.set_major_locator(ymajorLocator)
+    ax[0,0].yaxis.set_minor_locator(yminorLocator)
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ax[0,0].plot(xbins, y_CG, linestyle = '-', color = 'navy', label = 'COLD GASS Schechter fit', linewidth=1, zorder=3)
+    ax[0,0].plot(x_keres, y_ober, 'k--', label = 'Obreschkow+09', linewidth=1, zorder=1)
+    ax[0,0].plot(xkeres, ykeres2, 'k-', label = 'Keres+03', linewidth=1, zorder=2)
+    # ax[0,0].plot(xbins, y_CGl, linestyle = '-', color = 'crimson')
+    # ax[0,0].plot(xbins, y_CGu, linestyle = '-', color = 'crimson')
+    ax[0,0].fill_between(xbins, y_CGl, y_CGu, color = 'b', alpha =0.4)
+    ax[0,0].fill_between(gal[:,0], gal[:,1], gal[:,2], color = 'limegreen', alpha =0.1)
+    ax[0,0].fill_between(genzel[:,0], genzel[:,1], genzel[:,2], color = 'red', alpha =0.1)
+    ax[0,0].errorbar(totGen2[2], totGen2[1], yerr=[GenErr[:,0], GenErr[:,1]], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='b', mec='navy', ecolor='navy', zorder=7,label = 'COLD GASS + Schruba+12')
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    b = np.zeros((len(xbins),3))
+    b[:,0] = xbins
+    b[:,1] = y_CGl
+    b[:,2] = y_CGu
+    np.savetxt('pptgraphSr.txt', b)
+    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
+    ax[0,0].set_ylim(-5, -1)
+    ax[0,0].set_xlim(7.5, 10.75)
+    ax[0,0].tick_params(axis='x',which='minor',bottom='on')
+    plt.legend(fontsize = 13, loc=3)
+    plt.tight_layout()
+    plt.savefig('img/schechter/MH2Sr.pdf', format='pdf', dpi=250, transparent = True)
+################################################################################
+def PlotAccurso(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_ober, bins, LCOtot, y_CG):
+    gal = np.loadtxt('pptgraphGal.txt')
+    genzel = np.loadtxt('pptgraph.txt')
+    sr = np.loadtxt('pptgraphSr.txt')
+    xbins = np.linspace(7.5,10.5,300)
+    ND = LCOtot[LCOtot[:,1]==2]
+    D = LCOtot[LCOtot[:,1]==1]
+    LMass = D[D[:,17]==0]
+    HMass = D[D[:,17]==1]
+    LCOtot2 = prepGraph(LCOtot, 21, 22, 8, 27, 10, 0.1)
+    totGen2 = Schechter(LCOtot2, 31, 8, bins)
+    totGenl2 = Schechter(LCOtot2, 32, 8, bins)
+    totGenu2 = Schechter(LCOtot2, 33, 8, bins)
+    # a = np.zeros((len(totGen2[1]),3))
+    # a[:,0] = totGen2[1]
+    # a[:,1] = totGenl2[1]
+    # a[:,2] = totGenu2[1]
+    # np.savetxt('data/AccursoERRS.txt',a)
+    df = pd.read_csv('data/AccursoERRS.csv')
+    GenErr = df[['low', 'high']].values
+    GenErrS = errors2(LCOtot2, bins, totGen2[1])
+    for i in range(0,len(GenErr)):
+        GenErr[i,0] = np.sqrt((GenErr[i,0]**2) + (GenErrS[i]**2))
+        GenErr[i,1] = np.sqrt((GenErr[i,1]**2) + (GenErrS[i]**2))
+    xbins = np.linspace(7.5,11,300)
+    CG_para = schechter.log_schechter_fit(totGen2[2][4:-2], totGen2[1][4:-2])
+    print 'accurso para', CG_para
+    y_CG = schechter.log_schechter(xbins, *CG_para)
+    CG_parau = schechter.log_schechter_fit(totGen2[2][5:-1], totGen2[1][5:-1]+GenErr[:,1][5:-1])
+    y_CGu = schechter.log_schechter(xbins, *CG_parau)
+    CG_paral = schechter.log_schechter_fit(totGen2[2][3:-4], totGen2[1][3:-4]-GenErr[:,0][3:-4])
+    y_CGl = schechter.log_schechter(xbins, *CG_paral)
+    ans = OmegaH2(totGen2[2], totGen2[1]+totGen2[2])
+    low = OmegaH2(totGen2[2], totGen2[1]-GenErr[:,0]+totGen2[2])
+    high = OmegaH2(totGen2[2], totGen2[1]+GenErr[:,1]+totGen2[2])
+    ansfit = OmegaH2(xbins, y_CG+xbins)
+    ansfitL = OmegaH2(xbins, y_CGl+xbins)
+    ansfitH = OmegaH2(xbins, y_CGu+xbins)
+    print 'Omega H2 Accurso....................', round(ans,2)
+    print 'min Omega..........................', -round(ans-low,2)
+    print 'max Omega..........................', +round(high-ans,2)
+    print 'Omega H2 Accurso fit ...............', round(ansfit,2)
+    print 'min.................................', -round(ansfit-ansfitL,2)
+    print 'max.................................', round(ansfitH-ansfit,2)
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    xmajorLocator   = MultipleLocator(0.5)
+    xminorLocator   = MultipleLocator(0.1)
+    ymajorLocator   = MultipleLocator(0.5)
+    yminorLocator   = MultipleLocator(0.1)
+    fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].xaxis.set_major_locator(xmajorLocator)
+    ax[0,0].xaxis.set_minor_locator(xminorLocator)
+    ax[0,0].yaxis.set_major_locator(ymajorLocator)
+    ax[0,0].yaxis.set_minor_locator(yminorLocator)
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ax[0,0].plot(xbins, y_CG, linestyle = '-', color = 'm', label = 'COLD GASS Schechter fit', linewidth=1, zorder=3)
+    ax[0,0].plot(x_keres, y_ober, 'k--', label = 'Obreschkow+09', linewidth=1, zorder=1)
+    # ax[0,0].plot(xkeres, ykeres2, 'k-', label = 'Keres+03', linewidth=1, zorder=2)
+    # ax[0,0].plot(xbins, y_CGl, linestyle = '-', color = 'crimson')
+    # ax[0,0].plot(xbins, y_CGu, linestyle = '-', color = 'crimson')
+    ax[0,0].fill_between(xbins, y_CGl, y_CGu, color = 'deeppink', alpha =0.1)
+    ax[0,0].fill_between(gal[:,0], gal[:,1], gal[:,2], color = 'limegreen', alpha =0.1)
+    ax[0,0].fill_between(genzel[:,0], genzel[:,1], genzel[:,2], color = 'red', alpha =0.1)
+    ax[0,0].fill_between(sr[:,0], sr[:,1], sr[:,2], color = 'b', alpha =0.1)
+    # ax[0,0].errorbar(totGen2[2], totGen2[1], yerr=[GenErr[:,0], GenErr[:,1]], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='deeppink', mec='m', ecolor='m', zorder=7,label = 'COLD GASS + Accurso+12')
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
+    ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
+    ax[0,0].set_ylim(-5, -1)
+    ax[0,0].set_xlim(7.5, 10.75)
+    ax[0,0].tick_params(axis='x',which='minor',bottom='on')
+    plt.legend(fontsize = 13, loc=3)
+    plt.tight_layout()
+    plt.savefig('img/schechter/MH2Accurso.pdf', format='pdf', dpi=250, transparent = True)
 ################################################################################
 def PlotSchechter2(totSch, sigmatot, y_CG, detSch, sigmadet, y_det, xkeres, ykeres2):
     xmajorLocator   = MultipleLocator(0.5)
@@ -452,14 +883,15 @@ def PlotMstarMH2(total, FullData, ND, FullND, output, FullDatasim):
     ax[0,0].scatter(FullData[:,6], np.log10(FullData[:,4]), color = 'g', label = 'COLD GASS D', s=10)
     ax[0,0].scatter(FullND[:,6], np.log10(FullND[:,4]), color = 'crimson', label = 'COLD GASS ND', s=10)
     # ax[0,0].scatter(ND[:,output['M*']], np.log10(ND[:,output['MH2']]), color = 'g', label = 'My ND', s=10)
-    ax[0,0].scatter(det[:,4], det[:,9], color = 'k', label = 'Sim D', s=10)
-    ax[0,0].scatter(nondet[:,4], nondet[:,9], color = 'b', label = 'Sim ND', s=10)
+    ax[0,0].scatter(det[:,4], det[:,9], color = 'k', label = 'Scaling Relation:'+r'$\mathrm{SFR_{Best}}$' + '+'+ r'$f_{\mathrm{H_2}}$'+' ,D', s=10)
+    ax[0,0].scatter(nondet[:,4], nondet[:,9], color = 'b', label = 'Scaling Relation:'+r'$\mathrm{SFR_{Best}}$' + '+'+ r'$f_{\mathrm{H_2}}$'+' ,ND', s=10)
     ax[0,0].vlines(10,7.5,10.5, color='k')
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{*}\,[M_{\odot}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
     ax[0,0].set_ylim(7.5, 10.5)
     ax[0,0].set_xlim(9, 11.5)
-    plt.legend(fontsize = 12, loc=2)
+    plt.legend(fontsize = 13, loc=2)
+    plt.tight_layout()
     plt.savefig('img/schechter/MstarvsMH2.pdf', dpi=250, transparent = False)
 # Plot Schechter from Full dataset #############################################
 def PlotSchechterFull(FullDetSchech, FullNDSchech, FullSchech, x_keres, y_keres, y_ober):
@@ -482,7 +914,7 @@ def PlotSchechterFull(FullDetSchech, FullNDSchech, FullSchech, x_keres, y_keres,
     ax[0,0].set_ylim(-5, -1)
     ax[0,0].set_xlim(7.5, 10.5)
     ax[0,0].tick_params(axis='x',which='minor',bottom='on')
-    plt.legend(fontsize = 12)
+    plt.legend(fontsize = 10)
     plt.savefig('img/schechter/MH2_FULL.pdf', format='pdf', dpi=250, transparent = False)
 ################################################################################
 def comparefull(Full, compare):
@@ -499,8 +931,6 @@ def comparefull(Full, compare):
     return data
 ################################################################################
 def compareIDforID(Full, total, output, compareoutput):
-    # print output['M*']
-    # print total[:,4]
     # totalH = total[total[:,output['M*']] > 10.0]
     # totalHND = totalH[totalH[:,output['flag']] == 2]
     # FullH = Full[Full[:,compareoutput['M*']] > 10.0]
@@ -519,10 +949,17 @@ def compareIDforID(Full, total, output, compareoutput):
     plt.savefig('img/schechter/COMPAREID.pdf', format='pdf', dpi=250, transparent = False)
 ################################################################################
 def GetFull(Full, output):
-    FullData = np.zeros((len(Full),19))
+    df = pd.read_csv('data/XCO.csv')
+    XCOH = df[['ID', 'XCO']].values
+    FullData = np.zeros((len(Full),20))
     lorh = []
+    lorh2 = []
     for j,rows1 in enumerate(Full):
         lorh.append(rows1[1])
+        if rows1[1] == 'L':
+            lorh2.append(0)
+        elif rows1[1] == 'H':
+            lorh2.append(1)
     for i,rows in enumerate(Full):
         #z|flag|MH2|limMH2|MH2_both|Lumdist|M*|
         FullData[i,output['ID']] = rows[0]
@@ -543,13 +980,14 @@ def GetFull(Full, output):
         FullData[i,15] = rows[46] # rms_CO
         FullData[i,16] = rows[48] # W_CO
         FullData[i,17] = rows[35] # Metallicity
-        FullData[i,18] = rows[39] # Metallicity
-    data = pd.DataFrame({   'group':lorh, 'ID': FullData[:,output['ID']], 'S_CO': FullData[:,output['S_CO']], 'z': FullData[:,output['z']],
+        FullData[i,18] = rows[39] # genzel
+        FullData[i,19] = 4.35 #alphaCO GAL
+    data = pd.DataFrame({   'group':lorh, 'groupno':lorh2, 'ID': FullData[:,output['ID']], 'S_CO': FullData[:,output['S_CO']], 'z': FullData[:,output['z']],
                             'flag': FullData[:,output['flag']], 'M*': FullData[:,output['M*']], 'Zo': FullData[:,output['Zo']], 'SFR': FullData[:,output['SFR']],
                             'sSFR': FullData[:,output['sSFR']],'NUV-r': FullData[:,output['NUV-r']],'D_L': FullData[:,output['D_L']],
                             'MH2': FullData[:,10], 'limMH2': FullData[:,11], 'MH2both': FullData[:,12], 'Weight':FullData[:,13],
                             'LCO':FullData[:,14], 'rms':FullData[:,15], 'WCO':FullData[:,16], 'Met':FullData[:,17],
-                            'aCO':FullData[:,18]})
+                            'aCO':FullData[:,18], 'aCO_Gal':FullData[:,19]})
     LMass = (data.loc[data['group'] == 'L'])
     HMass = (data.loc[data['group'] == 'H'])
     Lz, Hz = LMass[['z']].values, HMass[['z']].values
@@ -576,30 +1014,44 @@ def GetFull(Full, output):
     LMassNDarr = LMassND[['ID', 'S_CO', 'z', 'flag', 'M*', 'Zo', 'SFR', 'sSFR', 'NUV-r', 'D_L', 'V/Vm', 'Vm', 'L_CO', 'AlphaCO', 'limMH2', 'dalpha']].values
     HMassNDarr = HMassND[['ID', 'S_CO', 'z', 'flag', 'M*', 'Zo', 'SFR', 'sSFR', 'NUV-r', 'D_L', 'V/Vm', 'Vm', 'L_CO', 'AlphaCO', 'limMH2', 'dalpha']].values
     ############
-    LMassFull2 = LMass[['z', 'flag', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm', 'Weight', 'LCO', 'rms', 'WCO', 'S_CO', 'sSFR']].values
-    HMassFull2 = HMass[['z', 'flag', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm', 'Weight', 'LCO', 'rms', 'WCO', 'S_CO', 'sSFR']].values
+    LMassFull2 = LMass[['z', 'flag', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm', 'Weight', 'LCO', 'rms', 'WCO', 'S_CO', 'sSFR','ID', 'aCO_Gal', 'groupno', 'Met']].values
+    HMassFull2 = HMass[['z', 'flag', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm', 'Weight', 'LCO', 'rms', 'WCO', 'S_CO', 'sSFR','ID', 'aCO_Gal', 'groupno', 'Met']].values
     # LCO
+    #0:z|1:flag|2:MH2|3:limMH2|4:MH2both|5:D_L|6:M*|7:V/Vm|8:Vm|9:Weight|10:LCO|
+    #11:rms|12:WCO|13:S_CO|14:sSFR|15:ID|16:aCO_Gal|17:groupno|18:Met|
+    #19:sigSCO|20:sigLCO|21:fracTOTLCOL|22:fracTOTLCOU|23:LMIN|24:LMAX|
+    #25:aGen|26:aSr|27:aGio
+    for i in range(0,len(HMassFull2)):
+        for j in range(0, len(XCOH)):
+            if XCOH[j,0] == HMassFull2[i,15]:
+                if XCOH[j,1] == 1:
+                    HMassFull2[i,16] = XCOH[j,1]
     LCO = np.vstack((LMassFull2, HMassFull2))
+    ###########################################################
     a = np.zeros((len(Fulldata),1))
     a[:,0] = (LCO[:,11]*LCO[:,12])/np.sqrt(LCO[:,12]/21.57) # calculating the error
     LCO = np.hstack((LCO, a))
-    LCO = lCalc(LCO, 14, 0, 5, True)# calculate the error in lum from err sco
+    LCO = lCalc(LCO, 19, 0, 5, True)# calculate the error in lum from err sco
     LCOdet = LCO[LCO[:,1]==1] #det only
     LCOND = LCO[LCO[:,1]==2] # ndonly
     a = np.zeros((len(LCOND),4))
+    a[:,0], a[:,1] = 0.2, 0.
     for i in range (0,len(a)):
-        a[:,2] = LCOND[:,10] - LCOND[:,10]*(0.6) # min max values for each det based on errors
-        a[:,3] = LCOND[:,10] + LCOND[:,10]*(0.2)
+        a[:,2] = LCOND[:,10] - LCOND[:,10]*(0.2) # min max values for each det based on errors
+        a[:,3] = LCOND[:,10] + LCOND[:,10]*(0)
     LCOND = np.hstack((LCOND, a))
     a = np.zeros((len(LCOdet),4))
-    a[:,0] = LCOdet[:,15]/LCOdet[:,10] #fractional error in lum from sco
     for i in range (0,len(a)):
-        x = np.sqrt((a[i,0]**2) + (0.1**2) + (0.15**2) + (0.021**2)) # add this err and others in quadrature to get total error ~20%
-        a[i,1] = x
+        x = np.sqrt(((LCOdet[i,20]/LCOdet[i,10])**2) + (0.1**2) + (0.15**2) + (0.021**2))
+        if math.isnan(x) == True:
+            x = 0.2
+        a[i,0] =  x# add this err and others in quadrature to get total error ~20%
+        a[i,1] = x # add this err and others in quadrature to get total error ~20%
     # a[:,1] = np.sqrt((a[:,0]**2) + (0,1**2) + (0.15**2) + (0.021**2))
-    a[:,2] = LCOdet[:,10] - LCOdet[:,10]*a[:,1] # min max values for each det based on errors
+    a[:,2] = LCOdet[:,10] - LCOdet[:,10]*a[:,0] # min max values for each det based on errors
     a[:,3] = LCOdet[:,10] + LCOdet[:,10]*a[:,1]
     LCOdet = np.hstack((LCOdet, a))
+    ###########################################################
     bins = np.linspace(5.5,11,18)
     conversionL = LMass[['Met', 'SFR', 'M*', 'z', 'LCO', 'Vm', 'MH2both']].values
     conversionH = HMass[['Met', 'SFR', 'M*', 'z', 'LCO', 'Vm', 'MH2both']].values
@@ -613,7 +1065,14 @@ def GetFull(Full, output):
     LMassFull = LMass[['z', 'flag', 'SFR', 'LCO', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm', 'Weight', 'Met', 'aCO']].values
     HMassFull = HMass[['z', 'flag', 'SFR', 'LCO', 'MH2', 'limMH2', 'MH2both', 'D_L', 'M*', 'V/Vm', 'Vm', 'Weight', 'Met', 'aCO']].values
     LCOSch = Schechter(LCO, 10, 8, bins)
+    #############################################
     LCOtot = np.vstack((LCOdet, LCOND))
+    a = np.zeros((len(LCOtot),3))
+    for i in range(0,len(LCOtot)):
+        a[i,0] = genzel(LCOtot[i,18])
+        a[i,1] = schruba(LCOtot[i,18])
+        a[i,2] = conversion_factor_equation2(LCOtot[i,18], LCOtot[i,14]+LCOtot[i,6], LCOtot[i,6], LCOtot[i,0])
+    LCOtot = np.hstack((LCOtot, a))
     return LMassNDarr, HMassNDarr, Fulldata, FullData, LCO, LCOdet, [LMassFull, HMassFull], LCOSch, LCOtot
 # fulldata Mh2 analysis  #######################################################
 def mh2calculator(data):
@@ -694,7 +1153,6 @@ FullData[:,2] = 10**FullData[:,2]
 FullData[:,3] = 10**FullData[:,3]
 FullData[:,4] = 10**FullData[:,4]
 #0:z|1:flag|2:MH2|3:limMH2|4:MH2_both|5:Lumdist|6:M*|7:V/Vm|8:Vm
-# print len(FullData), '@@@@'
 FullDet = FullData[FullData[:,1] == 1]
 FullND = FullData[FullData[:,1] == 2]
 ################################################################################
@@ -791,7 +1249,6 @@ total = np.vstack((totaldet, ND))
 #MH2 total
 # Nh2, rhoh2, xbinsh2 = Schechter(total, output['MH2'], output['Vm'])
 low, high = min(np.log10(total[:,output['MH2']])), max(np.log10(total[:,output['MH2']]))
-# print '@@@@1112323', total[:,output['MH2']]
 bins = np.linspace(low, high, 16) # log-spaced bins
 LSch = Schechter(LMass, output['MH2'], output['Vm'], bins)
 HSch = Schechter(HMass, output['MH2'], output['Vm'], bins)
@@ -815,7 +1272,6 @@ NDSch2 = Schechter(np.vstack((LND, HND)), output['MH2'], output['Vm'], bins)
 # popt2 = schechter.log_schechter_fit(x2, y2)
 # phi2, L02, alpha2 = popt2
 # poptkeres = np.log10(0.00072), np.log10(9.8*math.pow(10,6)), -1.3
-# #print popt1
 # xnew = np.linspace(max(xbins),min(xbins),100)
 # ynew1 = schechter.log_schechter(xnew, *popt1)
 # ynew2 = schechter.log_schechter(xnew, *popt2)
@@ -883,8 +1339,12 @@ FullSchech, sdssSchech, sdssSchechAm, totSch1, totSch2, FullDatasim = BlueRed.ma
 ################################################################################
 Plotweights(weights)
 fullcomparedata = comparefull(Full, compare)
-PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, y_ober, plotdata, bins)
+PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, y_ober, plotdata, bins, LCOtot)
 PlotSchechter2(totSch, sigma, y_CG, detSch, sigmadet, y_det, xkeres, ykeres2, )
+PlotSchechter3(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_ober, bins, LCOtot, y_CG)
+PlotGalactic(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_ober, bins, LCOtot, y_CG)
+PlotSchruba(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_ober, bins, LCOtot, y_CG)
+PlotAccurso(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_ober, bins, LCOtot, y_CG)
 PlotRhoH2(LSch, HSch, NDSch, totSch, xkeres, np.log10(x1), yrho, yrhoCG, yrhoCGpts, yrhoCG2, yrhokeres, x_keres)
 PlotAlphaCO(total, output)
 PlotMsunvsMH2(total, output)
@@ -893,7 +1353,6 @@ PlotMstarMH2(total, FullData, ND, FullND, output, FullDatasim)
 compareIDforID(fullcomparedata, total, output, compareoutput)
 x1 = np.log10(x1)
 
-# print np.sum((10**totSch[4])*(totSch[2][1]-totSch[2][0]))/(10**7)
 print 'p_H2 COLD GASS', np.sum((10**yrhoCGpts)*(totSch[2][1]-totSch[2][0]))/(10**7)
 print 'p_H2 Keres', np.sum((10**yrhokeres)*(totSch[2][1]-totSch[2][0]))/(10**7)
 print 'p_H2 COLD GASS', OmegaH2(x_keres, yrhoCG2), np.sqrt(np.sum(np.array(sigma)*np.array(sigma)))

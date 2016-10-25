@@ -33,4 +33,5 @@ def testMassLimits(data):
     ax[0,0].set_xlim(-12, -8)
     ax[0,0].set_ylim(-2.5, 0)
     plt.legend(fontsize=13, loc=4)
+    plt.tight_layout()
     plt.savefig('img/scal/gasfrac.pdf', format='pdf', dpi=250, transparent = False)

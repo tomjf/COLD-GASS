@@ -14,6 +14,7 @@ from sfrBestSDSS import convertsdss
 from GAMA import MH2varSFR
 from GAMA import PlotdMH2
 from setlim import testMassLimits
+from schechter import log_schechter_fit, log_schechter
 
 # Omega H2 ################################################################
 def CalcOmega(massfitx, massfity):
@@ -133,10 +134,11 @@ def PlotBaldry(L, yBaldry, yred, yblue):
     ax[0,0].plot(L,np.log10(yBaldry), 'k', linewidth = 3, label = 'Total')
     ax[0,0].plot(L,np.log10(yred), 'r', linewidth = 3, label = 'Red')
     ax[0,0].plot(L,np.log10(yblue), 'b', linewidth = 3, label = 'Blue')
-    ax[0,0].set_xlabel(r'$\mathrm{log \, M_{*}\, [M_{\odot}]}$', fontsize = 20)
-    ax[0,0].set_ylabel(r'$\mathrm{log \, \phi \,[Mpc^{-3}\, dex^{-1}]}$', fontsize = 20)
-    plt.legend(fontsize=13)
-    plt.savefig('img/scal/Baldry.pdf', format='pdf', dpi=250, transparent = False)
+    ax[0,0].set_xlabel(r'$\mathrm{log \, M_{*}\, [M_{\odot}]}$', fontsize = 30)
+    ax[0,0].set_ylabel(r'$\mathrm{log \, \phi \,[Mpc^{-3}\, dex^{-1}]}$', fontsize = 30)
+    plt.legend(fontsize=18)
+    plt.tight_layout()
+    plt.savefig('img/scal/Baldry.pdf', format='pdf', dpi=250, transparent = True)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def PlotMSFR(bluepop, redpop, x, z, data):
     xmajorLocator   = MultipleLocator(0.5)
@@ -154,20 +156,24 @@ def PlotMSFR(bluepop, redpop, x, z, data):
     ax[0,0].scatter(redpop, z, color = 'r', s = 5, label = 'Peng+10 Red')
     ax[0,0].plot(data[:,0], data[:,2], '-', color = 'k', linewidth = 5, label = 'Saintonge+16')
     ax[0,0].plot(data[:,0], data[:,1], '-', color = 'limegreen', linewidth = 5, label = 'Peng+10')
-    ax[0,0].set_xlabel(r'$\mathrm{log \, M_{*}\, [M_{\odot}]}$', fontsize = 20)
-    ax[0,0].set_ylabel(r'$\mathrm{log \, SFR\, [M_{\odot}\,yr^{-1}]}$', fontsize = 20)
-    plt.legend(fontsize =14, loc=2)
+    ax[0,0].set_xlabel(r'$\mathrm{log \, M_{*}\, [M_{\odot}]}$', fontsize = 30)
+    ax[0,0].set_ylabel(r'$\mathrm{log \, SFR\, [M_{\odot}\,yr^{-1}]}$', fontsize = 30)
+    plt.legend(fontsize =18, loc=2)
+    plt.tight_layout()
     plt.savefig('img/scal/MSFR.pdf', format='pdf', dpi=250, transparent = False)
+    plt.savefig('img/scal/MSFR.png', dpi=250, transparent = True)
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def PlotHist(bluepop, redpop):
     bins = np.linspace(7.5,11.5,25)
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
     ax[0,0].hist(bluepop, bins, normed = 1, alpha=0.5, color = 'b')
     ax[0,0].hist(redpop, bins, normed = 1, alpha=0.5, color = 'r')
-    ax[0,0].set_xlabel(r'$\mathrm{log \, M_{*}\, [M_{sun}]}$', fontsize = 20)
-    ax[0,0].set_ylabel(r'$\mathrm{Number \, Count}}$', fontsize = 20)
+    ax[0,0].set_xlabel(r'$\mathrm{log \, M_{*}\, [M_{sun}]}$', fontsize = 30)
+    ax[0,0].set_ylabel(r'$\mathrm{Number \, Count}}$', fontsize = 30)
     ax[0,0].set_xlim(7.8,11.5)
-    plt.savefig('img/scal/Hist.pdf', format='pdf', dpi=250, transparent = False)
+    plt.tight_layout()
+    plt.savefig('img/scal/Hist.pdf', format='pdf', dpi=250, transparent = True)
 # schechter only ###############################################################
 def PlotRhoH2(PengAmelie,x, y):
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
@@ -197,8 +203,8 @@ def PlotSchechter(PengAmelie,redSch, blueSch, x, y_scalfit, x_scal, y_keres):
     ax[0,0].yaxis.set_major_locator(ymajorLocator)
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
     ax[0,0].errorbar(PengAmelie[2], PengAmelie[1], fmt = 'o', markersize = 10, color = 'red', label = 'Scaling Relation Method')
-    ax[0,0].plot(x, y_scalfit, color ='red', label = 'Scaling Relation Fit')
-    ax[0,0].plot(x_scal, y_keres, 'k--', label = 'Keres+03')
+    ax[0,0].plot(x, y_scalfit, color ='green', label = 'Scaling Relation Fit')
+    ax[0,0].plot(x_scal, y_keres, 'g--', label = 'Keres+03')
     # ax[0,0].scatter(x_scal, y_scal)
     # ax[0,0].errorbar(redSch[2], redSch[1], fmt = 'o', markersize = 10, color = 'red', label = 'Red')
     # ax[0,0].errorbar(blueSch[2], blueSch[1], fmt = 'o', markersize = 10, color = 'blue', label = 'Blue')
@@ -267,26 +273,34 @@ def PlotSchechSDSSv2(GASS_Schech, FullSchech, FullSchech_Best, totSch_data, Peng
     ax[0,0].xaxis.set_minor_locator(xminorLocator)
     ax[0,0].yaxis.set_major_locator(ymajorLocator)
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
-    ax[0,0].errorbar(FullSchech_Best[2], FullSchech_Best[1], fmt = 'o', markersize = 8, color = 'g', label = 'CG with SFRbest')
+    df = pd.read_csv('confirmplot.csv')
+    GenErr = df[['y', 'low', 'high']].values
+    u = [0.23]*len(FullSchech_Best[2])
+    ax[0,0].errorbar(FullSchech_Best[2], FullSchech_Best[1], yerr = [u,u], zorder=1, capthick=3, linewidth=2, fmt = 'o', markersize = 8, color = 'g', label = 'COLD GASS modelled with ' + r'$\mathrm{SFR_{Best}}$' + '+'+ r'$f_{\mathrm{H_2}}$')
+    xbins = (7.5,11,300)
+    ax[0,0].errorbar(FullDetSchech[2], GenErr[:,0], yerr = [GenErr[:,1], GenErr[:,2]], fmt='s', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='none', mec='b', ecolor='b' ,label = 'COLD GASS Detections, Genzel+12')
     # ax[0,0].errorbar(FullSchech_m[2], FullSchech_m[1], fmt = 's', markersize = 4, color = 'k', label = 'All data')
     # ax[0,0].errorbar(FullSchech[2], FullSchech[1], fmt = 'o', markersize = 8, color = 'c', label = 'COLD GASS, using SFR_SDSS')
     # ax[0,0].errorbar(totSch_data[2], totSch_data[1], yerr=sigma, fmt = 's', markersize = 8, color = 'r', label = 'COLD GASS data pts')
     # ax[0,0].scatter(PengGio[2], PengGio[1], marker = 'h', s = 100, edgecolor = 'm', linewidth='2', facecolor='hotpink', label = 'Amelie Sim')
     # ax[0,0].scatter(PengAmelie[2], PengAmelie[1], marker = 'h', s = 100, edgecolor = 'green', linewidth='2', facecolor='lawngreen', label = 'Gio Sim')
-    ax[0,0].scatter(FullDetSchech[2], FullDetSchech[1], marker = 's', s = 100, edgecolor = 'blue', linewidth='2', facecolor='none', label = 'CG det')
-    ax[0,0].scatter(GASS_Schech[2], GASS_Schech[1], marker = 'o', s = 50, edgecolor = 'red', linewidth='2', facecolor='red', label = 'GASS')
+    #ax[0,0].scatter(FullDetSchech[2], FullDetSchech[1], marker = 's', s = 100, zorder=2, edgecolor = 'blue', linewidth='2', facecolor='none', label = 'COLD GASS Detections, Genzel+12')
+
+
+    # ax[0,0].scatter(GASS_Schech[2], GASS_Schech[1], marker = 'o', s = 50, edgecolor = 'red', linewidth='2', facecolor='red', label = 'GASS')
     # ax[0,0].fill_between(PengGio[2], PengGio[1], PengAmelie[1], alpha = 0.2, color = 'k')
     # ax[0,0].scatter(LSch[2], LSch[1], marker = 's', s = 100, edgecolor = 'coral', linewidth='2', facecolor='none', label = 'L')
     # ax[0,0].scatter(HSch[2], HSch[1], marker = 's', s = 100, edgecolor = 'green', linewidth='2', facecolor='none', label = 'H')
     # ax[0,0].scatter(NDSch[2], NDSch[1], marker = 's', s = 100, edgecolor = 'black', linewidth='2', facecolor='none', label = 'ND 5sig')
     # ax[0,0].scatter(NDSch2[2], NDSch2[1], marker = 's', s = 100, edgecolor = 'm', linewidth='2', facecolor='none', label = 'ND 3sig')
     ax[0,0].plot(np.log10(x_keres), y_keres, 'k--', label = 'Keres+03')
-    # ax[0,0].plot(np.log10(x_keres), y_ober, 'k', label = 'Obreschkow+09')
+    ax[0,0].plot(np.log10(x_keres), y_ober, 'k', label = 'Obreschkow+09')
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
     ax[0,0].set_ylim(-5, -1)
     ax[0,0].set_xlim(7.5, 10.5)
-    plt.legend(fontsize = 10)
+    plt.legend(fontsize = 13, loc=3)
+    plt.tight_layout()
     plt.savefig('img/scal/'+ 'SDSSv4' + '.pdf', format='pdf', dpi=250, transparent = False)
 # create galaxies ##############################################################
 
@@ -614,7 +628,7 @@ def main(bins, totSch_data, PengGio, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     x3 = np.linspace(7.5,10.5,16)
     y_scalfit = log_schechter(x3, *scalfit)
 
-    x_scal = np.linspace(7.5, 10.5, 25)
+    x_scal = np.linspace(7.5, 11, 200)
     x_keres = 10**x_scal
     mst=np.log10((2.81*(10**9))/(0.7**2))
     alpha=-1.18
@@ -667,19 +681,19 @@ def main(bins, totSch_data, PengGio, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     GASS_Schech = Schechter(SFRBL, 6, 9, bins)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #SFR COMPARISON
-    MH2varSFR(total, bins, x_keres, y_keres, res, FullSchech_m, FullDetSchech)
-    PlotdMH2(FullDet, Fulldetmain)
+    MH2varSFR(total, bins, x_keres, y_keres, res, FullSchech_m, FullDetSchech, sdssData, y_ober)
+    # PlotdMH2(FullDet, Fulldetmain)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # PlotSchechSDSS(FullSchech, sdssSchech, sdssSchechAm, PengAmelie,PengGio, x_keres, y_keres, y_ober)
     # SFRMH2(sdssData)
-    SFRMSTAR(sdssData, FullData)
+    # SFRMSTAR(sdssData, FullData)
     PlotBaldry(L, yBaldry, yred, yblue)
     PlotMSFR(blues[:,4], reds[:,4], blues[:,5], reds[:,5], data)
-    # PlotHist(blues[:,4], reds[:,4])
+    PlotHist(blues[:,4], reds[:,4])
     # PlotSimMH2(blues, reds)
     # PlotRhoH2(PengAmelie,x_scal, rhoscal)
     # sfrbest(FullData, SFRBL)
-    # PlotSchechter(PengAmelie,redSch, blueSch, x3, y_scalfit, x_scal, y_keres)
+    PlotSchechter(PengAmelie,redSch, blueSch, x3, y_scalfit, x_scal, y_keres)
     # PlotSchechterMass(MassSchB, MassSchR, L, yred, yblue)
     PlotSchechSDSSv2(GASS_Schech, FullSchech, FullSchech_Best_D, totSch_data, PengAmelie,PengGio,  LSch, HSch, NDSch, NDSch2, sigma, x_keres, y_keres, y_ober, FullDetSchech, FullSchech_m)
     # SFRHist(sdssData, datagio, FullData, total)
