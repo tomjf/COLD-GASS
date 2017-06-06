@@ -8,6 +8,20 @@ import math
 import random
 import schechter
 
+def read_Lagos_data(fname):
+     keres = pd.read_csv(fname, sep=",", header = None)
+     keres.columns = ["x", "y", "erup", "erdn"]
+     hobs=0.7
+     Hubble_h=0.6777
+     keres['lgCOB'] = keres['x'] + np.log10((hobs**2)/(Hubble_h**2))
+     keres['lgdndlgLCOB'] = keres['y'] + np.log10((hobs**3)/(Hubble_h**3))
+     keres['errupB'] = abs(keres['y']-keres['erup'])
+     keres['errdnB'] = abs(keres['erdn']-keres['y'])
+     X_CO = 2.0
+     keres['MH2_x'] = keres['lgCOB'] + np.log10(580.0*X_CO) + (2*np.log10(2.6)) - np.log10(4*np.pi)
+    #  print (keres)
+     return keres
+
 def Schechter(data, LCOaxis, Vmaxis, bins):
     l = data[:,LCOaxis]
     l = np.log10(l)
@@ -91,7 +105,7 @@ def errors(data, x, y):
     return sigma
 
 
-def PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet, LCO, LCOtot):
+def PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet, LCO, LCOtot, keresB, keres60):
     bins = np.linspace(5.5,11,18)
     bins2 = np.linspace(5.5,11,300)
     LCOSch = Schechter(LCOtot, 10, 8, bins)
@@ -113,6 +127,17 @@ def PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet, LCO, LC
     u = [0,0,0,0,0.3010299957,0.3979400087,0,0.044056824,0,0.0626094827,0.1443927751,0.1035405919,0,0.4771212547,0,0,0]
     l2 =[0,0,0,0,0.3010299957,0.1918855262,0.1365819998,0.0390612296,0.2402860609,0,0.1259633184,0.2108533653,0.1461280357,0,0,0,0]
     u2 =[0,0,0,0.4771212547,0.8293037728,0.1759744873,0.0193671767,0.0026500336,0.00662909,0.0763901687,0.1345726324,0.0901766303,0,0.4771212547,0,0,0]
+    lsx, lsy = np.append(LCOSch[2][7:9], LCOSch[2][10:13]), np.append(LCOSch[1][7:9], LCOSch[1][10:13]) - np.append(l[7:9], l[10:13])
+    usx, usy = np.append(LCOSch[2][9], LCOSch[2][11:14]), np.append(LCOSch[1][9], LCOSch[1][11:14]) - np.append(l[9], l[11:14])
+    print ('lsx', 'lsy', lsx, lsy)
+    CG_para_low = schechter.log_schechter_fit(lsx, lsy)
+    CG_para_up = schechter.log_schechter_fit(usx, usy)
+    bins3 = np.linspace(7.5,11,300)
+    bins4 = np.linspace(5.5,7.5,300)
+    y_CG_low2 = schechter.log_schechter(bins3, *CG_para_low)
+    y_CG_up2 = schechter.log_schechter(bins3, *CG_para_up)
+    y_CG_low1 = schechter.log_schechter(bins4, *CG_para_low)
+    y_CG_up1 = schechter.log_schechter(bins4, *CG_para_up)
     for i in range(0,len(l)):
         l[i] = np.sqrt((l[i]**2)+(sampling[i]**2))
         u[i] = np.sqrt((u[i]**2)+(sampling[i]**2))
@@ -148,28 +173,45 @@ def PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet, LCO, LC
     ymajorLocator   = MultipleLocator(1)
     yminorLocator   = MultipleLocator(0.2)
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
+    ax[0,0].tick_params(axis='both', which='major', labelsize=15)
+    ax[0,0].yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+    ax[0,0].xaxis.set_major_formatter(FormatStrFormatter('%.1f'))
     ax[0,0].xaxis.set_major_locator(xmajorLocator)
     ax[0,0].xaxis.set_minor_locator(xminorLocator)
     ax[0,0].yaxis.set_major_locator(ymajorLocator)
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
     # ax[0,0].errorbar(LCOdetschechl[2], LCOdetschechl[1], alpha = 0.1, fmt='s', markersize = 12, linewidth=2, mew=2, capthick=3, mfc='r', mec='navy' , label='det')
     # ax[0,0].errorbar(LCOdetschechu[2], LCOdetschechu[1], alpha = 0.1, fmt='s', markersize = 12, linewidth=2, mew=2, capthick=3, mfc='b', mec='navy' , label='det')
+    ax[0,0].axvline(7.5, color = 'r', linestyle = '--', label = 'xCOLD GASS completeness')
+    # ax[0,0].axvspan(7.5, 14, alpha=0.2, color='red', label = 'xCOLD GASS completeness', zorder = 1)
+    # ax[0,0].fill_between(lowerr2[:,0], lowerr2[:,1], uperr2[:,1], color = 'k', alpha = 0.2,  zorder = 2)
+    # ax[0,0].plot(data[:,0], data[:,1], label = 'Vallini+16', color = 'k', linewidth=1, zorder = 3)
+    # ax[0,0].errorbar(keres[:,0], keres[:,1], yerr=[keres[:,3], keres[:,2]], fmt='o', markersize = 10, linewidth=2, mew=2, capthick=3, zorder = 4, mfc='darkgray', mec='gray', ecolor = 'gray', label='Keres+03')
+    # # ax[0,0].plot(keresB['lgCOB'], keresB['lgdndlgLCOB'], label = 'KeresLagos', color = 'green', linewidth=3)
+    #
+    # ax[0,0].plot(bins2, y_CG2, label = 'xCOLD GASS fit', color = 'k', linestyle='--', alpha = 0.5, linewidth=1, zorder = 5)
 
-    ax[0,0].plot(data[:,0], data[:,1], label = 'Vallini+16', color = 'crimson', linewidth=3)
-    ax[0,0].plot(bins2, y_CG2, label = 'COLD GASS fit', color = 'k', linestyle='--', alpha = 0.5, linewidth=3)
+    ax[0,0].fill_between(bins3, y_CG_low2, y_CG_up2, color = 'g', alpha = 0.3, edgecolor="g")
+    ax[0,0].fill_between(bins4, y_CG_low1, y_CG_up1, color = 'none', hatch = '//', edgecolor="g")
+    ax[0,0].scatter(LCOSch[2][6:12], LCOSch[1][6:12] - l[6:12], color = 'g')
+    ax[0,0].scatter(LCOSch[2][6:13], LCOSch[1][6:13] + u[6:13], color = 'r')
     # ax[0,0].plot(uperr[:,0], uperr[:,1], label = 'upper limit', color = 'crimson')
     # ax[0,0].plot(lowerr[:,0], lowerr[:,1], label = 'lower limit', color = 'crimson')
-    ax[0,0].fill_between(lowerr2[:,0], lowerr2[:,1], uperr2[:,1], color = 'r', alpha = 0.2)
     # ax[0,0].scatter(lowerr2[:,0], lowerr2[:,1], label = 'uperr', color = 'g')
     # ax[0,0].scatter(uperr2[:,0], uperr2[:,1], label = 'uperr', color = 'g')
-    ax[0,0].errorbar(keres[:,0], keres[:,1], yerr=[keres[:,3], keres[:,2]], fmt='bo', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='b', mec='navy' , label='Keres+03')
-    ax[0,0].errorbar(LCOSch[2], LCOSch[1], yerr=[l2,u2], fmt='^', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='deeppink', mec='m', ecolor = 'm', label='COLD GASS det+non-det')
-    ax[0,0].errorbar(LCOdetschech[2], LCOdetschech[1], yerr=[l,u], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='limegreen', mec='g', ecolor='g', label='COLD GASS det only')
-    ax[0,0].set_xlabel(r'$\mathrm{log\, L_{CO}\, [K \, km \,s^{-1}\, pc^{2}]}$', fontsize=18)
+
+    # ax[0,0].errorbar(LCOSch[2], LCOSch[1], yerr=[l2,u2], fmt='^', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='r', mec='crimson', ecolor = 'crimson', label='xCOLD GASS det+non-det', zorder = 7)
+    # ax[0,0].errorbar(LCOdetschech[2], LCOdetschech[1], yerr=[l,u], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='blue', mec='navy', ecolor='navy', label='xCOLD GASS det only', zorder = 6)
+
+    ax[0,0].set_xlabel(r'$\mathrm{log\, L^{\prime}_{CO}\, [K \, km \,s^{-1}\, pc^{2}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, \phi\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
     ax[0,0].set_xlim(5.5, 12)
     ax[0,0].set_ylim(-7, -1)
-    plt.legend(fontsize = 13, loc=3)
+    # handles,labels = ax[0,0].get_legend_handles_labels()
+    # print 'cg labels', labels
+    # handles = [handles[3], handles[1], handles[0], handles[5], handles[4], handles[2]]
+    # labels = [labels[3], labels[1], labels[0], labels[5], labels[4], labels[2]]
+    # plt.legend(handles, labels, fontsize = 13, loc=3)
     plt.tight_layout()
     plt.savefig('img/schechter/luminosity.pdf', format='pdf', dpi=250, transparent = True)
 
@@ -229,4 +271,12 @@ for idx, element in enumerate(keres):
 # np.savetxt('data/lum/upasaerr.csv', uperr)
 # np.savetxt('data/lum/lowerrjk.csv', lowerr)
 # print data
-PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet, LCO, LCOtot)
+
+keresB = read_Lagos_data('data/Keres03_LCOLFBband.txt')
+keres60 = read_Lagos_data('data/Keres03_LCOLF60m.txt')
+
+
+
+
+
+PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet, LCO, LCOtot, keresB, keres60)

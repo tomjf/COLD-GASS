@@ -624,7 +624,8 @@ def main(bins, totSch_data, PengGio, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     MassSchB = Schechter(blues, 4, 7, massbins)
     MassSchR = Schechter(reds, 4, 7, massbins)
     x = np.linspace(7.5,10.5,200)
-    scalfit = log_schechter_fit(PengAmelie[2], PengAmelie[1])
+    print PengAmelie[2], PengAmelie[1]
+    scalfit = log_schechter_fit(PengAmelie[2][:-1], PengAmelie[1][:-1])
     x3 = np.linspace(7.5,10.5,16)
     y_scalfit = log_schechter(x3, *scalfit)
 
@@ -643,8 +644,8 @@ def main(bins, totSch_data, PengGio, totSch3, sigma, LSch, HSch, NDSch, NDSch2, 
     phistcorr = 0.0243*(0.7**3)
     y_ober = np.log10((phistcorr)*((x_keres/(mstcorr))**(alphacorr+1))*np.exp(-x_keres/mstcorr)*np.log(10))
 
-
-    scal_para = log_schechter_fit(PengAmelie[2][9:], PengAmelie[1][9:])
+    # print PengAmelie[2][9:], PengAmelie[1][9:]
+    scal_para = log_schechter_fit(PengAmelie[2][9:-1], PengAmelie[1][9:-1])
     y_scal = log_schechter(x_scal, *scal_para)
     rhoscal = y_scal + x_scal
 

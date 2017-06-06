@@ -19,7 +19,6 @@ def testMassLimits(data):
     fH2data = 6.02 + (0.704*SSFR)
     res = fh2 - fH2data
     sig = np.std(res)
-    print sig, '!!!@@@@@@@@@@@@@@'
     yu = logfH2+sig
     yl = logfH2-sig
     yu2 = logfH2+(3*sig)

@@ -54,40 +54,40 @@ def conversion_factor_equation(met, log_sfr, log_m, redshift):
     delta_ms_whitaker_2012 = log_sfr - log_m + 10.12 - 1.14*redshift + 0.19*redshift*redshift + (0.3 + 0.13*redshift)*(log_m - 10.5)
     if met > 8.8:
         if delta_ms_whitaker_2012 < -0.8:
-            alpha_co_redshift_dependent = 10**(15.623 - 1.732*8.8 + 0.051*(-0.8))
+            alpha_co_redshift_dependent = 10**(15.69 - 1.732*8.8 + 0.051*(-0.8))
         if delta_ms_whitaker_2012 > np.log10(20.0):
             alpha_co_redshift_dependent = 'nan'
         else:
-            alpha_co_redshift_dependent = 10**(15.623 - 1.732*8.8 + 0.051*delta_ms_whitaker_2012)
+            alpha_co_redshift_dependent = 10**(15.69 - 1.732*8.8 + 0.051*delta_ms_whitaker_2012)
     if met < 7.9:
         alpha_co_redshift_dependent = 'nan'
     else:
         if delta_ms_whitaker_2012 < -0.8:
-            alpha_co_redshift_dependent = 10**(15.623 - 1.732*met + 0.051*(-0.8))
+            alpha_co_redshift_dependent = 10**(15.69 - 1.732*met + 0.051*(-0.8))
         if delta_ms_whitaker_2012 > np.log10(20.0):
             alpha_co_redshift_dependent = 'nan'
         else:
-            alpha_co_redshift_dependent = 10**(15.623 - 1.732*met + 0.051*delta_ms_whitaker_2012)
+            alpha_co_redshift_dependent = 10**(15.69 - 1.732*met + 0.051*delta_ms_whitaker_2012)
     return alpha_co_redshift_dependent
 
 def conversion_factor_equation2(met, log_sfr, log_m, redshift):
     delta_ms_whitaker_2012 = log_sfr - log_m + 10.12 - 1.14*redshift + 0.19*redshift*redshift + (0.3 + 0.13*redshift)*(log_m - 10.5)
     if met > 8.8:
         if delta_ms_whitaker_2012 < -0.8:
-            alpha_co_redshift_dependent = 10**(15.623 - 1.732*8.8 + 0.051*(-0.8))
+            alpha_co_redshift_dependent = 10**(15.69 - 1.732*8.8 + 0.051*(-0.8))
         elif delta_ms_whitaker_2012 > np.log10(20.0):
             alpha_co_redshift_dependent = 'nan'
         else:
-            alpha_co_redshift_dependent = 10**(15.623 - 1.732*8.8 + 0.051*delta_ms_whitaker_2012)
+            alpha_co_redshift_dependent = 10**(15.69 - 1.732*8.8 + 0.051*delta_ms_whitaker_2012)
     elif met < 7.9:
         alpha_co_redshift_dependent = 'nan'
     else:
         if delta_ms_whitaker_2012 < -0.8:
-            alpha_co_redshift_dependent = 10**(15.623 - 1.732*met + 0.051*(-0.8))
+            alpha_co_redshift_dependent = 10**(15.69 - 1.732*met + 0.051*(-0.8))
         elif delta_ms_whitaker_2012 > np.log10(20.0):
             alpha_co_redshift_dependent = 'nan'
         else:
-            alpha_co_redshift_dependent = 10**(15.623 - 1.732*met + 0.051*delta_ms_whitaker_2012)
+            alpha_co_redshift_dependent = 10**(15.69 - 1.732*met + 0.051*delta_ms_whitaker_2012)
     return alpha_co_redshift_dependent
 
 def genzel(met):
@@ -313,7 +313,7 @@ def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, y_obe
         a[i,0] = LCOtot[i,10]*LCOtot[i,16]
     LCOtot = np.hstack((LCOtot,a))
     totGal = Schechter(LCOtot, 24, 8,bins)
-    Para_Gal = schechter.log_schechter_fit(totGal[2][5:], totGal[1][5:])
+    Para_Gal = schechter.log_schechter_fit(totGal[2][5:-2], totGal[1][5:-2])
     y_Gal = schechter.log_schechter(xbins, *Para_Gal)
     print 'galactic', OmegaH2(totGal[2], totGal[1]+totGal[2]), OmegaH2(xbins, y_Gal+xbins)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -698,11 +698,6 @@ def PlotAccurso(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_ober, bins, LCOtot
     totGen2 = Schechter(LCOtot2, 31, 8, bins)
     totGenl2 = Schechter(LCOtot2, 32, 8, bins)
     totGenu2 = Schechter(LCOtot2, 33, 8, bins)
-    # a = np.zeros((len(totGen2[1]),3))
-    # a[:,0] = totGen2[1]
-    # a[:,1] = totGenl2[1]
-    # a[:,2] = totGenu2[1]
-    # np.savetxt('data/AccursoERRS.txt',a)
     df = pd.read_csv('data/AccursoERRS.csv')
     GenErr = df[['low', 'high']].values
     GenErrS = errors2(LCOtot2, bins, totGen2[1])
@@ -742,13 +737,20 @@ def PlotAccurso(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_ober, bins, LCOtot
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ax[0,0].plot(xbins, y_CG, linestyle = '-', color = 'm', label = 'COLD GASS Schechter fit', linewidth=1, zorder=3)
     ax[0,0].plot(x_keres, y_ober, 'k--', label = 'Obreschkow+09', linewidth=1, zorder=1)
-    # ax[0,0].plot(xkeres, ykeres2, 'k-', label = 'Keres+03', linewidth=1, zorder=2)
+    ax[0,0].plot(xkeres, ykeres2, 'k-', label = 'Keres+03', linewidth=1, zorder=2)
     # ax[0,0].plot(xbins, y_CGl, linestyle = '-', color = 'crimson')
     # ax[0,0].plot(xbins, y_CGu, linestyle = '-', color = 'crimson')
     ax[0,0].fill_between(xbins, y_CGl, y_CGu, color = 'deeppink', alpha =0.1)
-    ax[0,0].fill_between(gal[:,0], gal[:,1], gal[:,2], color = 'limegreen', alpha =0.1)
-    ax[0,0].fill_between(genzel[:,0], genzel[:,1], genzel[:,2], color = 'red', alpha =0.1)
-    ax[0,0].fill_between(sr[:,0], sr[:,1], sr[:,2], color = 'b', alpha =0.1)
+    # ax[0,0].fill_between(gal[:,0], gal[:,1], gal[:,2], color = 'limegreen', alpha =0.1)
+    # ax[0,0].fill_between(genzel[:,0], genzel[:,1], genzel[:,2], color = 'red', alpha =0.1)
+    # ax[0,0].fill_between(sr[:,0], sr[:,1], sr[:,2], color = 'b', alpha =0.1)
+    a = np.zeros((len(totGen2[1]),4))
+    a[:,0] = totGen2[2]
+    a[:,1] = totGen2[1]
+    a[:,2] = GenErr[:,0]
+    a[:,3] = GenErr[:,1]
+    print (a)
+    np.savetxt('data/AccursoERRS.txt',a)
     # ax[0,0].errorbar(totGen2[2], totGen2[1], yerr=[GenErr[:,0], GenErr[:,1]], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='deeppink', mec='m', ecolor='m', zorder=7,label = 'COLD GASS + Accurso+12')
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)

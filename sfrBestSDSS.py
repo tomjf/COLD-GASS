@@ -48,7 +48,6 @@ def sfrbest13k():
 
 def plotsfrs(data, newdata, y):
     fig, ax = plt.subplots(nrows = 1, ncols = 1, squeeze=False, figsize=(8,8))
-    print '@@@@@111111111111111111111111222222222222222222222221', len(newdata)
     ax[0,0].scatter(data[:,6], np.log10(data[:,1]), color = 'm', label = 'data', s=10)
     ax[0,0].scatter(newdata, y, color = 'g', label = 'Sim', s=10)
     # for i in range(0,len(solns)-1):

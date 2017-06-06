@@ -18,3 +18,13 @@ schechter.pyc
 /data/GAMA/.~lock.StellarMasses.csv#
 /GAMA.pyc
 /.~lock.errschec.csv#
+
+\.DS_Store
+
+\.idea/COLD-GASS\.iml
+
+\.idea/misc\.xml
+
+*.xml
+
+*.pyc
