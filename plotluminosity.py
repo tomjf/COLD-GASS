@@ -6,7 +6,9 @@ from main import GetFull
 import atpy
 import math
 import random
-import schechter
+import schechter2
+import pandas as pd
+import multivariate
 
 def read_Lagos_data(fname):
      keres = pd.read_csv(fname, sep=",", header = None)
@@ -109,8 +111,15 @@ def PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet, LCO, LC
     bins = np.linspace(5.5,11,18)
     bins2 = np.linspace(5.5,11,300)
     LCOSch = Schechter(LCOtot, 10, 8, bins)
-    CG_para2 = schechter.log_schechter_fit(LCOSch[2][5:14], LCOSch[1][5:14])
-    y_CG2 = schechter.log_schechter(bins2, *CG_para2)
+    CG_para2, CG_para2cov = schechter2.log_schechter_fit(LCOSch[2][6:14], LCOSch[1][6:14])
+    perr = np.sqrt(np.diag(CG_para2cov))
+    print ('phi_star = ' + str(round(CG_para2[0],2)) + ' +/- ' + str(round(perr[0],2)))
+    print ('L_0 = ' + str(round(CG_para2[1],2)) + ' +/- ' + str(round(perr[1],2)))
+    print ('alpha = ' + str(round(CG_para2[2],3)) + ' +/- ' + str(round(perr[2],2)))
+    boundary, minaxis, maxaxis = multivariate.throws(CG_para2, CG_para2cov, 800, bins2)
+    print 'covariance'
+    print CG_para2cov
+    y_CG2 = schechter2.log_schechter(bins2, *CG_para2)
     LCONDl = Schechter(LCOtot, 19, 8, bins)
     LCONDu = Schechter(LCOtot, 20, 8, bins)
     a = np.zeros((len(LCOSch[1]),3))
@@ -121,6 +130,13 @@ def PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet, LCO, LC
     LCOdetschech = Schechter(LCOdet, 10, 8, bins)
     LCOdetschechl = Schechter(LCOdet, 19, 8, bins)
     LCOdetschechu = Schechter(LCOdet, 20, 8, bins)
+    CG_para3, CG_para2cov3 = schechter2.log_schechter_fit(LCOdetschech[2][6:14], LCOdetschech[1][6:14])
+    perr = np.sqrt(np.diag(CG_para2cov3))
+    print ('phi_star = ' + str(round(CG_para3[0],2)) + ' +/- ' + str(round(perr[0],2)))
+    print ('L_0 = ' + str(round(CG_para3[1],2)) + ' +/- ' + str(round(perr[1],2)))
+    print ('alpha = ' + str(round(CG_para3[2],3)) + ' +/- ' + str(round(perr[2],2)))
+    boundary3, minaxis3, maxaxis3 = multivariate.throws(CG_para3, CG_para2cov3, 800, bins2)
+    y_CG3 = schechter2.log_schechter(bins2, *CG_para3)
     sampling = errors(LCOdet, bins, LCOdetschech[1])
     samplingF = errors(LCO, bins, LCOSch[1])
     l = [0,0,0,0,0.1760912591,0.2041199827,0.1375917444,0.0137869414,0.0934900541,0,0.1259633184,0.2688453123,0.1461280357,0,0,0,0]
@@ -130,14 +146,8 @@ def PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet, LCO, LC
     lsx, lsy = np.append(LCOSch[2][7:9], LCOSch[2][10:13]), np.append(LCOSch[1][7:9], LCOSch[1][10:13]) - np.append(l[7:9], l[10:13])
     usx, usy = np.append(LCOSch[2][9], LCOSch[2][11:14]), np.append(LCOSch[1][9], LCOSch[1][11:14]) - np.append(l[9], l[11:14])
     print ('lsx', 'lsy', lsx, lsy)
-    CG_para_low = schechter.log_schechter_fit(lsx, lsy)
-    CG_para_up = schechter.log_schechter_fit(usx, usy)
-    bins3 = np.linspace(7.5,11,300)
-    bins4 = np.linspace(5.5,7.5,300)
-    y_CG_low2 = schechter.log_schechter(bins3, *CG_para_low)
-    y_CG_up2 = schechter.log_schechter(bins3, *CG_para_up)
-    y_CG_low1 = schechter.log_schechter(bins4, *CG_para_low)
-    y_CG_up1 = schechter.log_schechter(bins4, *CG_para_up)
+    CG_para_low, CG_para_lowcov = schechter2.log_schechter_fit(lsx, lsy)
+    CG_para_up, CG_para_upcov = schechter2.log_schechter_fit(usx, usy)
     for i in range(0,len(l)):
         l[i] = np.sqrt((l[i]**2)+(sampling[i]**2))
         u[i] = np.sqrt((u[i]**2)+(sampling[i]**2))
@@ -168,6 +178,7 @@ def PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet, LCO, LC
     #     err[i,3] = llim
     #     err[i,4] = ulim
     # print err
+
     xmajorLocator   = MultipleLocator(1)
     xminorLocator   = MultipleLocator(0.2)
     ymajorLocator   = MultipleLocator(1)
@@ -180,40 +191,54 @@ def PlotLum(data, uperr, lowerr, keres, lowerr2, uperr2, LCOSch, LCOdet, LCO, LC
     ax[0,0].xaxis.set_minor_locator(xminorLocator)
     ax[0,0].yaxis.set_major_locator(ymajorLocator)
     ax[0,0].yaxis.set_minor_locator(yminorLocator)
-    # ax[0,0].errorbar(LCOdetschechl[2], LCOdetschechl[1], alpha = 0.1, fmt='s', markersize = 12, linewidth=2, mew=2, capthick=3, mfc='r', mec='navy' , label='det')
-    # ax[0,0].errorbar(LCOdetschechu[2], LCOdetschechu[1], alpha = 0.1, fmt='s', markersize = 12, linewidth=2, mew=2, capthick=3, mfc='b', mec='navy' , label='det')
-    ax[0,0].axvline(7.5, color = 'r', linestyle = '--', label = 'xCOLD GASS completeness')
-    # ax[0,0].axvspan(7.5, 14, alpha=0.2, color='red', label = 'xCOLD GASS completeness', zorder = 1)
+    # ax[0,0].errorbar(LCOdetschechl[2], LCOdetschechl[1], alpha = 0.1, fmt='s', markersize = 12, linewidth=2, markeredgewidth=2, capthick=3, mfc='r', mec='navy' , label='det')
+    # ax[0,0].errorbar(LCOdetschechu[2], LCOdetschechu[1], alpha = 0.1, fmt='s', markersize = 12, linewidth=2, markeredgewidth=2, capthick=3, mfc='b', mec='navy' , label='det')
+    ax[0,0].axvline(7.5, color = 'k', linestyle = '--', label = 'xCOLD GASS completeness', zorder = 1)
+    ax[0,0].fill_between(bins2, minaxis, maxaxis, color = 'crimson', alpha = 0.3, zorder = 3)
+    # ax[0,0].fill_between(bins2, minaxis3, maxaxis3, color = 'navy', alpha = 0.3, zorder = 4)
+    # ax[0,0].axvline(LCOSch[2][6], color = 'r', linestyle = '-')
+    # ax[0,0].axvline(LCOSch[2][14], color = 'r', linestyle = '-')
     # ax[0,0].fill_between(lowerr2[:,0], lowerr2[:,1], uperr2[:,1], color = 'k', alpha = 0.2,  zorder = 2)
-    # ax[0,0].plot(data[:,0], data[:,1], label = 'Vallini+16', color = 'k', linewidth=1, zorder = 3)
-    # ax[0,0].errorbar(keres[:,0], keres[:,1], yerr=[keres[:,3], keres[:,2]], fmt='o', markersize = 10, linewidth=2, mew=2, capthick=3, zorder = 4, mfc='darkgray', mec='gray', ecolor = 'gray', label='Keres+03')
-    # # ax[0,0].plot(keresB['lgCOB'], keresB['lgdndlgLCOB'], label = 'KeresLagos', color = 'green', linewidth=3)
-    #
-    # ax[0,0].plot(bins2, y_CG2, label = 'xCOLD GASS fit', color = 'k', linestyle='--', alpha = 0.5, linewidth=1, zorder = 5)
+    ax[0,0].plot(data[:,0], data[:,1], label = 'Vallini+16', color = 'k', linewidth=1, zorder = 2, linestyle='-')
+    ax[0,0].errorbar(keres[:,0], keres[:,1], yerr=[keres[:,3], keres[:,2]], fmt='o', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, zorder = 7, mfc='darkgray', mec='gray', ecolor = 'gray', label='Keres+03')
+    # ax[0,0].plot(keresB['lgCOB'], keresB['lgdndlgLCOB'], label = 'KeresLagos', color = 'green', linewidth=3)
 
-    ax[0,0].fill_between(bins3, y_CG_low2, y_CG_up2, color = 'g', alpha = 0.3, edgecolor="g")
-    ax[0,0].fill_between(bins4, y_CG_low1, y_CG_up1, color = 'none', hatch = '//', edgecolor="g")
-    ax[0,0].scatter(LCOSch[2][6:12], LCOSch[1][6:12] - l[6:12], color = 'g')
-    ax[0,0].scatter(LCOSch[2][6:13], LCOSch[1][6:13] + u[6:13], color = 'r')
+    ax[0,0].plot(bins2, y_CG2, label = 'xCOLD GASS fit det+non-det', color = 'crimson', linestyle='-', alpha = 1, linewidth=1, zorder = 5)
+    ax[0,0].plot(bins2, y_CG3, label = 'xCOLD GASS fit det', color = 'navy', linestyle='-', alpha = 1, linewidth=1, zorder = 6)
+
+    # ax[0,0].fill_between(bins3, y_CG_low2, y_CG_up2, color = 'g', alpha = 0.3, edgecolor="g")
+    # ax[0,0].fill_between(bins4, y_CG_low1, y_CG_up1, color = 'none', hatch = '//', edgecolor="g")
+    # ax[0,0].scatter(LCOSch[2][6:12], LCOSch[1][6:12] - l[6:12], color = 'g')
+    # ax[0,0].scatter(LCOSch[2][6:13], LCOSch[1][6:13] + u[6:13], color = 'r')
     # ax[0,0].plot(uperr[:,0], uperr[:,1], label = 'upper limit', color = 'crimson')
     # ax[0,0].plot(lowerr[:,0], lowerr[:,1], label = 'lower limit', color = 'crimson')
     # ax[0,0].scatter(lowerr2[:,0], lowerr2[:,1], label = 'uperr', color = 'g')
     # ax[0,0].scatter(uperr2[:,0], uperr2[:,1], label = 'uperr', color = 'g')
 
-    # ax[0,0].errorbar(LCOSch[2], LCOSch[1], yerr=[l2,u2], fmt='^', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='r', mec='crimson', ecolor = 'crimson', label='xCOLD GASS det+non-det', zorder = 7)
-    # ax[0,0].errorbar(LCOdetschech[2], LCOdetschech[1], yerr=[l,u], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='blue', mec='navy', ecolor='navy', label='xCOLD GASS det only', zorder = 6)
+    ax[0,0].errorbar(LCOSch[2], LCOSch[1], yerr=[l2,u2], fmt='^', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='r', mec='crimson', ecolor = 'crimson', label='xCOLD GASS det+non-det', zorder = 9)
+    ax[0,0].errorbar(LCOdetschech[2], LCOdetschech[1], yerr=[l,u], fmt='h', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='blue', mec='navy', ecolor='navy', label='xCOLD GASS det only', zorder = 8)
 
     ax[0,0].set_xlabel(r'$\mathrm{log\, L^{\prime}_{CO}\, [K \, km \,s^{-1}\, pc^{2}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, \phi\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
-    ax[0,0].set_xlim(5.5, 12)
+    ax[0,0].set_xlim(5.5, 11)
     ax[0,0].set_ylim(-7, -1)
-    # handles,labels = ax[0,0].get_legend_handles_labels()
-    # print 'cg labels', labels
+    handles,labels = ax[0,0].get_legend_handles_labels()
+    print 'cg labels', labels
     # handles = [handles[3], handles[1], handles[0], handles[5], handles[4], handles[2]]
     # labels = [labels[3], labels[1], labels[0], labels[5], labels[4], labels[2]]
     # plt.legend(handles, labels, fontsize = 13, loc=3)
+    plt.legend(fontsize = 12, loc=3)
     plt.tight_layout()
     plt.savefig('img/schechter/luminosity.pdf', format='pdf', dpi=250, transparent = True)
+    newdf = pd.DataFrame()
+    newdf['x'] = LCOSch[2]
+    newdf['y'] = LCOSch[1]
+    newdf['dyu'] = u2
+    newdf['dyd'] = l2
+    newdf.to_csv('luminosity.txt', sep='\t')
+    np.savetxt('covariance.txt', CG_para2cov)
+    np.savetxt('mean.txt', CG_para2)
+    print (CG_para2)
 
 output = {  'ID':0, 'S_CO':1, 'z':2, 'flag':3, 'M*':4, 'Zo':5, 'SFR':6, 'sSFR':7,
             'NUV-r':8,'D_L':9, 'V/Vm':10, 'Vm':11, 'L_CO':12, 'AlphaCO':13,

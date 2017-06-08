@@ -275,6 +275,7 @@ def CalcOmega(massfitx, massfity):
     return OmegaH2
 ################################################################################
 def errors2(data, x, y):
+    # data = np.tile(data,(10,1))
     output = {'Vm':8, 'LCO':10}
     frac = 0.5
     eridx = int(len(data)*frac)
@@ -290,6 +291,9 @@ def errors2(data, x, y):
         totSch = Schechter(newdata, output['LCO'], output['Vm'], x)
         drho = totSch[1] - y
         spread[i,:] = drho
+    print 'ERRORSSSSSS'
+    print
+    print len(spread)
     er = spread
     sigma = []
     for i in range(0, np.shape(er)[1]):
@@ -353,11 +357,11 @@ def PlotSchechter(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_CG, sigma, y_obe
     # ax[0,0].scatter(LSch[2], LSch[1], marker = 's', s = 100, edgecolor='blue', linewidth='3', facecolor='none', label = 'Low Mass')
     # ax[0,0].scatter(HSch[2], HSch[1], marker = 's', s = 100, edgecolor='g', linewidth='3', facecolor='none', label = 'High Mass')
     # ax[0,0].scatter(NDSch[2], NDSch[1], marker = 's', s = 100, edgecolor='orange', linewidth='3', facecolor='none', label = 'Non Detection')
-    # ax[0,0].errorbar(totSch[2], totSch[1], yerr=sigma, fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='red', mec='crimson', ecolor='crimson', label = 'Total')
-    ax[0,0].errorbar(totGen[2], totGen[1], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='r', mec='crimson', ecolor='crimson', alpha=0.5,  label = 'Genzel+12')
-    ax[0,0].errorbar(totSr[2], totSr[1], fmt='o', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='limegreen', mec='g', ecolor='g', alpha=0.5, label = 'Schruba+12')
-    ax[0,0].errorbar(totGio[2], totGio[1], fmt='s', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='b', mec='navy', ecolor='navy', alpha=0.5, label = 'Accurso+16')
-    ax[0,0].errorbar(totGal[2], totGal[1], fmt='^', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='m', mec='m', ecolor='m', alpha=0.5, label = 'Galactic')
+    # ax[0,0].errorbar(totSch[2], totSch[1], yerr=sigma, fmt='h', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='red', mec='crimson', ecolor='crimson', label = 'Total')
+    ax[0,0].errorbar(totGen[2], totGen[1], fmt='h', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='r', mec='crimson', ecolor='crimson', alpha=0.5,  label = 'Genzel+12')
+    ax[0,0].errorbar(totSr[2], totSr[1], fmt='o', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='limegreen', mec='g', ecolor='g', alpha=0.5, label = 'Schruba+12')
+    ax[0,0].errorbar(totGio[2], totGio[1], fmt='s', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='b', mec='navy', ecolor='navy', alpha=0.5, label = 'Accurso+16')
+    ax[0,0].errorbar(totGal[2], totGal[1], fmt='^', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='m', mec='m', ecolor='m', alpha=0.5, label = 'Galactic')
     # #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ax[0,0].plot(x_keres, y_ober, 'k--', label = 'Obreschkow+09')
     ax[0,0].plot(xkeres, ykeres2, 'k-', label = 'Keres+03')
@@ -488,15 +492,15 @@ def PlotSchechter3(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_ober, bins, LCO
     # ax[0,0].scatter(LSch[2], LSch[1], marker = 's', s = 100, edgecolor='blue', linewidth='3', facecolor='none', label = 'Low Mass')
     # ax[0,0].scatter(HSch[2], HSch[1], marker = 's', s = 100, edgecolor='g', linewidth='3', facecolor='none', label = 'High Mass')
     # ax[0,0].scatter(NDSch[2], NDSch[1], marker = 's', s = 100, edgecolor='orange', linewidth='3', facecolor='none', label = 'Non Detection')
-    # ax[0,0].errorbar(totSch[2], totSch[1], yerr=sigma, fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='red', mec='crimson', ecolor='crimson', label = 'Total')
-    # ax[0,0].errorbar(totGen[2], totGen[1], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='b', mec='b', ecolor='crimson', alpha=0.5,  label = 'Genzel+12')
-    # ax[0,0].errorbar(totGenl[2], totGenl[1], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='r', mec='r', ecolor='crimson', alpha=0.5,  label = 'Genzell+12')
-    # ax[0,0].errorbar(totGenu[2], totGenu[1], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='g', mec='g', ecolor='crimson', alpha=0.5,  label = 'Genzelu+12')
-    #ax[0,0].errorbar(totGenl2[2], totGenl2[1], fmt='^', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='r', mec='r', ecolor='crimson', alpha=0.5,  label = 'Genzell+12')
-    # ax[0,0].errorbar(totGenu2[2], totGenu2[1], fmt='^', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='g', mec='g', ecolor='crimson', alpha=0.5,  label = 'Genzelu+12')
-    # ax[0,0].errorbar(totSr[2], totSr[1], fmt='o', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='limegreen', mec='g', ecolor='g', alpha=0.5, label = 'Schruba+12')
-    # ax[0,0].errorbar(totGio[2], totGio[1], fmt='s', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='b', mec='navy', ecolor='navy', alpha=0.5, label = 'Accurso+16')
-    # ax[0,0].errorbar(totGal[2], totGal[1], fmt='^', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='m', mec='m', ecolor='m', alpha=0.5, label = 'Galactic')
+    # ax[0,0].errorbar(totSch[2], totSch[1], yerr=sigma, fmt='h', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='red', mec='crimson', ecolor='crimson', label = 'Total')
+    # ax[0,0].errorbar(totGen[2], totGen[1], fmt='h', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='b', mec='b', ecolor='crimson', alpha=0.5,  label = 'Genzel+12')
+    # ax[0,0].errorbar(totGenl[2], totGenl[1], fmt='h', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='r', mec='r', ecolor='crimson', alpha=0.5,  label = 'Genzell+12')
+    # ax[0,0].errorbar(totGenu[2], totGenu[1], fmt='h', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='g', mec='g', ecolor='crimson', alpha=0.5,  label = 'Genzelu+12')
+    #ax[0,0].errorbar(totGenl2[2], totGenl2[1], fmt='^', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='r', mec='r', ecolor='crimson', alpha=0.5,  label = 'Genzell+12')
+    # ax[0,0].errorbar(totGenu2[2], totGenu2[1], fmt='^', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='g', mec='g', ecolor='crimson', alpha=0.5,  label = 'Genzelu+12')
+    # ax[0,0].errorbar(totSr[2], totSr[1], fmt='o', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='limegreen', mec='g', ecolor='g', alpha=0.5, label = 'Schruba+12')
+    # ax[0,0].errorbar(totGio[2], totGio[1], fmt='s', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='b', mec='navy', ecolor='navy', alpha=0.5, label = 'Accurso+16')
+    # ax[0,0].errorbar(totGal[2], totGal[1], fmt='^', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='m', mec='m', ecolor='m', alpha=0.5, label = 'Galactic')
     ax[0,0].plot(xbins, y_CG, linestyle = '-', color = 'crimson', label = 'COLD GASS Schechter fit', linewidth=1, zorder=3)
     ax[0,0].plot(x_keres, y_ober, 'k--', label = 'Obreschkow+09', linewidth=1, zorder=1)
     ax[0,0].plot(xkeres, ykeres2, 'k-', label = 'Keres+03', linewidth=1, zorder=2)
@@ -509,7 +513,7 @@ def PlotSchechter3(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_ober, bins, LCO
     a[:,3] = GenErr[:,1]
     np.savetxt('gzl.txt', a)
     ax[0,0].fill_between(xbins, y_CGl, y_CGu, color = 'r', alpha =0.1)
-    ax[0,0].errorbar(totGen2[2], totGen2[1], yerr = [GenErr[:,0], GenErr[:,1]], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='r', mec='crimson', ecolor='crimson', zorder = 7, label = 'COLD GASS + Genzel+12')
+    ax[0,0].errorbar(totGen2[2], totGen2[1], yerr = [GenErr[:,0], GenErr[:,1]], fmt='h', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='r', mec='crimson', ecolor='crimson', zorder = 7, label = 'COLD GASS + Genzel+12')
     ### ax[0,0].scatter(LSch[2], LSch[1], marker = 's', s = 100, edgecolor='blue', linewidth='3', facecolor='none', label = 'Low Mass Detections', zorder=6)
     # ax[0,0].scatter(HSch[2], HSch[1], marker = 's', s = 100, edgecolor='g', linewidth='3', facecolor='none', label = 'High Mass Detections', zorder=5)
     # ax[0,0].scatter(NDSch[2], NDSch[1], marker = 's', s = 100, edgecolor='orange', linewidth='3', facecolor='none', label = 'Non Detections', zorder=4)
@@ -589,9 +593,9 @@ def PlotGalactic(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_ober, bins, LCOto
     # ax[0,0].plot(xbins, y_CGu, linestyle = '-', color = 'crimson')
     ax[0,0].fill_between(xbins, y_CGl, y_CGu, color = 'limegreen', alpha =0.4)
     ax[0,0].fill_between(genzel[:,0], genzel[:,1], genzel[:,2], color = 'red', alpha =0.1)
-    ax[0,0].errorbar(totGen2[2], totGen2[1], yerr=[GenErr[:,0], GenErr[:,1]], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='limegreen', mec='g', ecolor='g', zorder=7,label = 'COLD GASS + Galactic')
-    # ax[0,0].errorbar(totGenl2[2], totGenl2[1], fmt='s', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='r', mec='crimson', ecolor='crimson', zorder=7,label = 'COLD GASS + Genzel+12')
-    # ax[0,0].errorbar(totGenu2[2], totGenu2[1], fmt='^', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='r', mec='crimson', ecolor='crimson', zorder=7,label = 'COLD GASS + Genzel+12')
+    ax[0,0].errorbar(totGen2[2], totGen2[1], yerr=[GenErr[:,0], GenErr[:,1]], fmt='h', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='limegreen', mec='g', ecolor='g', zorder=7,label = 'COLD GASS + Galactic')
+    # ax[0,0].errorbar(totGenl2[2], totGenl2[1], fmt='s', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='r', mec='crimson', ecolor='crimson', zorder=7,label = 'COLD GASS + Genzel+12')
+    # ax[0,0].errorbar(totGenu2[2], totGenu2[1], fmt='^', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='r', mec='crimson', ecolor='crimson', zorder=7,label = 'COLD GASS + Genzel+12')
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     b = np.zeros((len(xbins),3))
     b[:,0] = xbins
@@ -669,7 +673,7 @@ def PlotSchruba(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_ober, bins, LCOtot
     ax[0,0].fill_between(xbins, y_CGl, y_CGu, color = 'b', alpha =0.4)
     ax[0,0].fill_between(gal[:,0], gal[:,1], gal[:,2], color = 'limegreen', alpha =0.1)
     ax[0,0].fill_between(genzel[:,0], genzel[:,1], genzel[:,2], color = 'red', alpha =0.1)
-    ax[0,0].errorbar(totGen2[2], totGen2[1], yerr=[GenErr[:,0], GenErr[:,1]], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='b', mec='navy', ecolor='navy', zorder=7,label = 'COLD GASS + Schruba+12')
+    ax[0,0].errorbar(totGen2[2], totGen2[1], yerr=[GenErr[:,0], GenErr[:,1]], fmt='h', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='b', mec='navy', ecolor='navy', zorder=7,label = 'COLD GASS + Schruba+12')
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     b = np.zeros((len(xbins),3))
     b[:,0] = xbins
@@ -751,7 +755,7 @@ def PlotAccurso(LSch, HSch, NDSch, totSch, xkeres, ykeres2, y_ober, bins, LCOtot
     a[:,3] = GenErr[:,1]
     print (a)
     np.savetxt('data/AccursoERRS.txt',a)
-    # ax[0,0].errorbar(totGen2[2], totGen2[1], yerr=[GenErr[:,0], GenErr[:,1]], fmt='h', markersize = 10, linewidth=2, mew=2, capthick=3, mfc='deeppink', mec='m', ecolor='m', zorder=7,label = 'COLD GASS + Accurso+12')
+    # ax[0,0].errorbar(totGen2[2], totGen2[1], yerr=[GenErr[:,0], GenErr[:,1]], fmt='h', markersize = 10, linewidth=2, markeredgewidth=2, capthick=3, mfc='deeppink', mec='m', ecolor='m', zorder=7,label = 'COLD GASS + Accurso+12')
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     ax[0,0].set_xlabel(r'$\mathrm{log\, M_{H2}\,[M_{\odot}]}$', fontsize=18)
     ax[0,0].set_ylabel(r'$\mathrm{log\, \phi_{H2}\, [Mpc^{-3}\, dex^{-1}]}$', fontsize=18)
